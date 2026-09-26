@@ -4,8 +4,8 @@
 // reglas de la base de datos (supabase/schema.sql).
 // NUNCA pongas aquí una clave secreta (sb_secret_ o service_role).
 window.APP_CONFIG = {
-  supabaseUrl: "https://TU-PROYECTO.supabase.co",
-  supabaseAnonKey: "sb_publishable_TU-CLAVE",
+supabaseUrl: "https://hrybclllymcsbujancuw.supabase.co"
+supabaseAnonKey: "sb_publishable_f3punkQZ6WiowP4xIrc8VQ_8BoVB-Sp"
   // Los usuarios entran con un nombre (p. ej. "rm.sur"). Internamente se
   // convierte en rm.sur@<dominio>. No se envía ningún correo.
   dominioUsuarios: "homeandcook.app",
