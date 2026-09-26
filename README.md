@@ -30,7 +30,7 @@ Puedes probarla sin configurar nada añadiendo `?demo` al final del enlace.
 | `i18n.js` | Idiomas (español, inglés, francés) del portal y de las pantallas de invitado |
 | `marca.js` | Logotipo RR.HH. x Home & Cook dibujado en curvas SVG (sin fuentes externas) |
 | `marcas.js` | Logos de Groupe SEB y de las marcas, recortados e incrustados, y la cinta inferior |
-| `config.js` | Conexión a tu proyecto de Supabase |
+| `config.js` | Conexión a tu proyecto de Supabase. **Se crea una vez y no se vuelve a subir nunca**: si lo subes de nuevo, borras tus claves. En este paquete va como `config.EJEMPLO.js` para que no pueda pasar por accidente. |
 | `demo.js` | Modo demostración (`?demo`) |
 | `roleplay.js` | Role play con IA dentro del Circuito de Venta |
 | `arcade.js` | Juego «Un turno en la tienda» |

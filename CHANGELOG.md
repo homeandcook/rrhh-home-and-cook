@@ -35,6 +35,11 @@ Funcionamiento:
 - Los textos nuevos están en español, inglés y francés.
 - Arreglado: al entrar por `?codigo=` sin código, ya no aparece el aviso de «código caducado» antes de escribir nada.
 
+## 0.10.1 · 26/09/2026 · **SQL: no**
+- **KRUPS**: el logo se veía lavado al lado de los demás porque su opacidad máxima era 199 de 255. Reconstruido desde el fichero original de marca, a opacidad completa y con su gris oscuro (60, 57, 53), el mismo del propio fichero. Sigue pendiente la versión oficial del portal de marca.
+- **WMF**: su logo es cuadrado y de dos líneas, así que a 30 px quedaba pequeño al lado de los logotipos horizontales. Sube a 42 px, que es donde la altura de sus letras iguala a la de KRUPS y Rowenta.
+- `config.js` sale del paquete y pasa a llamarse `config.EJEMPLO.js`, para que al subir una actualización no pueda machacar las claves del proyecto.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

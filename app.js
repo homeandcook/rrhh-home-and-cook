@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.10.0";
+const APP_VERSION = "0.10.1";
 const C = SC.CONFIG, esc = SC.esc, K = window.APP_CONFIG || {};
 let sb = null;
 const S = {
