@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>RR.HH. x Home &amp; Cook</title>
+<meta name="description" content="Plataforma de Recursos Humanos de la red de tiendas Home &amp; Cook, Groupe SEB.">
 <link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F2F4F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12181E" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-title" content="RRHH H&amp;C">
+<meta name="mobile-web-app-capable" content="yes">
 <style>
 :root{
   --ink:#1C2733; --muted:#5E6B78; --line:#D9DEE5; --mist:#F2F4F7; --paper:#FFFFFF;
@@ -243,17 +250,72 @@ aside#side{top:53px;height:calc(100vh - 53px)}
 .loading{display:grid;place-items:center;height:100vh;color:var(--muted)}
 
 .login{min-height:100vh;display:grid;place-items:center;padding:24px;background:
-  radial-gradient(circle at 50% -20%, rgba(229,33,67,.10), transparent 60%), var(--mist)}
-.login-card{width:100%;max-width:380px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:32px 30px 28px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(28,39,51,.08)}
-.login-card .logo{margin:0 auto 4px}
-.login-card h1{text-align:center;font-size:24px}
-.login-card .sub{text-align:center;color:var(--muted);margin:-8px 0 2px;font-size:14px;line-height:1.45}
-.login-card .sub2{font-size:13px;margin:0 0 6px}
+  radial-gradient(circle at 12% 0%, rgba(229,33,67,.13), transparent 55%),
+  radial-gradient(circle at 92% 100%, rgba(62,92,118,.12), transparent 55%), var(--mist)}
+.login-wrap{width:100%;max-width:960px;display:grid;grid-template-columns:1.06fr 1fr;background:var(--paper);
+  border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 26px 60px rgba(28,39,51,.14)}
+
+/* Panel de marca */
+.login-marca{background:linear-gradient(160deg,#E52143 0%,#C4152F 55%,#9C0F26 100%);color:#fff;
+  display:flex;flex-direction:column;position:relative;min-height:520px;min-width:0;overflow:hidden}
+.login-marca .lm-seb{display:flex;align-items:center;gap:10px;padding:22px 26px 0;font-size:12.5px;color:rgba(255,255,255,.88);font-weight:600}
+.login-marca .chipseb{box-shadow:none;border-color:transparent;padding:6px 10px}
+.login-marca .lm-centro{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:20px 30px 26px;text-align:center}
+.login-marca .logo{margin:0 0 14px;box-shadow:0 8px 26px rgba(0,0,0,.18)}
+.login-marca .marca{color:#fff}
+.login-marca .marca .equis{stroke:#FFC9D3}
+.login-marca .lm-lema{margin:14px 0 0;max-width:19em;font-size:14.5px;line-height:1.5;color:rgba(255,255,255,.9)}
+.login-marca .marcas{position:static;border-top:0;border-radius:0;padding:14px 0;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 17%,#000 83%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 17%,#000 83%,transparent)}
+.login-marca .cinta{gap:40px;animation-duration:34s}
+
+/* Columna del formulario */
+.login-lado{position:relative;min-width:0;padding:34px 34px 22px;display:flex;flex-direction:column;justify-content:center;background:var(--paper)}
+.login-card{display:flex;flex-direction:column;gap:13px}
+.login-card h1{font-size:23px}
+.login-card .sub{color:var(--muted);margin:-9px 0 4px;font-size:14px;line-height:1.45}
 .login-card h1 i{font-style:normal;color:var(--red)}
 .login-card input{padding:10px 12px;font-size:15px}
 .login-card .btn{padding:11px;font-size:15px;text-align:center;text-decoration:none}
+.login-lado .btn{padding:11px;font-size:15px;text-align:center;text-decoration:none;display:block;width:100%;color:var(--ink)}
+.login-lado a.btn:hover{border-color:var(--ink)}
+.login-lado .btn.primary{color:#fff}
 .login-err{color:var(--l0);font-size:14px;min-height:20px;margin:0}
+.login-card .login-err:empty{display:none}
 .demo-note{background:var(--warnbg);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13px;margin:0}
+.campo-pass{position:relative;display:block}
+.campo-pass input{padding-right:42px}
+.ojo{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);
+  cursor:pointer;padding:7px;display:flex;border-radius:6px}
+.ojo:hover{color:var(--ink)}
+label.check{flex-direction:row;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;margin:-2px 0}
+label.check input[type=checkbox]{appearance:auto;-webkit-appearance:checkbox;width:16px;height:16px;flex:none;
+  accent-color:var(--red);padding:0;border:0;background:none;border-radius:0;margin:0}
+.olvido{font-size:13px;margin:-2px 0 0}
+.olvido summary{color:var(--muted);cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:5px;text-decoration:underline;text-underline-offset:2px}
+.olvido summary::-webkit-details-marker{display:none}
+.olvido summary:hover{color:var(--ink)}
+.olvido p{margin:8px 0 0;background:var(--mist);border-radius:8px;padding:10px 12px;color:var(--muted);line-height:1.5}
+.login-o{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12.5px;margin:20px 0 12px}
+.login-o::before,.login-o::after{content:"";flex:1;height:1px;background:var(--line)}
+.acc-pie{text-align:center;font-size:12.5px;margin:8px 0 0}
+.login-pie{margin:auto 0 0;padding-top:16px;text-align:center;color:var(--muted);font-size:11.5px}
+
+@media (max-width:860px){
+  .login{padding:0;place-items:stretch;background:var(--paper)}
+  .login-wrap{grid-template-columns:1fr;max-width:none;border:0;border-radius:0;box-shadow:none;min-height:100vh;align-content:start}
+  .login-marca{min-height:0}
+  .login-marca .lm-centro{padding:14px 24px 20px}
+  .login-marca .logo{width:92px;height:92px;margin-bottom:10px}
+  .login-marca .lm-lema{display:none}
+  .login-marca .marcas{padding:11px 0}
+  .login-lado{padding:18px 20px 20px;justify-content:flex-start}
+  .login-lado>*{width:100%;max-width:440px;margin-left:auto;margin-right:auto}
+  .login .login-lado .langsel{position:static;background:transparent;padding:0;justify-content:flex-end;margin:0 auto 12px}
+  .login .login-lado .langsel button.on{background:var(--mist)}
+  .login-pie{padding-top:22px}
+}
 .inline-form{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;border-top:1px solid var(--mist);margin-top:14px;padding-top:14px}
 .inline-form h3{flex-basis:100%;margin:0}
 .inline-form label{flex:1 1 150px}
@@ -384,8 +446,9 @@ h2.grupo:first-of-type{margin-top:0}
 .langsel{display:flex;gap:2px;background:var(--mist);border-radius:8px;padding:2px}
 .langsel button{border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 8px;border-radius:6px;cursor:pointer;letter-spacing:.04em}
 .langsel button.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.login-card .langsel,.guest-card .langsel{position:absolute;top:14px;right:14px}
-.login-card,.guest-card{position:relative}
+.login-lado .langsel,.guest-card .langsel{position:absolute;top:14px;right:14px}
+.guest-card{position:relative}
+.guest-card .hint a,.login-card .hint a{color:var(--red);font-weight:600}
 .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:4px}
 .np{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:10px 0;cursor:pointer;font-weight:700;color:inherit;font-variant-numeric:tabular-nums}
 .np:hover{border-color:var(--ink)}
@@ -423,7 +486,7 @@ h2.grupo:first-of-type{margin-top:0}
 .chipseb{display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .home-h{position:relative}
 .home-seb{margin-bottom:14px}
-.login,.guest{position:relative;padding-bottom:110px}
+.guest{position:relative;padding-bottom:110px}
 .marcas{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);overflow:hidden;padding:16px 0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
 .home .marcas{position:static;margin-top:36px;border:1px solid var(--line);border-radius:12px}
 .cinta{display:flex;align-items:center;gap:56px;width:max-content;animation:desfile 42s linear infinite}

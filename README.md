@@ -32,8 +32,16 @@ Puedes probarla sin configurar nada añadiendo `?demo` al final del enlace.
 | `marcas.js` | Logos de Groupe SEB y de las marcas, recortados e incrustados, y la cinta inferior |
 | `config.js` | Conexión a tu proyecto de Supabase |
 | `demo.js` | Modo demostración (`?demo`) |
+| `roleplay.js` | Role play con IA dentro del Circuito de Venta |
+| `arcade.js` | Juego «Un turno en la tienda» |
 | `logo.png` | Logo Home & Cook |
+| `manifest.json` | Datos para instalar la plataforma en el móvil |
+| `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` | Iconos de esa instalación |
 | `supabase/schema.sql` | Tablas y reglas de seguridad |
+
+### Instalarla en el móvil
+
+Con `manifest.json` y los tres iconos subidos, cualquiera que abra el enlace desde el móvil puede añadirla a la pantalla de inicio y abrirla como una aplicación, sin barra del navegador. En Android: menú del navegador → «Añadir a pantalla de inicio». En iPhone: botón de compartir → «Añadir a pantalla de inicio».
 
 ## Puesta en marcha (unos 20 minutos)
 

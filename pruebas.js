@@ -11,6 +11,7 @@ const INV = { codigo: "", datos: null, respuestas: {}, enviado: false, error: ""
 async function abrirInvitacion(codigo) {
   INV.codigo = (codigo || "").trim().toUpperCase();
   INV.error = "";
+  if (!INV.codigo) { INV.datos = null; return pintarInvitado(); }
   const { data, error } = await sb.rpc("invitacion_abrir", { p_codigo: INV.codigo });
   if (error) { INV.error = traducirError(error); INV.datos = null; }
   else if (!data) { INV.error = "Ese código no existe o ya ha caducado. Revisa que lo has copiado entero."; INV.datos = null; }

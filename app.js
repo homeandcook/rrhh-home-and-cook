@@ -1,4 +1,5 @@
 "use strict";
+const APP_VERSION = "0.10.0";
 const C = SC.CONFIG, esc = SC.esc, K = window.APP_CONFIG || {};
 let sb = null;
 const S = {
@@ -37,37 +38,96 @@ function arrancar() {
   sb.auth.getSession().then(({ data }) => (data && data.session ? entrar() : pantallaLogin()));
 }
 function pantallaSinConfig() {
-  $("app").innerHTML = `<div class="login"><div class="login-card">${selectorIdioma()}${logo(110)}<div class="marcacaja">${marcaSVG("grande", 28)}</div>
-    <p class="hint">La plataforma aún no está conectada a su base de datos. Sigue los pasos del README para configurar <code>config.js</code>.</p>
-    <a class="btn primary block" href="?demo">Probar en modo demostración</a></div></div>`;
+  $("app").innerHTML = `<div class="login"><div class="login-wrap">
+    ${panelMarca()}
+    <div class="login-lado">
+      ${selectorIdioma()}
+      <div class="login-card">
+        <h1>${t("bienvenida")}</h1>
+        <p class="demo-note">La plataforma aún no está conectada a su base de datos: falta poner la URL del proyecto y la clave publicable en <code>config.js</code>. En el README está el paso a paso.</p>
+        <a class="btn primary block" href="?demo">Probar en modo demostración</a>
+      </div>
+      <p class="login-pie">${esc(t("unaPlataformaDe"))} · v${APP_VERSION}</p>
+    </div>
+  </div></div>`;
 }
 function selectorIdioma() {
   return `<div class="langsel">${IDIOMAS.map(i => `<button class="${LANG === i.id ? "on" : ""}" data-action="idioma" data-l="${i.id}">${i.id.toUpperCase()}</button>`).join("")}</div>`;
 }
 function logo(px) { return `<img class="logo" src="${window.LOGO_SRC || "logo.png"}" width="${px}" height="${px}" alt="Home &amp; Cook Official Store">`; }
+function panelMarca() {
+  return `<div class="login-marca">
+    <div class="lm-seb"><span class="chipseb">${logoSEB(30)}</span><span>${t("unaPlataformaDe")}</span></div>
+    <div class="lm-centro">
+      ${logo(132)}
+      <div class="marcacaja">${marcaSVG("grande", 34)}</div>
+      <p class="lm-lema">${t("lemaPanel")}</p>
+    </div>
+    ${bandaMarcas()}
+  </div>`;
+}
 function pantallaLogin(msg) {
+  let recordado = "";
+  try { recordado = localStorage.getItem("sc-usuario") || ""; } catch (e) {}
   $("app").innerHTML = `<div class="login">
-    <div class="esquina"><span class="chipseb">${logoSEB(38)}</span></div>
-    <form class="login-card" id="loginForm" autocomplete="on">
-    ${selectorIdioma()}
-    ${logo(126)}
-    <div class="marcacaja">${marcaSVG("grande", 30)}</div>
-    <p class="sub">${t("subPlataforma")}</p>
-    <p class="sub sub2">${t("subAcceso")}</p>
-    ${sb.demo ? `<p class="demo-note">${t("demoAviso")}</p>` : ""}
-    <label>${t("usuario")}<input id="lgUser" name="username" autocomplete="username" required autofocus></label>
-    <label>${t("contrasena")}<input id="lgPass" name="password" type="password" autocomplete="current-password" required></label>
-    <p class="login-err" id="lgErr" role="alert">${esc(msg || "")}</p>
-    <button class="btn primary block" type="submit" id="lgBtn">${t("entrar")}</button>
-    <p class="hint" style="text-align:center;margin:2px 0 0">${t("tengoCodigo")} <a href="?codigo=" >${t("entraConEl")}</a></p>
-  </form>${bandaMarcas()}</div>`;
+    <div class="login-wrap">
+      ${panelMarca()}
+      <div class="login-lado">
+        ${selectorIdioma()}
+        <form class="login-card" id="loginForm" autocomplete="on">
+          <h1>${t("bienvenida")}</h1>
+          <p class="sub">${t("subAcceso")}</p>
+          ${sb.demo ? `<p class="demo-note">${t("demoAviso")}</p>` : ""}
+          <label>${t("usuario")}<input id="lgUser" name="username" autocomplete="username" required ${recordado ? `value="${esc(recordado)}"` : "autofocus"}></label>
+          <label>${t("contrasena")}
+            <span class="campo-pass">
+              <input id="lgPass" name="password" type="password" autocomplete="current-password" required ${recordado ? "autofocus" : ""}>
+              <button type="button" class="ojo" id="lgOjo" aria-label="${t("verPass")}" aria-pressed="false">${ICO_OJO}</button>
+            </span>
+          </label>
+          <label class="check"><input type="checkbox" id="lgRec" ${recordado ? "checked" : ""}><span>${t("recordarme")}</span></label>
+          <p class="login-err" id="lgErr" role="alert">${esc(msg || "")}</p>
+          <button class="btn primary block" type="submit" id="lgBtn">${t("entrar")}</button>
+          <details class="olvido"><summary>${t("olvidePass")}</summary><p>${t("olvidePassTxt")}</p></details>
+        </form>
+        <div class="login-o"><span>${t("tengoCodigo")}</span></div>
+        <a class="btn block" href="?codigo=">${t("botonCodigo")}</a>
+        <p class="hint acc-pie">${t("botonCodigoPie")}</p>
+        <p class="login-pie">${esc(t("unaPlataformaDe"))} · v${APP_VERSION}</p>
+      </div>
+    </div>
+  </div>`;
+  (recordado ? $("lgPass") : $("lgUser")).focus();
+  const ojo = $("lgOjo");
+  ojo.addEventListener("click", () => {
+    const p = $("lgPass"), ver = p.type === "password";
+    p.type = ver ? "text" : "password";
+    ojo.setAttribute("aria-pressed", ver ? "true" : "false");
+    ojo.setAttribute("aria-label", ver ? t("ocultarPass") : t("verPass"));
+    ojo.innerHTML = ver ? ICO_OJO_NO : ICO_OJO;
+    p.focus();
+  });
   $("loginForm").addEventListener("submit", async ev => {
     ev.preventDefault();
+    const usuario = $("lgUser").value.trim();
     $("lgBtn").disabled = true; $("lgBtn").textContent = t("entrando"); $("lgErr").textContent = "";
-    const { error } = await sb.auth.signInWithPassword({ email: emailDe($("lgUser").value), password: $("lgPass").value });
-    if (error) { $("lgErr").textContent = traducirError(error); $("lgBtn").disabled = false; $("lgBtn").textContent = t("entrar"); return; }
+    let error = null;
+    try {
+      const r = await sb.auth.signInWithPassword({ email: emailDe(usuario), password: $("lgPass").value });
+      error = r.error;
+    } catch (e) { error = e; }
+    if (error) { $("lgErr").textContent = errorAcceso(error); $("lgBtn").disabled = false; $("lgBtn").textContent = t("entrar"); return; }
+    try { if ($("lgRec").checked) localStorage.setItem("sc-usuario", usuario); else localStorage.removeItem("sc-usuario"); } catch (e) {}
     entrar();
   });
+}
+const ICO_OJO = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.8 12S5.4 5.2 12 5.2 22.2 12 22.2 12 18.6 18.8 12 18.8 1.8 12 1.8 12Z"/><circle cx="12" cy="12" r="3.1"/></svg>`;
+const ICO_OJO_NO = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5l17 17"/><path d="M9.6 6A9.9 9.9 0 0 1 12 5.2c6.6 0 10.2 6.8 10.2 6.8a19 19 0 0 1-3.5 4.4"/><path d="M6.3 7.7A18.7 18.7 0 0 0 1.8 12S5.4 18.8 12 18.8a9.8 9.8 0 0 0 3.9-.8"/><path d="M9.9 9.9a3.1 3.1 0 0 0 4.3 4.3"/></svg>`;
+function errorAcceso(e) {
+  const m = (e && (e.message || e)) + "";
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return t("sinRed");
+  if (/Failed to fetch|NetworkError|Load failed|ERR_/i.test(m)) return t("servidorDormido");
+  return traducirError(e);
 }
 async function entrar() {
   $("app").innerHTML = `<div class="loading">Cargando…</div>`;
