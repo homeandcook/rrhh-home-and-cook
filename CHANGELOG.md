@@ -108,6 +108,10 @@ Todos los apartados de la portada quedan en marcha. Desaparece el bloque «En pr
 
 **Psicotécnicos pasa a llamarse Pruebas situacionales**, que es lo que son. Solo cambia el nombre.
 
+## 0.14.1 · 05/10/2026 · **SQL: no**
+
+- **El aviso del modo demostración listaba usuarios que ya no existen** (`rm.norte`, `rm.centro`, `rm.sur`, de una versión anterior). Los que crea hoy son `admin`, `rm.es`, `rm.pt` y `marketing`. Quien abría `?demo` y los copiaba recibía «Usuario o contraseña incorrectos». Corregido en los tres idiomas, y el aviso explica además cómo volver al acceso real quitando `?demo` de la dirección.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).
