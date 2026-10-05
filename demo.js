@@ -8,16 +8,18 @@ window.crearClienteDemo = function () {
   let db;
   try { db = JSON.parse(sessionStorage.getItem(KEY)); } catch (e) {}
   if (!db) {
-    const u = [["admin", "RR.HH. (demo)", "admin", ""], ["rm.norte", "RM Norte (demo)", "rm", "Norte"], ["rm.centro", "RM Centro (demo)", "rm", "Centro"], ["rm.sur", "RM Sur (demo)", "rm", "Sur"]]
+    const u = [["admin", "RR.HH. (demo)", "admin", ""], ["rm.es", "RM España (demo)", "rm", "España"],
+               ["rm.pt", "RM Portugal y Tui (demo)", "rm", "Portugal y Tui"], ["marketing", "Retail Marketing (demo)", "marketing", ""]]
       .map(([usuario, nombre, rol, zona]) => ({ id: uid(), usuario, nombre, rol, zona, activo: true, creado: new Date().toISOString() }));
     const auth = u.map(p => ({ id: p.id, email: p.usuario + "@demo", password: "demo1234" }));
-    const tiendas = [];
-    [["HC Málaga", "rm.sur"], ["HC Sevilla", "rm.sur"], ["HC Madrid Xanadú", "rm.centro"], ["HC Valencia", "rm.centro"], ["HC Bilbao", "rm.norte"], ["HC Zaragoza", "rm.norte"]].forEach(([n, rm]) => {
-      tiendas.push({ id: uid(), anio: SC.CONFIG.anio, nombre: n, codigo: "", rm_id: u.find(x => x.usuario === rm).id, version: 1, actualizado: new Date().toISOString(), actualizado_por: null,
-        datos: { objetivos: { s1: {}, fy: {} }, resultados: { s1: {}, fy: {} }, objetivosValidados: null, personas: [] } });
-    });
-    db = { perfiles: u, auth, tiendas, actividad: [], campanas: [], invitaciones: [], sesion: null, seq: 1 };
+    const tiendas = SC.CONFIG.red.map(x => ({
+      id: uid(), anio: SC.CONFIG.anio, nombre: x.nombre, codigo: x.codigo,
+      rm_id: u.find(p => p.usuario === "rm." + x.rm).id,
+      version: 1, actualizado: new Date().toISOString(), actualizado_por: null,
+      datos: { objetivos: { s1: {}, fy: {} }, resultados: { s1: {}, fy: {} }, objetivosValidados: null, personas: [] } }));
+    db = { perfiles: u, auth, tiendas, actividad: [], campanas: [], invitaciones: [], documentos: [], sesion: null, seq: 1 };
   }
+  db.documentos = db.documentos || [];
   const save = () => sessionStorage.setItem(KEY, JSON.stringify(db));
   save();
   const yo = () => db.perfiles.find(p => db.sesion && p.id === db.sesion.user.id && p.activo);
@@ -28,8 +30,12 @@ window.crearClienteDemo = function () {
     perfiles: r => rol() === "admin" || (db.sesion && r.id === db.sesion.user.id),
     tiendas: r => rol() === "admin" || (rol() === "rm" && r.rm_id === db.sesion.user.id),
     actividad: r => rol() === "admin" || (db.sesion && r.usuario_id === db.sesion.user.id),
-    campanas: () => !!rol(),
-    invitaciones: r => { if (rol() === "admin") return true; const t = db.tiendas.find(x => x.id === r.tienda_id); return !!(t && db.sesion && t.rm_id === db.sesion.user.id); }
+    campanas: r => (rol() === "admin" || rol() === "rm") || (rol() === "marketing" && r.tipo === "mystery"),
+    documentos: () => !!rol(),
+    invitaciones: r => {
+      if (rol() === "admin") return true;
+      if (rol() === "marketing") { const c = db.campanas.find(x => x.id === r.campana_id); return !!(c && c.tipo === "mystery"); }
+      const t = db.tiendas.find(x => x.id === r.tienda_id); return !!(t && db.sesion && t.rm_id === db.sesion.user.id); }
   };
   const err = m => ({ data: null, error: { message: m } });
 
@@ -69,16 +75,18 @@ window.crearClienteDemo = function () {
           if (this.t === "tiendas") Object.assign(r, { id: r.id || uid(), version: 1, actualizado: new Date().toISOString(), datos: r.datos || {} });
           if (this.t === "actividad") Object.assign(r, { id: db.seq++, fecha: new Date().toISOString(), usuario_id: db.sesion.user.id });
           if (this.t === "campanas" || this.t === "invitaciones") Object.assign(r, { id: r.id || uid(), creado: new Date().toISOString() });
+          if (this.t === "documentos") Object.assign(r, { actualizado: new Date().toISOString(), actualizado_por: db.sesion.user.id });
           if (this.t === "perfiles") { if (db.perfiles.some(p => p.usuario === r.usuario)) throw new Error("dup"); Object.assign(r, { activo: r.activo !== false, creado: new Date().toISOString() }); }
           return r;
         });
         T.push(...rows); out = rows;
       } else if (this.op === "update") {
-        if (this.t === "perfiles" && rol() !== "admin") return err("Sin permiso");
+        if ((this.t === "perfiles" || this.t === "documentos") && rol() !== "admin") return err("Sin permiso");
         out = T.filter(match);
         out.forEach(r => {
           const v = clone(this.v);
           if (this.t === "tiendas") { if (rol() === "rm") { delete v.rm_id; delete v.anio; } delete v.version; Object.assign(r, v, { version: r.version + 1, actualizado: new Date().toISOString(), actualizado_por: db.sesion.user.id }); }
+          else if (this.t === "documentos") Object.assign(r, v, { actualizado: new Date().toISOString(), actualizado_por: db.sesion.user.id });
           else Object.assign(r, v);
         });
       } else if (this.op === "delete") {
@@ -114,6 +122,13 @@ window.crearClienteDemo = function () {
           if (i.estado === "respondida") return r(err("Este código ya se ha utilizado"));
           i.respuestas = a.p_respuestas || {}; i.estado = "respondida"; i.respondido = new Date().toISOString(); save();
           return r({ data: { ok: true }, error: null });
+        }
+        if (fn === "red_kpis") {
+          if (!rol()) return r(err("Sin permiso"));
+          const mias = db.tiendas.filter(x => (a.p_anio == null || x.anio === a.p_anio)
+            && (rol() !== "rm" || x.rm_id === db.sesion.user.id));
+          return r({ data: clone(mias).sort((x, y) => x.nombre.localeCompare(y.nombre))
+            .map(x => ({ id: x.id, nombre: x.nombre, codigo: x.codigo, anio: x.anio, kpis: (x.datos || {}).kpis || {} })), error: null });
         }
         if (fn !== "admin_cambiar_password") return r(err("Función desconocida"));
         if (rol() !== "admin") return r(err("Solo un administrador puede cambiar contraseñas de otros usuarios"));

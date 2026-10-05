@@ -29,6 +29,7 @@ function mesesPDC() {
 }
 
 function pintarPDC() {
+  if (filtroPDC().vista === "cargar") return pintarPDCCarga();
   const f = filtroPDC(), ms = mesesPDC(), ts = tiendasPDC(), k = SC.kpis(ts, ms);
   const msPrev = (() => { const all = mesesDisponibles(); const i = all.indexOf(ms[0]); return i > 0 ? all.slice(Math.max(0, i - ms.length), i) : []; })();
   const kPrev = msPrev.length ? SC.kpis(ts, msPrev) : null;
@@ -42,7 +43,7 @@ function pintarPDC() {
   const tarjeta = (titulo, valor, pie, extra) => `<div class="kpi-b"><small>${esc(titulo)}</small><b>${valor}</b><small>${pie || ""} ${extra || ""}</small></div>`;
 
   let h = `<div class="page pdc">
-    <div class="page-h"><h1>People Data Centre</h1><button class="btn" data-action="pdcCsv">Exportar CSV</button></div>
+    <div class="page-h"><h1>People Data Centre</h1><span class="docs-acc">${esMarketing() ? "" : `<button class="btn" data-action="pdcVista" data-v="cargar">Cargar datos</button>`}<button class="btn ghost" data-action="pdcCsv">Exportar CSV</button></span></div>
     <div class="filters">
       <label>Zona<select data-pdc="zona"><option value="">Todas</option>${rms.map(r => `<option value="${r.id}" ${f.zona === r.id ? "selected" : ""}>${esc(r.nombre)}${r.zona ? " (" + esc(r.zona) + ")" : ""}</option>`).join("")}</select></label>
       <label>Tienda<select data-pdc="tienda"><option value="">Todas</option>${S.tiendas.map(t => `<option value="${t.id}" ${f.tienda === t.id ? "selected" : ""}>${esc(t.nombre)}</option>`).join("")}</select></label>
@@ -54,7 +55,8 @@ function pintarPDC() {
       ${f.zona || f.tienda || f.periodo !== "todo" ? `<button class="btn small ghost" data-action="pdcReset">Quitar filtros</button>` : ""}
     </div>`;
 
-  if (!ms.length || !k.nTiendas) { $("vista").innerHTML = h + `<div class="empty big"><p>No hay datos cargados para este filtro. Los datos mensuales por tienda se subirán desde Excel.</p></div></div>`; return; }
+  if (!ms.length || !k.nTiendas) { $("vista").innerHTML = h + `<div class="empty big"><p>${mesesDisponibles().length ? "No hay datos para este filtro." : "Todavía no hay datos mensuales cargados."}</p>
+    ${esMarketing() ? "" : `<p class="hint">Se cargan pegando desde Excel o con el formulario de un mes, tienda a tienda.</p><button class="btn primary" data-action="pdcVista" data-v="cargar">Cargar datos</button>`}</div></div>`; return; }
 
   // Datos clave
   h += `<div class="kpis-top">
@@ -65,6 +67,8 @@ function pintarPDC() {
     ${tarjeta("Ticket medio", k.ticketMedio == null ? "–" : SC.eur(k.ticketMedio), "", kPrev ? comp(k.ticketMedio, kPrev.ticketMedio) : "")}
     ${tarjeta("Conversión", SC.pct(k.conversion, 1), "visitas que compran", kPrev ? comp(k.conversion, kPrev.conversion) : "")}
   </div>`;
+
+  h += bloqueGraficosPDC(ts, ms);
 
   // Bloque 1: negocio
   h += `<h2 class="grupo">KPIs de negocio</h2><div class="kpis-grid">
@@ -132,6 +136,6 @@ function pdcCsv() {
 }
 
 const ACCIONES_PDC = {
-  pdcReset() { S.pdc = { zona: "", tienda: "", periodo: "todo" }; },
+  pdcReset() { S.pdc = { zona: "", tienda: "", periodo: "todo", vista: "cuadro" }; },
   pdcCsv() { pdcCsv(); return false; }
 };

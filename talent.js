@@ -148,11 +148,11 @@ function pintarMapaTalento() {
   const dist = [0, 1, 2].map(i => situadas.filter(x => x.r.perfIdx === i).length);
   h += `<div class="grid2"><section class="card"><h2>Distribución de desempeño</h2>
     <p class="hint">Referencia orientativa de la compañía: ${SC.pct(g.alto, 0)} destacado, ${SC.pct(g.solido, 0)} sólido, ${SC.pct(g.bajo, 0)} por debajo.</p>
-    <table class="mini"><tbody>${[2, 1, 0].map(i => {
+    <div class="tablewrap"><table class="mini"><tbody>${[2, 1, 0].map(i => {
       const ref = [g.bajo, g.solido, g.alto][i], real = dist[i] / tot, desv = real - ref;
       return `<tr><td>${esc(T().bandasDesempeno[i].t)}</td><td class="n">${dist[i]}</td><td class="n">${SC.pct(real, 0)}</td>
         <td class="n"><span class="dev ${Math.abs(desv) >= 0.1 ? "alta" : ""} ${desv > 0 ? "pos" : desv < 0 ? "neg" : ""}">${desv > 0 ? "+" : ""}${SC.pct(desv, 0)}</span></td></tr>`;
-    }).join("")}</tbody></table></section>
+    }).join("")}</tbody></table></div></section>
   <section class="card"><h2>Riesgo de salida por impacto</h2>
     <div class="tablewrap"><table class="mini"><thead><tr><th></th>${T().niveles.map(n => `<th class="n">Impacto ${esc(n.toLowerCase())}</th>`).join("")}</tr></thead><tbody>
     ${T().niveles.map(rg => `<tr><td>Riesgo ${esc(rg.toLowerCase())}</td>${T().niveles.map(im => {

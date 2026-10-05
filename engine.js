@@ -391,7 +391,7 @@ CONFIG.plantillas = [
 ];
 
 CONFIG.tiposPrueba = {
-  psico: { t: "Psicotécnicos", modulo: "psico" },
+  psico: { t: "Pruebas situacionales", modulo: "psico" },
   mystery: { t: "Mystery Shopper", modulo: "mystery" },
   clima: { t: "Encuesta de Clima", modulo: "clima" }
 };
@@ -411,6 +411,64 @@ Object.assign(SC, {
     });
     const puntuables = plantilla.preguntas.filter(q => q.tipo !== "texto").length;
     return { obt, max, pct: max ? SC.r10(obt / max) : null, contestadas: n, puntuables, completa: n === puntuables };
+  },
+  /* Días naturales que una baja solapa con un mes "AAAA-MM".
+     Una baja sin fecha de alta sigue abierta: cuenta hasta hoy o hasta el
+     fin del mes, lo que llegue antes. */
+  diasEnMes(baja, mes) {
+    const [a, m] = mes.split("-").map(Number);
+    const ini = new Date(Date.UTC(a, m - 1, 1)), fin = new Date(Date.UTC(a, m, 0));
+    const bi = new Date(baja.inicio + "T00:00:00Z");
+    const bf = baja.fin ? new Date(baja.fin + "T00:00:00Z") : new Date();
+    if (isNaN(bi) || isNaN(bf)) return 0;
+    const desde = bi > ini ? bi : ini, hasta = bf < fin ? bf : fin;
+    if (hasta < desde) return 0;
+    return Math.round((hasta - desde) / 86400000) + 1;
+  },
+  diasTotales(baja) {
+    const bi = new Date(baja.inicio + "T00:00:00Z");
+    const bf = baja.fin ? new Date(baja.fin + "T00:00:00Z") : new Date();
+    if (isNaN(bi) || isNaN(bf) || bf < bi) return 0;
+    return Math.round((bf - bi) / 86400000) + 1;
+  },
+  diasDelMes(mes) { const [a, m] = mes.split("-").map(Number); return new Date(Date.UTC(a, m, 0)).getUTCDate(); },
+
+  /* Absentismo de un conjunto de tiendas en un conjunto de meses.
+     Tasa = días naturales perdidos ÷ (plantilla × días del periodo).
+     La plantilla sale del campo "empleados" de los KPIs mensuales; sin él
+     no hay denominador y la tasa se devuelve nula en vez de inventada. */
+  absentismo(tiendas, meses) {
+    const porTipo = {}, porTienda = [];
+    let dias = 0, expuestos = 0, procesos = 0, abiertos = 0, sinPlantilla = 0;
+    const vistos = new Set();
+    CONFIG.bajasTipos.forEach(x => porTipo[x.id] = 0);
+    tiendas.forEach(t => {
+      const bajas = (t.bajas || (t.datos && t.datos.bajas) || []);
+      const k = (t.kpis || (t.datos && t.datos.kpis) || {});
+      let dT = 0, eT = 0;
+      meses.forEach(m => {
+        const emp = Number((k[m] || {}).empleados) || 0;
+        if (emp) eT += emp * SC.diasDelMes(m); else sinPlantilla++;
+        bajas.forEach(b => {
+          const d = SC.diasEnMes(b, m);
+          if (!d) return;
+          dT += d;
+          porTipo[b.tipo] = (porTipo[b.tipo] || 0) + d;
+          if (!vistos.has(b.id)) { vistos.add(b.id); procesos++; if (!b.fin) abiertos++; }
+        });
+      });
+      dias += dT; expuestos += eT;
+      porTienda.push({ id: t.id, nombre: t.nombre, codigo: t.codigo, dias: dT,
+        tasa: eT ? SC.r10(dT / eT * 100) : null, nBajas: bajas.length });
+    });
+    const duraciones = [...vistos];
+    return {
+      dias, procesos, abiertos, porTipo, sinPlantilla,
+      tasa: expuestos ? SC.r10(dias / expuestos * 100) : null,
+      duracionMedia: procesos ? SC.r10(dias / procesos) : null,
+      porTienda: porTienda.sort((a, b) => (b.tasa || 0) - (a.tasa || 0)),
+      nTiendas: duraciones.length ? porTienda.filter(x => x.dias).length : 0
+    };
   },
   codigoInvitacion() {
     const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin caracteres que se confundan
@@ -550,6 +608,53 @@ CONFIG.tiposPrueba.onboarding = { t: { es: "Onboarding", en: "Onboarding", fr: "
 CONFIG.tiposPrueba.offboarding = { t: { es: "Offboarding", en: "Offboarding", fr: "Départs" } };
 
 /* --------- KPIs del People Data Centre --------- */
+/* La red real, a 27/09/2026. "rm" es la clave de zona del Regional Manager
+   que la gestiona; al crear los usuarios se asocia cada clave a su persona.
+   Si abre o cierra una tienda, se cambia aquí y en Usuarios y tiendas. */
+CONFIG.red = [
+  { codigo: "ES001", nombre: "HOME & COOK S.SEBASTIAN REYES", rm: "es" },
+  { codigo: "ES002", nombre: "HOME & COOK GETAFE", rm: "es" },
+  { codigo: "ES003", nombre: "HOME & COOK SEVILLA", rm: "es" },
+  { codigo: "ES004", nombre: "HOME & COOK BIZKAIA", rm: "es" },
+  { codigo: "ES006", nombre: "HOME & COOK MALLORCA", rm: "es" },
+  { codigo: "ES007", nombre: "HOME & COOK TUI", rm: "pt" },
+  { codigo: "ES008", nombre: "HOME & COOK A CORUÑA", rm: "es" },
+  { codigo: "ES009", nombre: "HOME & COOK LAS ROZAS", rm: "es" },
+  { codigo: "ES011", nombre: "HOME & COOK VILADECANS", rm: "es" },
+  { codigo: "ES012", nombre: "HOME & COOK ALICANTE", rm: "es" },
+  { codigo: "ES014", nombre: "HOME & COOK MÁLAGA", rm: "es" },
+  { codigo: "ES015", nombre: "HOME & COOK ZARAGOZA", rm: "es" },
+  { codigo: "ES019", nombre: "WMF MALLORCA", rm: "es" },
+  { codigo: "ES020", nombre: "WMF S.SEBASTIAN REYES", rm: "es" },
+  { codigo: "PT001", nombre: "HOME & COOK PORTO", rm: "pt" },
+  { codigo: "PT002", nombre: "HOME & COOK FREEPORT", rm: "pt" },
+  { codigo: "PT003", nombre: "HOME & COOK ALGARVE", rm: "pt" },
+  { codigo: "PT004", nombre: "TEFAL OUTLET STRADA", rm: "pt" },
+  { codigo: "PT005", nombre: "WMF FREEPORT", rm: "pt" },
+  { codigo: "PT006", nombre: "WMF ALGARVE", rm: "pt" },
+  { codigo: "PT008", nombre: "TEFAL Campera", rm: "pt" }
+];
+CONFIG.zonas = { es: "España", pt: "Portugal y Tui" };
+
+/* Bajas y absentismo.
+   Son las contingencias que constan en el parte de baja y que la empresa
+   necesita conocer para la Seguridad Social y para cubrir el turno. NUNCA
+   el diagnóstico ni la causa médica: eso es dato de salud del artículo 9
+   del RGPD y la empresa no tiene por qué tenerlo. Por eso no hay ningún
+   campo de texto libre en este apartado: si existiera, alguien lo usaría. */
+CONFIG.bajasTipos = [
+  { id: "it_comun",      t: "IT por contingencias comunes",  corto: "IT común",    color: "l1" },
+  { id: "it_accidente",  t: "IT por accidente de trabajo",   corto: "Accidente",   color: "l0" },
+  { id: "it_no_laboral", t: "Accidente no laboral",          corto: "No laboral",  color: "l05" },
+  { id: "enf_prof",      t: "Enfermedad profesional",        corto: "Enf. prof.",  color: "l0" },
+  { id: "maternidad",    t: "Nacimiento y cuidado de menor", corto: "Nacimiento",  color: "l15" },
+  { id: "otras",         t: "Otras ausencias justificadas",  corto: "Otras",       color: "l2" }
+];
+/* Por encima de este porcentaje la tienda sale marcada. 4,5 % es la
+   referencia habitual del comercio minorista en España; cámbialo cuando
+   tengas el dato real de la red. */
+CONFIG.absentismoObjetivo = 4.5;
+
 CONFIG.franjas = ["10-12", "12-14", "14-16", "16-18", "18-20", "20-22"];
 
 Object.assign(SC, {

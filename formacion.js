@@ -9,15 +9,20 @@ const CURSOS = [
   { id: "circuito", t: "Circuito de Venta", estado: "activo", min: 15,
     d: "Desde que el cliente entra hasta que sale: los siete pasos, con las frases que funcionan en sala.",
     quien: "Todo el equipo de tienda" },
-  { id: "kpis", t: "KPIs Retail", estado: "pendiente", min: 20,
-    d: "Conversión, ticket medio, unidades por ticket y margen: qué mide cada uno y qué hacer cuando bajan.", quien: "SM y ASM" },
-  { id: "visual", t: "Visual Merchandising", estado: "pendiente", min: 20,
-    d: "Escaparate, mesa de promociones y recorrido de tienda según el plan comercial.", quien: "Todo el equipo" },
-  { id: "pyl", t: "P&L", estado: "pendiente", min: 25,
-    d: "La cuenta de resultados de una tienda: qué líneas dependen de ti y cuáles no.", quien: "SM" },
-  { id: "equipos", t: "Gestión de equipos", estado: "pendiente", min: 25,
-    d: "Horarios, feedback, motivación y conversaciones difíciles.", quien: "SM y ASM" }
+  { id: "kpis", t: "KPIs Retail", estado: "activo", min: 20,
+    d: "Conversión, ticket medio, unidades por ticket, margen y productividad: qué mide cada uno y qué hacer cuando bajan.", quien: "SM y ASM" },
+  { id: "visual", t: "Visual Merchandising", estado: "activo", min: 20,
+    d: "Recorrido del cliente, escaparate según el plan comercial, lineal, precio y la rutina diaria de diez minutos.", quien: "Todo el equipo" },
+  { id: "pyl", t: "P&L", estado: "activo", min: 25,
+    d: "La cuenta de resultados de una tienda: qué líneas dependen de ti, cuáles no, y cómo leerla cada mes.", quien: "SM" },
+  { id: "equipos", t: "Gestión de equipos", estado: "activo", min: 25,
+    d: "Horarios, feedback, reconocimiento, conversaciones difíciles y la acogida de quien entra.", quien: "SM y ASM" }
 ];
+/* Las paradas de cada curso. El Circuito tiene las suyas aquí abajo; el
+   resto viven en cursos.js con el mismo formato. */
+function cursoDe(id) { return CURSOS.find(c => c.id === id); }
+function pasosDe(id) { return id === "circuito" ? CIRCUITO : ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).pasos || []; }
+function testDe(id) { return id === "circuito" ? null : ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).test || null; }
 
 const CIRCUITO = [
   {
@@ -187,57 +192,72 @@ function progreso() {
   try { return JSON.parse(localStorage.getItem(claveProgreso())) || {}; } catch (e) { return {}; }
 }
 function guardarProgreso(p) { try { localStorage.setItem(claveProgreso(), JSON.stringify(p)); } catch (e) {} }
-function vistos() { return (progreso().circuito || {}).vistos || []; }
-function marcarVisto(id) {
-  const p = progreso(); p.circuito = p.circuito || { vistos: [] };
-  if (!p.circuito.vistos.includes(id)) p.circuito.vistos.push(id);
-  p.circuito.ultimo = id;
-  if (p.circuito.vistos.length === CIRCUITO.length && !p.circuito.completado) {
-    p.circuito.completado = new Date().toISOString();
-    log("Formación completada: Circuito de Venta");
+/* El progreso se guarda por curso, con la misma clave que su id. El del
+   Circuito guarda además las prácticas con IA y las partidas del arcade. */
+function progresoCurso(id) { return progreso()[id || S.curso] || {}; }
+function vistos(id) { return progresoCurso(id).vistos || []; }
+function marcarVisto(paso) {
+  const cid = S.curso, p = progreso(); p[cid] = p[cid] || { vistos: [] };
+  p[cid].vistos = p[cid].vistos || [];
+  if (!p[cid].vistos.includes(paso)) p[cid].vistos.push(paso);
+  p[cid].ultimo = paso;
+  if (p[cid].vistos.length === pasosDe(cid).length && !p[cid].completado) {
+    p[cid].completado = new Date().toISOString();
+    log("Formación completada: " + cursoDe(cid).t);
   }
   guardarProgreso(p);
 }
+function cursosCompletados() { return CURSOS.filter(c => progresoCurso(c.id).completado).length; }
 
 /* ---------------- Catálogo ---------------- */
 function pintarFormaciones() {
-  if (S.curso === "circuito") return pintarCircuito();
-  const v = vistos().length, p = progreso().circuito || {};
-  const npr = (p.practicas || []).length, narc = (p.arcade || {}).partidas || 0;
-  const pie = c => c.estado === "pendiente" ? "En preparación"
-    : p.completado ? "Completada el " + fechaES(p.completado) + (npr ? ` · ${npr} ${npr === 1 ? "práctica" : "prácticas"}` : "") + (narc ? ` · ${narc} ${narc === 1 ? "partida" : "partidas"}` : "")
-    : (v ? `${v} de ${CIRCUITO.length} pasos vistos` : "Sin empezar")
-      + (npr ? ` · ${npr} ${npr === 1 ? "práctica" : "prácticas"}` : "") + (narc ? ` · ${narc} ${narc === 1 ? "partida" : "partidas"}` : "");
+  if (S.curso) return pintarCurso();
+  const pie = c => {
+    const p = progresoCurso(c.id), v = (p.vistos || []).length, n = pasosDe(c.id).length;
+    const extra = [];
+    if (c.id === "circuito") {
+      const npr = (p.practicas || []).length, narc = (p.arcade || {}).partidas || 0;
+      if (npr) extra.push(`${npr} ${npr === 1 ? "práctica" : "prácticas"}`);
+      if (narc) extra.push(`${narc} ${narc === 1 ? "partida" : "partidas"}`);
+    } else if (p.test) extra.push(`test ${p.test.aciertos} de ${p.test.total}`);
+    const base = p.completado ? "Completada el " + fechaES(p.completado) : (v ? `${v} de ${n} pasos vistos` : "Sin empezar");
+    return [base].concat(extra).join(" · ");
+  };
+  const hechos = cursosCompletados();
   $("vista").innerHTML = `<div class="page">
-    <h1>Formaciones</h1>
-    <p class="lead">Formación breve, pensada para hacerla en el móvil antes de abrir o entre horas. Cada una deja registro de quién la ha completado.</p>
-    <div class="cards">${CURSOS.map(c => `<button class="mod ${c.estado === "pendiente" ? "pendiente" : ""}" data-action="abrirCurso" data-c="${c.id}" ${c.estado === "pendiente" ? "disabled" : ""}>
-      <span class="mod-t">${esc(c.t)}${c.estado === "pendiente" ? `<span class="badge">${t("pendiente")}</span>` : ""}</span>
+    <div class="page-h"><h1>Formaciones</h1><span class="muted num">${hechos} de ${CURSOS.length} completadas</span></div>
+    <p class="lead">Formación breve, pensada para hacerla en el móvil antes de abrir o entre horas. Cada curso termina con un test corto y deja registro de quién lo ha completado.</p>
+    <div class="cards">${CURSOS.map(c => { const p = progresoCurso(c.id), n = pasosDe(c.id).length, v = (p.vistos || []).length;
+      return `<button class="mod curso-card ${p.completado ? "hecho" : ""}" data-action="abrirCurso" data-c="${c.id}">
+      <span class="mod-t">${esc(c.t)}${p.completado ? `<span class="badge ok">Completada</span>` : ""}</span>
       <span class="mod-d">${esc(c.d)}</span>
-      <span class="curso-meta">${esc(c.quien)} · ${c.min} min</span>
-      <span class="mod-f">${esc(pie(c))}</span></button>`).join("")}</div></div>`;
+      <span class="curso-meta">${esc(c.quien)} · ${c.min} min · ${n} paradas${testDe(c.id) ? " + test" : " + práctica con IA"}</span>
+      <i class="prog mini" aria-hidden="true"><span style="width:${n ? Math.round(v / n * 100) : 0}%"></span></i>
+      <span class="mod-f">${esc(pie(c))}</span></button>`; }).join("")}</div></div>`;
 }
 
-/* ---------------- Circuito de Venta ---------------- */
-function pintarCircuito() {
+/* ---------------- Un curso: recorrido por paradas ---------------- */
+function pintarCurso() {
   if (S.chuleta) return pintarChuleta();
-  if (S.vista === "practicar") return pintarPractica();
-  if (S.vista === "arcade") return pintarArcade();
-  const vis = vistos();
-  const i = Math.max(0, CIRCUITO.findIndex(p => p.id === S.paso));
-  const p = CIRCUITO[i], ult = i === CIRCUITO.length - 1;
-  const prog = progreso().circuito || {};
+  if (S.vista === "test") return pintarTest();
+  if (S.curso === "circuito" && S.vista === "practicar") return pintarPractica();
+  if (S.curso === "circuito" && S.vista === "arcade") return pintarArcade();
+  const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso), vis = vistos();
+  if (!curso || !PASOS.length) { S.curso = null; return pintarFormaciones(); }
+  const i = Math.max(0, PASOS.findIndex(p => p.id === S.paso));
+  const p = PASOS[i], ult = i === PASOS.length - 1, esCircuito = S.curso === "circuito";
+  const prog = progresoCurso(), test = testDe(S.curso);
   $("vista").innerHTML = `<div class="page curso">
     <div class="page-h"><div><button class="btn small ghost" data-action="volverCursos">← Formaciones</button>
-      <h1>Circuito de Venta</h1></div>
-      <div class="curso-acc"><button class="btn small" data-action="arcade">Jugar el turno</button>
-        <button class="btn small" data-action="practicar">Practicar con IA</button>
+      <h1>${esc(curso.t)}</h1></div>
+      <div class="curso-acc">${esCircuito ? `<button class="btn small" data-action="arcade">Jugar el turno</button>
+        <button class="btn small" data-action="practicar">Practicar con IA</button>` : (test ? `<button class="btn small" data-action="irTest">Hacer el test</button>` : "")}
         <button class="btn small" data-action="chuleta">Ver la chuleta</button>
         <button class="btn small ghost" data-action="imprimirCurso">Imprimir</button></div></div>
 
-    <div class="ruta">
-      <div class="ruta-linea"><i style="width:${Math.round(vis.length / CIRCUITO.length * 100)}%"></i></div>
-      ${CIRCUITO.map((x, k) => `<button class="parada ${x.id === p.id ? "on" : ""} ${vis.includes(x.id) ? "hecha" : ""}" data-action="irPaso" data-p="${x.id}">
+    <div class="ruta" style="--n:${PASOS.length}">
+      <div class="ruta-linea"><i style="width:${Math.round(vis.length / PASOS.length * 100)}%"></i></div>
+      ${PASOS.map((x, k) => `<button class="parada ${x.id === p.id ? "on" : ""} ${vis.includes(x.id) ? "hecha" : ""}" data-action="irPaso" data-p="${x.id}">
         <span class="bolita">${vis.includes(x.id) ? "✓" : k + 1}</span><span class="parada-t">${esc(x.t)}</span></button>`).join("")}
     </div>
 
@@ -251,27 +271,58 @@ function pintarCircuito() {
         <div class="bloque"><h3>Cuidado con</h3><ul class="lista ojo">${p.ojo.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
       </div>
 
-      <h3 class="tit-frases">Qué dices</h3>
+      <h3 class="tit-frases">${esCircuito ? "Qué dices" : "Frases que ayudan"}</h3>
       <div class="frases">${p.dices.map((f, k) => `<blockquote class="frase"><span class="ctx">${esc(f.c)}</span>
         <p>${esc(f.f)}</p><button class="btn small ghost" data-action="copiarFrase" data-i="${i}" data-k="${k}">Copiar</button></blockquote>`).join("")}</div>
 
       ${p.extra === "necesidades" ? extraNecesidades() : ""}
       ${p.extra === "argumentos" ? extraArgumentos() : ""}
 
-      ${ult ? `<div class="cta-rp"><div><b>Ya has visto el circuito entero.</b>
+      ${ult && esCircuito ? `<div class="cta-rp"><div><b>Ya has visto el circuito entero.</b>
         <p class="hint">Ahora pruébalo: habla con un cliente simulado y recibe una valoración con esta misma rúbrica.</p></div>
         <span><button class="btn" data-action="arcade">Jugar el turno</button>
         <button class="btn primary" data-action="practicar">Practicar con IA</button></span></div>` : ""}
+      ${ult && test ? `<div class="cta-rp"><div><b>Has llegado al final del curso.</b>
+        <p class="hint">Cinco preguntas para comprobar que te lo llevas. Se pueden repetir las veces que quieras; queda la última.</p></div>
+        <span><button class="btn primary" data-action="irTest">Hacer el test</button></span></div>` : ""}
       <div class="paso-nav">
         <button class="btn" data-action="pasoAnt" ${i === 0 ? "disabled" : ""}>Anterior</button>
-        <span class="muted num">${vis.length} de ${CIRCUITO.length} pasos</span>
+        <span class="muted num">${vis.length} de ${PASOS.length} pasos</span>
         <button class="btn primary" data-action="pasoSig">${ult ? "Marcar y terminar" : "Lo tengo, siguiente"}</button>
       </div>
     </section>
 
     ${prog.completado ? `<section class="card fin"><h2>Formación completada</h2>
-      <p class="hint">Terminada el ${fechaES(prog.completado)}. Puedes volver cuando quieras: la chuleta está pensada para repasar en dos minutos antes de abrir.</p>
-      <div class="actions"><button class="btn" data-action="chuleta">Ver la chuleta</button><button class="btn ghost" data-action="reiniciarCurso">Empezar de nuevo</button></div></section>` : ""}
+      <p class="hint">Terminada el ${fechaES(prog.completado)}.${prog.test ? ` Test: ${prog.test.aciertos} de ${prog.test.total} aciertos el ${fechaES(prog.test.fecha)}.` : ""} Puedes volver cuando quieras: la chuleta está pensada para repasar en dos minutos antes de abrir.</p>
+      <div class="actions"><button class="btn" data-action="chuleta">Ver la chuleta</button>${test ? `<button class="btn" data-action="irTest">${prog.test ? "Repetir el test" : "Hacer el test"}</button>` : ""}<button class="btn ghost" data-action="reiniciarCurso">Empezar de nuevo</button></div></section>` : ""}
+  </div>`;
+}
+
+/* ---------------- Test final ---------------- */
+function testEstado() { S.test = S.test || { resp: {}, corregido: false }; return S.test; }
+function pintarTest() {
+  const curso = cursoDe(S.curso), test = testDe(S.curso), st = testEstado();
+  if (!test) { S.vista = "recorrido"; return pintarCurso(); }
+  const n = test.length, contestadas = test.filter((q, i) => typeof st.resp[i] === "number").length;
+  const aciertos = test.filter((q, i) => st.resp[i] === q.r).length;
+  const prog = progresoCurso();
+  $("vista").innerHTML = `<div class="page curso">
+    <div class="page-h"><div><button class="btn small ghost" data-action="volverRecorrido">← ${esc(curso.t)}</button>
+      <h1>Comprueba lo aprendido</h1></div>
+      ${prog.test ? `<span class="muted num">Último resultado: ${prog.test.aciertos} de ${prog.test.total}</span>` : ""}</div>
+    ${st.corregido ? `<section class="card test-res ${aciertos >= 4 ? "ok" : ""}">
+        <div class="nota-rp"><b class="num">${aciertos}</b><span class="hint">de ${n} aciertos</span></div>
+        <p class="test-titular">${aciertos === n ? "Impecable. Te lo llevas entero." : aciertos >= 4 ? "Bien. Repasa la que has fallado y listo." : aciertos >= 3 ? "A medias: vuelve a las paradas que te han fallado antes de repetir." : "Vuelve al recorrido con calma y repite el test después."}</p>
+        <div class="actions"><button class="btn" data-action="volverRecorrido">Volver al recorrido</button><button class="btn primary" data-action="testRepetir">Repetir el test</button></div>
+      </section>` : ""}
+    <div class="qlist test">${test.map((q, i) => {
+      const v = st.resp[i], ok = st.corregido && v === q.r;
+      return `<section class="q"><p class="qt"><span class="qn">${i + 1}</span>${esc(q.t)}</p>
+        <div class="opts">${q.o.map((o, k) => `<button type="button" class="opt ${v === k ? "on" : ""} ${st.corregido ? (k === q.r ? "bien" : (v === k ? "mal" : "")) : ""}" data-action="testResp" data-q="${i}" data-v="${k}" ${st.corregido ? "disabled" : ""}>${esc(o)}</button>`).join("")}</div>
+        ${st.corregido ? `<p class="porque ${ok ? "ok" : ""}"><b>${ok ? "Correcto." : "La correcta era la " + (q.r + 1) + "."}</b> ${esc(q.por)}</p>` : ""}</section>`;
+    }).join("")}</div>
+    ${st.corregido ? "" : `<div class="guest-f"><span class="muted num">${contestadas} de ${n} respondidas</span>
+      <button class="btn primary" data-action="testCorregir" ${contestadas === n ? "" : "disabled"}>Corregir</button></div>`}
   </div>`;
 }
 
@@ -320,34 +371,39 @@ function pintarArcade() {
   arcRefrescar(); arcPintarDecision();
 }
 function pintarChuleta() {
+  const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso);
   $("vista").innerHTML = `<div class="page curso">
     <div class="page-h"><div><button class="btn small ghost" data-action="chuletaNo">← Volver al recorrido</button>
-      <h1>Circuito de Venta en una pantalla</h1></div>
+      <h1>${esc(curso.t)} en una pantalla</h1></div>
       <button class="btn small" data-action="imprimirCurso">Imprimir</button></div>
-    <div class="chuleta">${CIRCUITO.map((p, k) => `<section class="card"><div class="paso-h"><span class="paso-n">${k + 1}</span><div><h2>${esc(p.t)}</h2><p class="muted">${esc(p.sub)}</p></div></div>
+    <div class="chuleta">${PASOS.map((p, k) => `<section class="card"><div class="paso-h"><span class="paso-n">${k + 1}</span><div><h2>${esc(p.t)}</h2><p class="muted">${esc(p.sub)}</p></div></div>
       <ul class="lista">${p.haces.slice(0, 3).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
       <blockquote class="frase mini"><p>${esc(p.dices[0].f)}</p></blockquote></section>`).join("")}</div></div>`;
 }
 
 function informeCurso() {
-  return `<div class="pr-head">${logo(56)}<div><h1>Circuito de Venta</h1>
+  const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso), esCircuito = S.curso === "circuito";
+  return `<div class="pr-head">${logo(56)}<div><h1>${esc(curso.t)}</h1>
     <p class="meta">RRHH x Home&Cook, Groupe SEB${S.me ? " · " + esc(S.me.nombre) : ""}</p></div></div>
-    ${CIRCUITO.map((p, k) => `<h2>${k + 1}. ${esc(p.t)} — ${esc(p.sub)}</h2>
+    ${PASOS.map((p, k) => `<h2>${k + 1}. ${esc(p.t)} — ${esc(p.sub)}</h2>
       <p><b>${esc(p.idea)}</b></p>
       <p><b>Qué haces:</b></p><ul>${p.haces.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
-      <p><b>Qué dices:</b></p><ul>${p.dices.map(f => `<li><i>${esc(f.c)}:</i> ${esc(f.f)}</li>`).join("")}</ul>
+      <p><b>${esCircuito ? "Qué dices" : "Frases que ayudan"}:</b></p><ul>${p.dices.map(f => `<li><i>${esc(f.c)}:</i> ${esc(f.f)}</li>`).join("")}</ul>
       <p><b>Cuidado con:</b></p><ul>${p.ojo.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`).join("")}`;
 }
 
 const ACCIONES_FORMACION = {
-  abrirCurso(b) { S.curso = b.dataset.c; S.paso = (progreso().circuito || {}).ultimo || CIRCUITO[0].id; S.chuleta = false; S.vista = "recorrido"; },
+  abrirCurso(b) {
+    S.curso = b.dataset.c; const PASOS = pasosDe(S.curso);
+    S.paso = progresoCurso().ultimo || (PASOS[0] || {}).id; S.chuleta = false; S.vista = "recorrido"; S.test = null;
+  },
   volverCursos() { S.curso = null; S.chuleta = false; S.vista = "recorrido"; },
   irPaso(b) { S.paso = b.dataset.p; window.scrollTo(0, 0); },
-  pasoAnt() { const i = CIRCUITO.findIndex(x => x.id === S.paso); if (i > 0) S.paso = CIRCUITO[i - 1].id; window.scrollTo(0, 0); },
+  pasoAnt() { const P = pasosDe(S.curso), i = P.findIndex(x => x.id === S.paso); if (i > 0) S.paso = P[i - 1].id; window.scrollTo(0, 0); },
   pasoSig() {
-    const i = CIRCUITO.findIndex(x => x.id === S.paso);
+    const P = pasosDe(S.curso), i = P.findIndex(x => x.id === S.paso);
     marcarVisto(S.paso);
-    if (i < CIRCUITO.length - 1) { S.paso = CIRCUITO[i + 1].id; window.scrollTo(0, 0); }
+    if (i < P.length - 1) { S.paso = P[i + 1].id; window.scrollTo(0, 0); }
     else toast("Formación completada");
   },
   chuleta() { S.chuleta = true; S.vista = "recorrido"; window.scrollTo(0, 0); },
@@ -355,14 +411,29 @@ const ACCIONES_FORMACION = {
   arcade() { S.vista = "arcade"; S.chuleta = false; window.scrollTo(0, 0); },
   volverRecorrido() { S.vista = "recorrido"; },
   chuletaNo() { S.chuleta = false; },
-  reiniciarCurso() { if (!confirm("Se borra tu progreso de esta formación. ¿Seguro?")) return false; const p = progreso(); delete p.circuito; guardarProgreso(p); S.paso = CIRCUITO[0].id; },
+  reiniciarCurso() { if (!confirm("Se borra tu progreso de esta formación. ¿Seguro?")) return false; const p = progreso(); delete p[S.curso]; guardarProgreso(p); S.paso = (pasosDe(S.curso)[0] || {}).id; },
   famSel(b) { S.fam = Number(b.dataset.k); },
   prodSel(b) { S.prod = b.dataset.t; },
   copiarFrase(b) {
-    const f = CIRCUITO[Number(b.dataset.i)].dices[Number(b.dataset.k)].f;
+    const f = pasosDe(S.curso)[Number(b.dataset.i)].dices[Number(b.dataset.k)].f;
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(f).then(() => toast("Frase copiada"), () => toast(f));
     else toast(f);
     return false;
   },
-  imprimirCurso() { $("print").innerHTML = informeCurso(); window.print(); return false; }
+  imprimirCurso() { $("print").innerHTML = informeCurso(); window.print(); return false; },
+  /* Test final */
+  irTest() { S.vista = "test"; S.chuleta = false; S.test = { resp: {}, corregido: false }; window.scrollTo(0, 0); },
+  testResp(b) { const st = testEstado(); if (st.corregido) return false; const q = Number(b.dataset.q), v = Number(b.dataset.v); st.resp[q] = st.resp[q] === v ? undefined : v; if (st.resp[q] === undefined) delete st.resp[q]; },
+  testCorregir() {
+    const st = testEstado(), test = testDe(S.curso);
+    if (test.some((q, i) => typeof st.resp[i] !== "number")) { toast("Responde todas las preguntas antes de corregir."); return false; }
+    st.corregido = true;
+    const aciertos = test.filter((q, i) => st.resp[i] === q.r).length;
+    const p = progreso(); p[S.curso] = p[S.curso] || { vistos: [] };
+    p[S.curso].test = { aciertos, total: test.length, fecha: new Date().toISOString() };
+    guardarProgreso(p);
+    log(`Test de formación: ${cursoDe(S.curso).t} (${aciertos}/${test.length})`);
+    window.scrollTo(0, 0);
+  },
+  testRepetir() { S.test = { resp: {}, corregido: false }; window.scrollTo(0, 0); }
 };

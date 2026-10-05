@@ -1,5 +1,9 @@
 "use strict";
-const APP_VERSION = "0.10.1";
+const APP_VERSION = "0.14.0";
+/* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
+   del estado porque es preferencia de pantalla, no dato que guardar. */
+const ITEMS_ABIERTOS = new Set();
+let TODO_ABIERTO = false;
 const C = SC.CONFIG, esc = SC.esc, K = window.APP_CONFIG || {};
 let sb = null;
 const S = {
@@ -11,7 +15,18 @@ const S = {
 const $ = id => document.getElementById(id);
 const configurado = () => K.supabaseUrl && !/TU-PROYECTO/.test(K.supabaseUrl) && K.supabaseAnonKey && !/TU-CLAVE/.test(K.supabaseAnonKey);
 const emailDe = u => (u.includes("@") ? u : u + "@" + (K.dominioUsuarios || "homeandcook.app")).trim().toLowerCase();
+/* Dentro de claude.ai la plataforma corre en un artifact: ahí funciona el
+   role play con IA y no se puede cambiar la dirección para entrar en modo
+   demostración, así que el acceso de ejemplo se ofrece en la pantalla. */
+const enClaude = () => !!(window.claude && window.claude.use);
 const esAdmin = () => S.me && S.me.rol === "admin";
+/* Retail Marketing Development: solo KPIs de negocio y mystery shopper de
+   toda la red. El corte de verdad está en la base de datos (no puede leer
+   la tabla de tiendas); esto solo evita enseñarle puertas cerradas. */
+const esMarketing = () => S.me && S.me.rol === "marketing";
+const MODULOS_MARKETING = ["pdc", "mystery"];
+const puedeVer = id => !esMarketing() || MODULOS_MARKETING.includes(id);
+const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
 function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove("on"), 2800); }
 function fechaES(iso) { return iso ? new Date(iso).toLocaleDateString("es-ES") : ""; }
 function traducirError(e) {
@@ -30,12 +45,33 @@ function arrancar() {
   if (modoDemo || !configurado()) {
     if (!modoDemo) return pantallaSinConfig();
     sb = window.crearClienteDemo();
+  } else if (!window.supabase || !window.supabase.createClient) {
+    // La biblioteca de Supabase viene de un CDN. Si no carga (red caída, un
+    // bloqueador, una red corporativa restrictiva) la aplicación se quedaba
+    // en blanco sin decir nada. Ahora al menos se explica.
+    return pantallaSinLibreria();
   } else {
     sb = window.supabase.createClient(K.supabaseUrl, K.supabaseAnonKey);
   }
   const cod = par.get("codigo");
   if (cod !== null) return abrirInvitacion(cod);
   sb.auth.getSession().then(({ data }) => (data && data.session ? entrar() : pantallaLogin()));
+}
+function pantallaSinLibreria() {
+  $("app").innerHTML = `<div class="login"><div class="login-wrap">
+    ${panelMarca()}
+    <div class="login-lado">
+      ${selectorIdioma()}
+      <div class="login-card">
+        <h1>${t("bienvenida")}</h1>
+        <p class="demo-note">No se ha podido cargar una pieza necesaria de la plataforma desde internet.
+          Suele ser la red o un bloqueador del navegador. Vuelve a cargar la página; si sigue igual, prueba con otra red o avisa a RR.HH.</p>
+        <button class="btn primary block" onclick="location.reload()">Volver a cargar</button>
+        <p class="hint acc-pie"><a href="#" data-action="irDemo">Entrar con datos de ejemplo</a></p>
+      </div>
+      <p class="login-pie">${esc(t("unaPlataformaDe"))} · v${APP_VERSION}</p>
+    </div>
+  </div></div>`;
 }
 function pantallaSinConfig() {
   $("app").innerHTML = `<div class="login"><div class="login-wrap">
@@ -92,6 +128,7 @@ function pantallaLogin(msg) {
         </form>
         <div class="login-o"><span>${t("tengoCodigo")}</span></div>
         <a class="btn block" href="?codigo=">${t("botonCodigo")}</a>
+        ${enClaude() && !sb.demo ? `<p class="hint acc-pie"><a href="#" data-action="irDemo">Entrar con datos de ejemplo</a></p>` : ""}
         <p class="hint acc-pie">${t("botonCodigoPie")}</p>
         <p class="login-pie">${esc(t("unaPlataformaDe"))} · v${APP_VERSION}</p>
       </div>
@@ -139,6 +176,7 @@ async function entrar() {
   await recargar();
 }
 async function recargar() {
+  if (esMarketing()) return recargarMarketing();
   const [t, p] = await Promise.all([
     sb.from("tiendas").select("*").eq("anio", C.anio).order("nombre"),
     sb.from("perfiles").select("*").order("nombre")
@@ -146,9 +184,26 @@ async function recargar() {
   if (t.error) { toast(traducirError(t.error)); return; }
   S.tiendas = (t.data || []).map(desdeFila);
   S.perfiles = p.data || [S.me];
-  await recargarPruebas();
+  await Promise.all([recargarPruebas(), cargarDocumentos()]);
   if (esAdmin()) { const a = await sb.from("actividad").select("*").order("fecha", { ascending: false }).limit(150); S.actividad = a.data || []; }
   if (!S.tiendas.some(x => x.id === S.ui.t)) S.ui.t = null;
+  pintar();
+}
+/* Retail Marketing no puede leer la tabla de tiendas: pide solo los KPIs.
+   Lo que llega no trae equipo ni evaluaciones, así que se rellenan vacíos
+   para que el resto de la aplicación no tenga que preguntar por el rol. */
+async function recargarMarketing() {
+  const { data, error } = await sb.rpc("red_kpis", { p_anio: C.anio });
+  if (error) { toast(traducirError(error)); return; }
+  S.tiendas = (data || []).map(r => ({
+    id: r.id, nombre: r.nombre, codigo: r.codigo, rm_id: null, version: 1,
+    objetivos: { s1: {}, fy: {} }, resultados: { s1: {}, fy: {} },
+    objetivosValidados: null, personas: [], kpis: r.kpis || {}
+  }));
+  S.perfiles = [S.me];
+  await recargarPruebas();
+  if (!S.tiendas.some(x => x.id === S.ui.t)) S.ui.t = null;
+  if (!puedeVer(S.modulo) && S.modulo !== "inicio") S.modulo = "inicio";
   pintar();
 }
 async function salir() {
@@ -162,9 +217,9 @@ function desdeFila(r) {
   const d = r.datos || {};
   return { id: r.id, rm_id: r.rm_id, version: r.version, actualizado: r.actualizado, nombre: r.nombre, codigo: r.codigo,
     objetivos: d.objetivos || { s1: {}, fy: {} }, resultados: d.resultados || { s1: {}, fy: {} },
-    objetivosValidados: d.objetivosValidados || null, personas: d.personas || [], kpis: d.kpis || {} };
+    objetivosValidados: d.objetivosValidados || null, personas: d.personas || [], kpis: d.kpis || {}, bajas: d.bajas || [], prl: d.prl || {} };
 }
-function aDatos(t) { return { objetivos: t.objetivos, resultados: t.resultados, objetivosValidados: t.objetivosValidados, personas: t.personas, kpis: t.kpis || {} }; }
+function aDatos(t) { return { objetivos: t.objetivos, resultados: t.resultados, objetivosValidados: t.objetivosValidados, personas: t.personas, kpis: t.kpis || {}, bajas: t.bajas || [], prl: t.prl || {} }; }
 function guardar(t) { t = t || tienda(); if (!t) return; S.sucios.add(t.id); pintarEstado(); clearTimeout(guardar.h); guardar.h = setTimeout(volcar, 700); }
 async function volcar() {
   if (S.guardando) { clearTimeout(guardar.h); guardar.h = setTimeout(volcar, 400); return; }
@@ -215,7 +270,7 @@ const MODULOS = [
   { id: "talent", t: "Talent Matrix", grupo: "activo",
     d: "Desempeño y potencial de cada responsable de tienda, riesgo de salida, sucesión y plan de desarrollo. Matriz 9-Box para RR.HH.",
     tabs: [["eval", "Fichas"], ["mapa", "Mapa de talento", true]] },
-  { id: "pdc", t: "People Data Centre", grupo: "destacado", abrible: true,
+  { id: "pdc", t: "People Data Centre", grupo: "activo", abrible: true,
     d: "El cuadro de mando de personas de la red: productividad, dotación por hora de apertura y ajuste de la plantilla al tráfico.",
     kpis: [
       { t: "Productividad por hora trabajada", f: "Facturación del periodo ÷ horas realmente trabajadas",
@@ -229,21 +284,23 @@ const MODULOS = [
       { t: "Staff adaptation to traffic", f: "Reparto de horas planificadas frente al tráfico por franja horaria",
         q: "Si las horas están donde está la gente: mañanas, tardes, fines de semana y campaña.", d: "Contador de tráfico por franja y horarios planificados." }
     ] },
+  { id: "bajas", t: "Bajas y absentismo", grupo: "activo",
+    d: "Registro de bajas por tienda y tasa de absentismo de la red. Se guarda la contingencia y las fechas, nunca el diagnóstico." },
   { id: "onboarding", t: "Onboarding y Offboarding", grupo: "activo", tipoPrueba: "onboarding",
     tabs: [["onboarding", "Onboarding"], ["offboarding", "Offboarding"]], d: "" },
   { id: "formacion", t: "Formaciones", grupo: "activo", d: "" },
   { id: "hometime", t: "HomeTime", grupo: "externo", enlace: "hometime", d: "" },
-  { id: "process", t: "Process Book", grupo: "pendiente",
+  { id: "process", t: "Process Book", grupo: "activo",
     d: "Los procesos de tienda en un solo sitio: apertura y cierre, caja, inventario, incidencias y onboarding del nuevo equipo." },
-  { id: "politica", t: "Política de RR.HH.", grupo: "pendiente",
+  { id: "politica", t: "Política de RR.HH.", grupo: "activo",
     d: "Las normas que el equipo de tienda consulta a diario: vacaciones, permisos, fichaje, uniformidad, gastos y canal de dudas." },
   { id: "clima", t: "Encuesta de Clima", grupo: "activo", tipoPrueba: "clima",
     d: "Encuesta anónima por tienda: se reparten códigos sueltos, el equipo responde sin usuario y los resultados se ven agregados." },
-  { id: "prl", t: "PRL", grupo: "pendiente",
+  { id: "prl", t: "PRL", grupo: "activo",
     d: "Prevención de riesgos en tienda: formación asignada y realizada, evaluaciones de riesgos, reconocimientos médicos e incidencias." },
   { id: "mystery", t: "Mystery Shopper", grupo: "activo", tipoPrueba: "mystery",
     d: "Ficha de visita por tienda: el visitante entra con un código, rellena y el resultado aparece aquí por tienda y por pregunta." },
-  { id: "psico", t: "Psicotécnicos", grupo: "activo", tipoPrueba: "psico",
+  { id: "psico", t: "Pruebas situacionales", grupo: "activo", tipoPrueba: "psico",
     d: "Envío de pruebas situacionales de tienda con un código de un solo uso, seguimiento de quién ha respondido y resultado por persona." }
 ];
 function modActual() { return MODULOS.find(m => m.id === S.modulo); }
@@ -256,9 +313,10 @@ function pintar() {
       ${m ? `<span class="modname">${esc(modTxt(m.id, 0))}</span>` : ""}
       ${tabs.length > 1 ? `<nav class="mainnav">${tabs.map(([id, t]) => `<button class="${S.vista === id ? "on" : ""}" data-action="vista" data-v="${id}">${t}</button>`).join("")}</nav>` : ""}
       <div class="spacer"></div>
+      <div class="busca-g"><input id="buscaGlobal" type="search" placeholder="Buscar tienda, persona o apartado" autocomplete="off" aria-label="Búsqueda rápida"><div id="buscaRes" hidden></div></div>
       <span id="estadoGuardado" class="saved"></span>
       ${selectorIdioma()}
-      <details class="user"><summary>${esc(S.me.nombre)} <small>${esAdmin() ? t("admin") : t("rm")}</small></summary>
+      <details class="user"><summary>${esc(S.me.nombre)} <small>${nombreRol()}</small></summary>
         <div class="menu"><button data-action="inicio">${t("inicio")}</button>${esAdmin() ? `<button data-action="modulo" data-m="gestion">${t("gestionUsuarios")}</button>` : ""}<button data-action="miPassword">${t("cambiarPass")}</button><button data-action="salir">${t("salir")}</button></div></details>
     </header>
     ${sb.demo ? `<div class="demo-bar">${t("demoBarra")}</div>` : ""}
@@ -268,7 +326,10 @@ function pintar() {
   if (S.modulo === "scorecard") return S.vista === "consolidado" && esAdmin() ? pintarConsolidado() : pintarModulo("scorecard");
   if (S.modulo === "talent") return S.vista === "mapa" && esAdmin() ? pintarMapaTalento() : pintarModulo("talent");
   if (S.modulo === "pdc") return pintarPDC();
+  if (S.modulo === "bajas") return pintarBajas();
+  if (S.modulo === "prl") return pintarPrl();
   if (S.modulo === "formacion") return pintarFormaciones();
+  if (DOCS_TIPOS.includes(S.modulo)) return pintarDocs(S.modulo);
   if (m && m.tipoPrueba) return pintarPruebas(m.id === "onboarding" ? (S.vista === "offboarding" ? "offboarding" : "onboarding") : m.tipoPrueba);
   pintarInicio();
 }
@@ -276,14 +337,27 @@ function pintarInicio() {
   const resumen = m => {
     if (m.grupo === "pendiente") return t("enPreparacion");
     if (m.id === "formacion") {
-      const p = (typeof progreso === "function" ? progreso().circuito : null) || {};
-      return p.completado ? "Circuito de Venta completado" : (p.vistos && p.vistos.length ? `Circuito de Venta: ${p.vistos.length} de 7 pasos` : `1 formación disponible, ${CURSOS.length - 1} en preparación`);
+      const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0;
+      const enCurso = CURSOS.filter(c => !progresoCurso(c.id).completado && (progresoCurso(c.id).vistos || []).length).length;
+      return n === CURSOS.length ? "Las 5 formaciones completadas" : `${CURSOS.length} formaciones · ${n} ${n === 1 ? "completada" : "completadas"}${enCurso ? `, ${enCurso} en curso` : ""}`;
     }
     if (m.tipoPrueba) {
       const cs = (S.campanas || []).filter(c => c.tipo === m.tipoPrueba);
       if (!cs.length) return "Sin campañas todavía";
       const inv = (S.invitaciones || []).filter(i => cs.some(c => c.id === i.campana_id));
       return `${inv.filter(i => i.estado === "respondida").length} de ${inv.length} códigos respondidos`;
+    }
+    if (DOCS_TIPOS.includes(m.id)) { const L = libro(m.id); return `${L.items.length} fichas${L.editado ? " · editado por RR.HH." : ""}`; }
+    if (m.id === "prl") {
+      const R = S.tiendas.map(resumenPrl), per = R.reduce((s, x) => s + x.personas, 0), ok = R.reduce((s, x) => s + x.alDia, 0), pend = R.reduce((s, x) => s + x.revVencidas, 0);
+      if (!per) return "Sin plantilla registrada todavía";
+      return `${SC.pct(ok / per, 0)} con formación al día · ${pend} ${pend === 1 ? "revisión pendiente" : "revisiones pendientes"}`;
+    }
+    if (m.id === "bajas") {
+      const a = SC.absentismo(S.tiendas, mesesDisponibles());
+      if (!a.procesos) return "Sin bajas registradas";
+      return a.tasa == null ? `${a.dias} días perdidos en ${a.procesos} procesos`
+        : `${SC.fmt(a.tasa, 1)} % de absentismo · ${a.abiertos} sin alta`;
     }
     if (m.id === "pdc") {
       const ms = mesesDisponibles(), k = ms.length ? SC.kpis(S.tiendas, ms) : null;
@@ -306,16 +380,18 @@ function pintarInicio() {
       <span class="mod-d">${esc(modTxt(m.id, 1))}</span>
       ${m.kpis ? `<span class="mod-k">${m.kpis.map(k => `<i>${esc(k.t)}</i>`).join("")}</span>` : ""}
       <span class="mod-f">${esc(resumen(m))}</span></button>`;
-  const enMarcha = MODULOS.filter(m => m.grupo !== "pendiente"), pendientes = MODULOS.filter(m => m.grupo === "pendiente");
+  const visibles = MODULOS.filter(m => puedeVer(m.id));
+  const enMarcha = visibles.filter(m => m.grupo !== "pendiente"), pendientes = visibles.filter(m => m.grupo === "pendiente");
   $("vista").innerHTML = `<div class="home">
     <div class="home-seb"><span class="chipseb">${logoSEB(38)}</span></div>
     <div class="home-h">${logo(76)}<div>${marcaSVG("grande", 34)}
-      <p>${t("homeIntro")} ${esAdmin() ? t("homeAdmin") : t("homeRM")}</p></div></div>
+      <p>${t("homeIntro")} ${esAdmin() ? t("homeAdmin") : esMarketing() ? t("homeMk") : t("homeRM")}</p></div></div>
+    ${bloqueHoy()}
     <h2 class="grupo">${t("enMarcha")}</h2><div class="cards">${enMarcha.map(tarjeta).join("")}
       ${esAdmin() ? `<button class="mod admin" data-action="modulo" data-m="gestion"><span class="mod-t">${t("gestionUsuarios")}</span>
         <span class="mod-d">${esc(modTxt("gestion", 1))}</span>
         <span class="mod-f">${S.perfiles.length} usuarios, ${S.tiendas.length} tiendas</span></button>` : ""}</div>
-    <h2 class="grupo">${t("enPreparacion")}</h2><div class="cards">${pendientes.map(tarjeta).join("")}</div>
+    ${pendientes.length ? `<h2 class="grupo">${t("enPreparacion")}</h2><div class="cards">${pendientes.map(tarjeta).join("")}</div>` : ""}
     ${bandaMarcas()}</div>`;
 }
 /* =================== Evaluaciones =================== */
@@ -344,7 +420,7 @@ function pintarSide() {
     const grupos = {}; S.tiendas.forEach(t => { const k = rmNombre(t); (grupos[k] = grupos[k] || []).push(t); });
     Object.keys(grupos).sort().forEach(g => { h += `<h3 class="grp">${esc(g)}</h3><ul class="stores">${grupos[g].map(itemTienda).join("")}</ul>`; });
   } else h += `<ul class="stores">${S.tiendas.map(itemTienda).join("")}</ul>`;
-  h += `<div class="legend"><span class="ph cerrado">✓</span> cerrado <span class="ph curso">·</span> en curso <span class="ph pendiente"> </span> pendiente</div>`;
+  h += `<div class="legend"><span><span class="ph cerrado"></span>cerrado</span><span><span class="ph curso"></span>en curso</span><span><span class="ph"></span>pendiente</span></div>`;
   el.innerHTML = h;
 }
 const FASES = [["obj", "1", "Objetivos"], ["s1", "2", "Seguimiento 6 meses"], ["fy", "3", "Cierre anual"], ["pdi", "4", "Desarrollo"]];
@@ -360,7 +436,10 @@ function pintarModulo(modulo) {
       ${esAdmin() && !S.tiendas.length ? `<button class="btn primary" data-action="modulo" data-m="gestion">Ir a Usuarios y tiendas</button>` : ""}</div>`;
     return;
   }
-  const titulo = `<h1 class="store">${esc(t.nombre || "Tienda sin nombre")}${t.codigo ? ` <small>${esc(t.codigo)}</small>` : ""}${esAdmin() ? ` <small>${esc(rmNombre(t))}</small>` : ""}</h1>`;
+  // En pantallas estrechas el listado lateral de 21 tiendas tapaba el trabajo:
+  // ahí se esconde y se cambia de tienda con este desplegable.
+  const selMovil = `<label class="selmovil">Tienda<select data-action="selTiendaSel">${S.tiendas.map(x => `<option value="${x.id}" ${x.id === t.id ? "selected" : ""}>${esc(x.nombre || "Sin nombre")}</option>`).join("")}</select></label>`;
+  const titulo = selMovil + `<h1 class="store">${esc(t.nombre || "Tienda sin nombre")}${t.codigo ? ` <small>${esc(t.codigo)}</small>` : ""}${esAdmin() ? ` <small>${esc(rmNombre(t))}</small>` : ""}</h1>`;
   const body = modulo === "talent" ? vistaTalent(t)
     : S.ui.fase === "obj" ? vistaObjetivos(t) : S.ui.fase === "pdi" ? vistaPDI(t) : vistaPeriodo(t, S.ui.fase);
   m.innerHTML = cab + titulo + body;
@@ -424,18 +503,42 @@ function vistaPeriodo(t, per) {
   h += `</tbody></table></div></fieldset></section>` + selectorPersonas(t);
   const p = persona(t); if (!p) return h;
   const e = ev(p, per), cerr = !!e.cerrado, sc = `e:${p.id}:${per}`;
-  h += `<div class="evalgrid"><div><fieldset ${cerr ? "disabled" : ""}>`;
+  // Cada ítem es una fila: nombre, peso y la escala. La pregunta de ayuda y
+  // el campo de evidencias viven plegados y solo se abren cuando hacen falta:
+  // en las notas 0 y 2, donde la evidencia es obligatoria, si ya hay texto
+  // escrito, o si se pulsa el botón de detalle. Antes estaban siempre a la
+  // vista y eran el 60 % del alto de la pantalla.
+  const total = C.bloques.reduce((s, b) => s + b.items.length, 0);
+  const hechos = C.bloques.reduce((s, b) => s + b.items.filter(i => typeof e.val[i.id] === "number").length, 0);
+  h += `<div class="evalgrid"><div><fieldset ${cerr ? "disabled" : ""}>
+    <section class="card eval">
+      <div class="eval-h">
+        <div class="eval-t"><div><h2>Valoración cualitativa</h2>
+          <small>${hechos} de ${total} valorados${hechos < total ? ` · faltan ${total - hechos}` : " · completo"}</small></div>
+          <button type="button" class="btn small ghost" data-action="itemTodos">${TODO_ABIERTO ? "Ocultar preguntas" : "Ver las preguntas"}</button></div>
+        <i class="prog" aria-hidden="true"><span style="width:${Math.round(hechos / total * 100)}%"></span></i>
+      </div>`;
   C.bloques.forEach(b => {
-    h += `<section class="card"><div class="card-h"><h2>${esc(b.nombre)}</h2><span class="muted num">${SC.pct(b.items.reduce((s, i) => s + i.peso, 0), 0)} del cualitativo</span></div>`;
+    h += `<div class="blq"><span>${esc(b.nombre)}</span><i></i><span class="num">${SC.pct(b.items.reduce((s, i) => s + i.peso, 0), 0)}</span></div>`;
     b.items.forEach(i => {
-      const v = e.val[i.id];
-      h += `<div class="item"><div class="item-t"><b>${esc(i.nombre)}</b><span class="w num">${SC.pct(i.peso, 0)}</span>${i.guia ? `<small>${esc(i.guia)}</small>` : ""}</div>
-        <div class="scale" role="radiogroup" aria-label="${esc(i.nombre)}">${C.escala.map(s => `<button role="radio" aria-checked="${v === s.v}" class="lv lv${String(s.v).replace(".", "")} ${v === s.v ? "on" : ""}" data-action="valorar" data-i="${i.id}" data-v="${s.v}" title="${esc(s.t)}">${SC.fmt(s.v, s.v % 1 ? 1 : 0)}</button>`).join("")}
-        <span class="lvl">${typeof v === "number" ? esc(SC.nivel(v)) : ""}</span></div>
-        <textarea rows="1" data-scope="${sc}" data-path="evid.${i.id}" placeholder="Evidencias y ejemplos concretos${v === 0 || v === 2 ? " (obligatorio en valoraciones 0 y 2)" : ""}">${esc(e.evid[i.id] || "")}</textarea></div>`;
+      const v = e.val[i.id], txt = e.evid[i.id] || "";
+      const obliga = v === 0 || v === 2;
+      const abierto = TODO_ABIERTO || obliga || !!txt || ITEMS_ABIERTOS.has(i.id);
+      h += `<div class="it ${typeof v === "number" ? "hecho" : ""} ${abierto ? "abierto" : ""}">
+        <div class="it-h">
+          <b>${esc(i.nombre)}</b><span class="w num">${SC.pct(i.peso, 0)}</span>
+          <div class="scale" role="radiogroup" aria-label="${esc(i.nombre)}">${C.escala.map(s => `<button role="radio" aria-checked="${v === s.v}" class="lv lv${String(s.v).replace(".", "")} ${v === s.v ? "on" : ""}" data-action="valorar" data-i="${i.id}" data-v="${s.v}" title="${esc(s.t)}">${SC.fmt(s.v, s.v % 1 ? 1 : 0)}</button>`).join("")}</div>
+          <button type="button" class="it-mas ${txt ? "lleno" : ""}" data-action="itemMas" data-i="${i.id}"
+            title="${abierto ? "Ocultar" : "Ver"} la pregunta y las evidencias" aria-expanded="${abierto}">${txt ? "✎" : "＋"}</button>
+        </div>
+        <div class="it-body">
+          ${i.guia ? `<p class="guia">${esc(i.guia)}</p>` : ""}
+          ${typeof v === "number" ? `<p class="nivel">${esc(SC.nivel(v))}</p>` : ""}
+          <textarea rows="2" data-scope="${sc}" data-path="evid.${i.id}" placeholder="Evidencias y ejemplos concretos${obliga ? " (obligatorio en 0 y 2)" : ""}">${esc(txt)}</textarea>
+        </div></div>`;
     });
-    h += `</section>`;
   });
+  h += `</section>`;
   h += `<section class="card"><h2>Conversación</h2><div class="grid2">
     <label>Comentarios del evaluador<textarea rows="3" data-scope="${sc}" data-path="comentEvaluador">${esc(e.comentEvaluador || "")}</textarea></label>
     <label>Comentarios del evaluado<textarea rows="3" data-scope="${sc}" data-path="comentEvaluado">${esc(e.comentEvaluado || "")}</textarea></label>
@@ -618,8 +721,8 @@ function pintarGestion() {
   ${S.perfiles.map(p => {
     const yo = p.id === S.me.id;
     return `<tr><td>${esc(p.nombre)}${yo ? " <small>(tú)</small>" : ""}</td><td><code>${esc(p.usuario)}</code></td>
-      <td>${p.rol === "admin" ? "Administrador" : "Regional Manager"}</td>
-      <td><input class="short2" data-perfil="${p.id}" data-campo="zona" value="${esc(p.zona || "")}" ${p.rol === "admin" ? "disabled" : ""}></td>
+      <td>${p.rol === "admin" ? "Administrador" : p.rol === "marketing" ? "Retail Marketing" : "Regional Manager"}</td>
+      <td><input class="short2" data-perfil="${p.id}" data-campo="zona" value="${esc(p.zona || "")}" ${p.rol === "rm" ? "" : "disabled"}></td>
       <td class="n">${p.rol === "rm" ? nT(p.id) : ""}</td>
       <td>${yo ? `<span class="badge ok">Activo</span>` : `<button class="btn small ${p.activo ? "" : "danger"}" data-action="toggleActivo" data-id="${p.id}">${p.activo ? "Activo" : "Desactivado"}</button>`}</td>
       <td class="n">${yo ? "" : `<button class="btn small ghost" data-action="resetPass" data-id="${p.id}">Nueva contraseña</button>`}</td></tr>`;
@@ -628,7 +731,7 @@ function pintarGestion() {
     <label>Nombre<input name="nombre" required placeholder="Nombre y apellidos"></label>
     <label>Usuario<input name="usuario" required placeholder="p. ej. rm.sur" pattern="[a-z0-9._-]{3,}" title="Minúsculas, números, punto, guion. Mínimo 3."></label>
     <label>Contraseña inicial<input name="password" required minlength="8" autocomplete="new-password"></label>
-    <label>Rol<select name="rol"><option value="rm">Regional Manager</option><option value="admin">Administrador</option></select></label>
+    <label>Rol<select name="rol"><option value="rm">Regional Manager</option><option value="marketing">Retail Marketing (solo KPIs y mystery)</option><option value="admin">Administrador</option></select></label>
     <label>Zona<input name="zona" placeholder="Opcional"></label>
     <button class="btn primary" type="submit">Crear usuario</button></form>
   <p class="hint">Comunica a cada persona su usuario y contraseña inicial; puede cambiarla desde su nombre, arriba a la derecha. Desactivar un usuario le corta el acceso sin borrar sus datos.</p></section>
@@ -644,7 +747,10 @@ function pintarGestion() {
     <label>Nombre<input name="nombre" required placeholder="p. ej. HC Málaga"></label>
     <label>Código<input name="codigo" placeholder="Opcional"></label>
     <label>Regional Manager<select name="rm_id"><option value="">Sin asignar</option>${rms.map(r => `<option value="${r.id}">${esc(r.nombre)}</option>`).join("")}</select></label>
-    <button class="btn primary" type="submit">Crear tienda</button></form></section>
+    <button class="btn primary" type="submit">Crear tienda</button></form>
+  ${faltanDeLaRed().length ? `<p class="hint" style="margin-top:14px">Faltan ${faltanDeLaRed().length} de las ${C.red.length} tiendas de la red.
+    <button class="btn small" data-action="cargarRed">Crear las que faltan</button>
+    Se crean sin asignar; después repartes con el desplegable de cada una.</p>` : ""}</section>
 
   <section class="card"><h2>Actividad reciente</h2><div class="tablewrap act"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th></tr></thead><tbody>
   ${S.actividad.length ? S.actividad.map(a => `<tr><td class="num">${new Date(a.fecha).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc((perfil(a.usuario_id) || {}).nombre || "–")}</td><td>${esc(a.accion)}</td></tr>`).join("") : `<tr><td colspan="3" class="muted">Sin actividad todavía.</td></tr>`}
@@ -679,6 +785,22 @@ async function crearTienda(ev) {
   if (error) return alert("No se ha podido crear la tienda: " + traducirError(error));
   log(`Alta de tienda ${f.nombre}`); toast("Tienda creada"); await recargar();
 }
+/* Las tiendas de la red (engine.js, CONFIG.red) que aún no existen este año.
+   Se compara por código, que es lo único estable: el nombre puede cambiar. */
+function faltanDeLaRed() {
+  const hay = new Set(S.tiendas.map(t => (t.codigo || "").trim().toUpperCase()).filter(Boolean));
+  return C.red.filter(x => !hay.has(x.codigo));
+}
+async function cargarRedDeTiendas() {
+  const faltan = faltanDeLaRed();
+  if (!faltan.length) return toast("Ya están las 21 tiendas de la red.");
+  if (!confirm(`Se van a crear ${faltan.length} tiendas de ${C.anio}, sin asignar a ningún Regional Manager. ¿Seguimos?`)) return false;
+  const filas = faltan.map(x => ({ anio: C.anio, nombre: x.nombre, codigo: x.codigo, rm_id: null,
+    datos: { objetivos: { s1: {}, fy: {} }, resultados: { s1: {}, fy: {} }, objetivosValidados: null, personas: [] } }));
+  const { error } = await sb.from("tiendas").insert(filas);
+  if (error) return alert("No se han podido crear las tiendas: " + traducirError(error));
+  log(`Alta de ${faltan.length} tiendas de la red`); toast(`${faltan.length} tiendas creadas`); await recargar();
+}
 
 /* =================== Eventos =================== */
 function scopeObj(scope) {
@@ -705,6 +827,9 @@ document.addEventListener("change", async e => {
   const el = e.target;
   if (el.dataset.scope && (el.type === "radio" || el.tagName === "SELECT")) { pintarModulo(S.modulo); return; }
   if (el.dataset.pdc) { filtroPDC()[el.dataset.pdc] = el.value; pintarPDC(); return; }
+  if (el.dataset.bajas) { filtroBajas()[el.dataset.bajas] = el.value; pintarBajas(); return; }
+  if (el.dataset.action === "selTiendaSel") { S.ui.t = el.value; S.ui.p = null; pintar(); return; }
+  if (el.dataset.alta) { if (el.value) cerrarBaja(el.dataset.alta, el.value); return; }
   if (el.dataset.f) { S.f[el.dataset.f] = el.value; S.modulo === "talent" ? pintarMapaTalento() : pintarConsolidado(); return; }
   if (el.dataset.asignar) {
     const t = S.tiendas.find(x => x.id === el.dataset.asignar);
@@ -722,13 +847,15 @@ document.addEventListener("click", async e => {
   const a = b.dataset.action;
   if (a === "idioma" && !S.me) { e.preventDefault(); setLang(b.dataset.l); if (typeof INV !== "undefined" && (INV.datos || INV.codigo !== undefined && document.querySelector(".guest"))) pintarInvitado(); else pantallaLogin(); return; }
   if (typeof ACCIONES_INVITADO !== "undefined" && ACCIONES_INVITADO[a]) { e.preventDefault(); await ACCIONES_INVITADO[a](b); return; }
+  if (a === "irDemo") { e.preventDefault(); sb = window.crearClienteDemo(); pantallaLogin(); return; }
   if (!S.me) return;
   const t = tienda();
   const nombreYo = S.me.nombre;
   const acciones = Object.assign({
     idioma() { setLang(b.dataset.l); },
     inicio() { S.modulo = "inicio"; b.closest("details") && (b.closest("details").open = false); },
-    modulo() { S.modulo = b.dataset.m; S.campana = null;
+    modulo() { if (!puedeVer(b.dataset.m)) return false; S.modulo = b.dataset.m; S.campana = null;
+      if (S.docs) { S.docs.sel = null; S.docs.edit = null; S.docs.busca = ""; }
       if (S.modulo === "formacion") { S.curso = null; S.chuleta = false; b.closest("details") && (b.closest("details").open = false); return; }
       if (MODULOS.some(x => x.id === S.modulo && x.tipoPrueba)) { b.closest("details") && (b.closest("details").open = false); return; } if (S.modulo === "pdc") { b.closest("details") && (b.closest("details").open = false); return; } S.vista = S.modulo === "talent" ? (esAdmin() ? "mapa" : "eval") : "eval"; if (S.modulo === "talent") S.ui.fase = "talent"; else if (S.ui.fase === "talent") S.ui.fase = "obj"; b.closest("details") && (b.closest("details").open = false); },
     vista() { S.vista = b.dataset.v; if (S.vista === "eval" && S.modulo === "talent") S.ui.fase = "talent"; },
@@ -748,7 +875,7 @@ document.addEventListener("click", async e => {
     fase() { S.ui.fase = b.dataset.f; },
     selPersona() { S.ui.p = b.dataset.id; },
     nuevaPersona() { const np = { id: SC.uid(), nombre: "", puesto: t.personas.some(p => p.puesto === "SM") ? "ASM" : "SM", prorrata: 100, evals: {}, pdi: {} }; t.personas.push(np); S.ui.p = np.id; guardar(t); },
-    borrarPersona() { const p = t.personas.find(x => x.id === b.dataset.id); if (!confirm(`¿Eliminar a ${p.nombre || "esta persona"} y sus evaluaciones?`)) return false; t.personas = t.personas.filter(x => x !== p); log(`Baja de ${p.nombre} en ${t.nombre}`, t); guardar(t); },
+    borrarPersona() { const p = t.personas.find(x => x.id === b.dataset.id); if (!confirm(`¿Eliminar a ${p.nombre || "esta persona"} y sus evaluaciones?`)) return false; t.personas = t.personas.filter(x => x !== p); log(`Baja de una persona en ${t.nombre}`, t); guardar(t); },
     copiarObjetivos() { t.objetivos.fy = Object.assign({}, t.objetivos.fy, t.objetivos.s1); guardar(t); toast("Objetivos anuales copiados del seguimiento de 6 meses"); },
     validarObjetivos() {
       const falta = C.kpis.filter(k => k.tipo !== "inventario").filter(k => ["s1", "fy"].some(per => { const v = SC.num(getPath(t, `objetivos.${per}.${k.id}`)); return v == null || v <= 0; }));
@@ -761,6 +888,8 @@ document.addEventListener("click", async e => {
       t.objetivosValidados = null; log(`Objetivos reabiertos en ${t.nombre}`, t); guardar(t);
     },
     valorar() { const e2 = ev(persona(t), S.ui.fase), v = Number(b.dataset.v); if (e2.val[b.dataset.i] === v) delete e2.val[b.dataset.i]; else e2.val[b.dataset.i] = v; guardar(t); },
+    itemMas() { const i = b.dataset.i; ITEMS_ABIERTOS.has(i) ? ITEMS_ABIERTOS.delete(i) : ITEMS_ABIERTOS.add(i); },
+    itemTodos() { TODO_ABIERTO = !TODO_ABIERTO; ITEMS_ABIERTOS.clear(); },
     cerrar() {
       const p = persona(t), per = S.ui.fase, e2 = ev(p, per), r = SC.calcular(t, p, per), faltan = [];
       if (!t.objetivosValidados) faltan.push("validar los objetivos de la tienda");
@@ -796,6 +925,7 @@ document.addEventListener("click", async e => {
       if (!error) log(`Contraseña restablecida para ${p.usuario}`);
       return false;
     },
+    async cargarRed() { if (!esAdmin()) return false; return cargarRedDeTiendas(); },
     async borrarTienda() {
       const x = S.tiendas.find(y => y.id === b.dataset.id);
       if (!confirm(`¿Eliminar ${x.nombre} y todas sus evaluaciones de ${C.anio}? No se puede deshacer.`)) return false;
@@ -803,7 +933,7 @@ document.addEventListener("click", async e => {
       if (error) { alert(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
-  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_RP === "undefined" ? {} : ACCIONES_RP, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC);
+  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_RP === "undefined" ? {} : ACCIONES_RP, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY);
   if (!acciones[a]) return;
   const res = await acciones[a](b, t);
   if (res !== false) pintar();

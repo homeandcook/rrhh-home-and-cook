@@ -23,14 +23,20 @@ Puedes probarla sin configurar nada añadiendo `?demo` al final del enlace.
 | `app.js` | Lógica de la plataforma |
 | `engine.js` | **Parámetros y cálculo** del bonus y de la Talent Matrix (pesos, escalados, importes, bandas, competencias, año) |
 | `talent.js` | Módulo Talent Matrix: ficha del RM y mapa de talento |
-| `pruebas.js` | Psicotécnicos, Mystery Shopper, Clima, Onboarding y Offboarding: campañas, códigos y acceso de invitado |
+| `pruebas.js` | Pruebas situacionales, Mystery Shopper, Clima, Onboarding y Offboarding: campañas, códigos y acceso de invitado |
 | `pdc.js` | People Data Centre: cuadro de mando con filtros |
-| `formacion.js` | Formaciones: catálogo y Circuito de Venta en 7 paradas |
+| `pdc_carga.js` | Carga de datos mensuales (pegar desde Excel, CSV o a mano) y gráficos SVG |
+| `bajas.js` | Bajas y absentismo |
+| `prl.js` | Prevención de riesgos: formación, revisiones del local, reconocimientos e incidencias |
+| `docs_base.js`, `docs.js` | Process Book y Política de RR.HH.: contenido base y motor de fichas con edición en la plataforma |
+| `hoy.js` | Bloque «Para hoy» de la portada y búsqueda rápida |
+| `formacion.js` | Formaciones: catálogo, recorrido por paradas, chuleta y test final |
+| `cursos.js` | Contenido de KPIs Retail, Visual Merchandising, P&L y Gestión de equipos |
 | `curso_datos.js` | Preguntas por familia y argumentos por producto (sistemática comercial) |
 | `i18n.js` | Idiomas (español, inglés, francés) del portal y de las pantallas de invitado |
 | `marca.js` | Logotipo RR.HH. x Home & Cook dibujado en curvas SVG (sin fuentes externas) |
 | `marcas.js` | Logos de Groupe SEB y de las marcas, recortados e incrustados, y la cinta inferior |
-| `config.js` | Conexión a tu proyecto de Supabase. **Se crea una vez y no se vuelve a subir nunca**: si lo subes de nuevo, borras tus claves. En este paquete va como `config.EJEMPLO.js` para que no pueda pasar por accidente. |
+| `config.js` | Conexión a tu proyecto de Supabase |
 | `demo.js` | Modo demostración (`?demo`) |
 | `roleplay.js` | Role play con IA dentro del Circuito de Venta |
 | `arcade.js` | Juego «Un turno en la tienda» |
@@ -38,6 +44,7 @@ Puedes probarla sin configurar nada añadiendo `?demo` al final del enlace.
 | `manifest.json` | Datos para instalar la plataforma en el móvil |
 | `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` | Iconos de esa instalación |
 | `supabase/schema.sql` | Tablas y reglas de seguridad |
+| `supabase/migracion_0.11.sql`, `migracion_0.14.sql` | Cambios de base de datos por versión, en orden |
 
 ### Instalarla en el móvil
 
