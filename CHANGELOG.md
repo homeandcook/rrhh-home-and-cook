@@ -142,6 +142,14 @@ Portada: jerarquía visual.
 - "Usuarios y tiendas" deja de ser una tarjeta huérfana en su propia fila y pasa a una barra de gestión bajo la rejilla.
 - HomeTime deja el borde discontinuo (parecía sin terminar) y se distingue por fondo.
 
+## 0.16.0 · 06/10/2026 · **SQL: no**
+Navegación de dos niveles y sello de Groupe SEB en la cabecera.
+- El sello de Groupe SEB deja la portada y pasa a la cabecera, junto a RRHH ✕ Home&Cook, a 38 px.
+- Al entrar en un apartado con varias pantallas se ve primero su índice, con las mismas tarjetas de la portada: título, descripción y un dato real de cada pantalla. Las pestañas de arriba siguen estando para saltar directo.
+- Botón "Atrás" en la cabecera, que sube un nivel cada vez: pantalla → índice del apartado → portada. Cuando el botón ya dice el nombre del apartado, deja de repetirse al lado.
+- People Data Centre y PRL intercambian su sitio en la portada. El título de People Data Centre pasa a dorado, igual que HomeTime va en azul.
+- Descripciones nuevas en los tres idiomas para Consolidado, Mapa 9-Box, Prevención, Offboarding y Formaciones.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

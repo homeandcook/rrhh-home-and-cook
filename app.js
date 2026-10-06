@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.15.1";
+const APP_VERSION = "0.16.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -8,7 +8,7 @@ const C = SC.CONFIG, esc = SC.esc, K = window.APP_CONFIG || {};
 let sb = null;
 const S = {
   me: null, perfiles: [], tiendas: [], actividad: [],
-  modulo: "inicio", tab: "eval", curso: null, paso: null, chuleta: false, fam: 0, prod: null, busca: "", campanas: [], invitaciones: [], campana: null, vista: "recorrido", ui: { t: null, p: null, fase: "obj" },
+  modulo: "inicio", indice: false, tab: "eval", curso: null, paso: null, chuleta: false, fam: 0, prod: null, busca: "", campanas: [], invitaciones: [], campana: null, vista: "recorrido", ui: { t: null, p: null, fase: "obj" },
   sucios: new Set(), guardando: false, errorGuardado: null,
   f: { per: "fy", rm: "", puesto: "", estado: "", orden: "bonus", dir: -1 }
 };
@@ -268,11 +268,11 @@ const MODULOS = [
     d: "Objetivos y bonus del Store Manager, mapa de talento de la red, y las encuestas de incorporación y de salida.",
     tabs: [["eval", "Scorecard"], ["consolidado", "Consolidado", true], ["talent", "Talent Matrix"],
            ["mapa", "Mapa 9-Box", true], ["onboarding", "Onboarding"], ["offboarding", "Offboarding"]] },
-  { id: "pdc", t: "People Data Centre", grupo: "activo",
-    d: "El cuadro de mando de personas de la red: productividad, dotación por hora de apertura y ajuste de la plantilla al tráfico." },
   { id: "prl", t: "PRL", grupo: "activo",
     d: "Salud y seguridad de la red: bajas y absentismo, formación y revisiones de prevención, y el clima de las tiendas, que es donde se ven los riesgos psicosociales.",
     tabs: [["bajas", "Bajas y absentismo"], ["prevencion", "Prevención"], ["clima", "Clima"]] },
+  { id: "pdc", t: "People Data Centre", grupo: "activo",
+    d: "El cuadro de mando de personas de la red: productividad, dotación por hora de apertura y ajuste de la plantilla al tráfico." },
   { id: "formacion", t: "Formaciones", grupo: "activo",
     d: "Cinco formaciones breves para el equipo de tienda, con test, y las pruebas situacionales de selección.",
     tabs: [["cursos", "Formaciones"], ["psico", "Pruebas situacionales"]] },
@@ -282,6 +282,9 @@ const MODULOS = [
   { id: "hometime", t: "HomeTime", grupo: "externo", enlace: "hometime", d: "" }
 ];
 /* Qué apartado y qué pestaña corresponden a cada cuestionario con código */
+const TAB_TXT = { eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
+  onboarding: "onboarding", offboarding: "offboarding", bajas: "bajas", prevencion: "prevencion",
+  clima: "clima", cursos: "cursos", psico: "psico", process: "process", politica: "politica" };
 const TAB_PRUEBA = { onboarding: ["evaluacion", "onboarding"], offboarding: ["evaluacion", "offboarding"],
                      clima: ["prl", "clima"], psico: ["formacion", "psico"] };
 /* Pestaña por defecto al entrar en un apartado */
@@ -305,8 +308,10 @@ function pintar() {
   const tabs = m && m.tabs ? m.tabs.filter(x => !x[2] || esAdmin()) : [];
   $("app").innerHTML = `<header class="top">
       <button class="brand" data-action="inicio" title="${t("inicio")}">${logo(30)}${marcaSVG("linea", 17)}</button>
-      ${m ? `<span class="modname">${esc(modTxt(m.id, 0))}</span>` : ""}
-      ${tabs.length > 1 ? `<nav class="mainnav">${tabs.map(([id, t]) => `<button class="${tabActual() === id ? "on" : ""}" data-action="tab" data-v="${id}">${t}</button>`).join("")}</nav>` : ""}
+      <span class="topseb" title="Groupe SEB">${logoSEB(38)}</span>
+      ${S.modulo !== "inicio" ? `<button class="atras" data-action="atras">← ${esc(etiquetaAtras())}</button>` : ""}
+      ${m && !S.indice && etiquetaAtras() !== modTxt(m.id, 0) ? `<span class="modname">${esc(modTxt(m.id, 0))}</span>` : ""}
+      ${tabs.length > 1 && !S.indice ? `<nav class="mainnav">${tabs.map(([id, t]) => `<button class="${tabActual() === id ? "on" : ""}" data-action="tab" data-v="${id}">${t}</button>`).join("")}</nav>` : ""}
       <div class="spacer"></div>
       <div class="busca-g"><input id="buscaGlobal" type="search" placeholder="Buscar tienda, persona o apartado" autocomplete="off" aria-label="Búsqueda rápida"><div id="buscaRes" hidden></div></div>
       <span id="estadoGuardado" class="saved"></span>
@@ -318,6 +323,7 @@ function pintar() {
     <div id="vista"></div><div id="print"></div>`;
   pintarEstado();
   if (S.modulo === "gestion" && esAdmin()) return pintarGestion();
+  if (S.indice && tabs.length > 1) return pintarIndice(m, tabs);
   const tab = tabActual();
   if (S.modulo === "evaluacion") {
     if (tab === "consolidado") return pintarConsolidado();
@@ -335,6 +341,62 @@ function pintar() {
   if (S.modulo === "docs") return pintarDocs(tab);
   if (S.modulo === "pdc") return pintarPDC();
   pintarInicio();
+}
+/* ============ Índice de apartado y navegación hacia atrás ============
+   Al entrar en un apartado desde la portada se ve primero su índice: las
+   mismas tarjetas, un nivel más abajo. Las pestañas de arriba siguen ahí
+   para saltar directo, y "Atrás" sube un nivel cada vez.
+   ==================================================================== */
+function etiquetaAtras() {
+  if (S.indice || S.modulo === "gestion") return t("inicio");
+  const m = modActual();
+  const n = m && m.tabs ? m.tabs.filter(x => !x[2] || esAdmin()).length : 0;
+  return n > 1 ? modTxt(m.id, 0) : t("inicio");
+}
+function irAtras() {
+  const m = modActual();
+  const n = m && m.tabs ? m.tabs.filter(x => !x[2] || esAdmin()).length : 0;
+  if (!S.indice && n > 1) { S.indice = true; S.campana = null; if (S.docs) { S.docs.sel = null; S.docs.edit = null; } }
+  else { S.modulo = "inicio"; S.indice = false; }
+  window.scrollTo(0, 0);
+}
+function resumenTab(id) {
+  const campana = tipo => {
+    const cs = (S.campanas || []).filter(c => c.tipo === tipo);
+    if (!cs.length) return "Sin campañas todavía";
+    const inv = (S.invitaciones || []).filter(i => cs.some(c => c.id === i.campana_id));
+    if (!inv.length) return `${cs.length} ${cs.length === 1 ? "campaña" : "campañas"} · sin códigos`;
+    return `${inv.filter(i => i.estado === "respondida").length} de ${inv.length} códigos respondidos`;
+  };
+  const personas = () => S.tiendas.reduce((a, t2) => a + t2.personas.length, 0);
+  try {
+    if (id === "eval") { const c = S.tiendas.reduce((a, t2) => a + t2.personas.filter(p => ((p.evals || {}).fy || {}).cerrado).length, 0); return `${c} de ${personas()} cierres anuales`; }
+    if (id === "consolidado") return `${S.tiendas.length} ${S.tiendas.length === 1 ? "tienda" : "tiendas"} en una tabla`;
+    if (id === "talent") { const f = S.tiendas.flatMap(t2 => t2.personas.map(p => SC.talent(t2, p))); return `${f.filter(x => x.cerrado).length} de ${f.length} fichas cerradas`; }
+    if (id === "mapa") return `${personas()} ${personas() === 1 ? "persona" : "personas"} en la matriz`;
+    if (id === "onboarding" || id === "offboarding" || id === "clima" || id === "psico") return campana(id);
+    if (id === "bajas") { const a = SC.absentismo(S.tiendas, mesesDisponibles()); return a.tasa == null ? (a.procesos ? `${a.dias} días perdidos` : "Sin bajas registradas") : `${SC.fmt(a.tasa, 1)} % de absentismo`; }
+    if (id === "prevencion") { const R = S.tiendas.map(resumenPrl), per = R.reduce((a, x) => a + x.personas, 0), ok = R.reduce((a, x) => a + x.alDia, 0); return per ? `${SC.pct(ok / per, 0)} con la formación al día` : "Sin personas dadas de alta"; }
+    if (id === "cursos") { const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0; return `${CURSOS.length} formaciones · ${n} ${n === 1 ? "completada" : "completadas"}`; }
+    if (id === "process") return `${libro("process").items.length} procesos`;
+    if (id === "politica") return `${libro("politica").items.length} fichas`;
+  } catch (e) {}
+  return "";
+}
+function pintarIndice(m, tabs) {
+  const AV = typeof avisosHoy === "function" ? avisosHoy() : [];
+  const pend = AV.reduce((a, x) => { if (x.nivel !== "info" && x.modulo === m.id && x.tab) a[x.tab] = (a[x.tab] || 0) + 1; return a; }, {});
+  const tarjeta = ([id, et, soloHr]) => {
+    const k = TAB_TXT[id], tit = k ? modTxt(k, 0) : et, des = k ? modTxt(k, 1) : "";
+    return `<button class="mod" data-action="tab" data-v="${id}">
+      <span class="mod-t">${esc(tit)}${pend[id] ? `<span class="mod-n">${pend[id]}</span>` : ""}${soloHr ? `<span class="badge">${t("soloRRHH")}</span>` : ""}</span>
+      ${des ? `<span class="mod-d">${esc(des)}</span>` : ""}
+      <span class="mod-f">${esc(resumenTab(id))}</span></button>`;
+  };
+  $("vista").innerHTML = `<div class="home idx">
+    <div class="idx-h"><h1>${esc(modTxt(m.id, 0))}</h1><p>${esc(modTxt(m.id, 1))}</p></div>
+    <div class="cards">${tabs.map(tarjeta).join("")}</div>
+    ${bandaMarcas()}</div>`;
 }
 function pintarInicio() {
   const resumen = m => {
@@ -372,7 +434,7 @@ function pintarInicio() {
         <span class="mod-t">${esc(modTxt(m.id, 0))}<span class="badge">${t("externo")}</span></span>
         <span class="mod-d">${esc(modTxt(m.id, 1))}</span>
         <span class="mod-f">${t("abrirEnPestana")} ↗</span></a>`
-    : `<button class="mod ${m.grupo}" data-action="modulo" data-m="${m.id}" ${m.grupo === "pendiente" ? "disabled" : ""}>
+    : `<button class="mod ${m.grupo} m-${m.id}" data-action="modulo" data-m="${m.id}" ${m.grupo === "pendiente" ? "disabled" : ""}>
       <span class="mod-t">${esc(modTxt(m.id, 0))}${pend[m.id] ? `<span class="mod-n" title="${pend[m.id] === 1 ? "1 cosa pide atención" : pend[m.id] + " cosas piden atención"}">${pend[m.id]}</span>` : ""}${m.grupo === "destacado" ? `<span class="badge oro">${t("enDiseno")}</span>` : m.grupo === "pendiente" ? `<span class="badge">${t("pendiente")}</span>` : ""}</span>
       <span class="mod-d">${esc(modTxt(m.id, 1))}</span>
       ${m.kpis ? `<span class="mod-k">${m.kpis.map(k => `<i>${esc(k.t)}</i>`).join("")}</span>` : ""}
@@ -381,8 +443,7 @@ function pintarInicio() {
   const enMarcha = visibles.filter(m => m.grupo !== "pendiente"), pendientes = visibles.filter(m => m.grupo === "pendiente");
   $("vista").innerHTML = `<div class="home">
     <div class="home-h">${logo(76)}<div class="home-txt">${marcaSVG("grande", 34)}
-      <p>${t("homeIntro")} ${esAdmin() ? t("homeAdmin") : esMarketing() ? t("homeMk") : t("homeRM")}</p></div>
-      <span class="chipseb home-seb">${logoSEB(34)}</span></div>
+      <p>${t("homeIntro")} ${esAdmin() ? t("homeAdmin") : esMarketing() ? t("homeMk") : t("homeRM")}</p></div></div>
     ${bloqueHoy(AV)}
     <h2 class="grupo">${t("enMarcha")}</h2><div class="cards">${enMarcha.map(tarjeta).join("")}</div>
     ${esAdmin() ? `<button class="adminbar" data-action="modulo" data-m="gestion">
@@ -850,18 +911,21 @@ document.addEventListener("click", async e => {
   const nombreYo = S.me.nombre;
   const acciones = Object.assign({
     idioma() { setLang(b.dataset.l); },
-    inicio() { S.modulo = "inicio"; b.closest("details") && (b.closest("details").open = false); },
+    inicio() { S.modulo = "inicio"; S.indice = false; b.closest("details") && (b.closest("details").open = false); },
     modulo() {
       if (!puedeVer(b.dataset.m)) return false;
       S.modulo = b.dataset.m; S.campana = null;
       if (S.docs) { S.docs.sel = null; S.docs.edit = null; S.docs.busca = ""; }
       S.tab = tabPorDefecto(S.modulo);
+      const mm = MODULOS.find(x => x.id === S.modulo);
+      S.indice = !!(mm && mm.tabs && mm.tabs.filter(x => !x[2] || esAdmin()).length > 1);
       if (S.modulo === "formacion") { S.curso = null; S.chuleta = false; S.vista = "recorrido"; }
       if (S.modulo === "evaluacion") S.ui.fase = "obj";
       b.closest("details") && (b.closest("details").open = false);
     },
+    atras() { irAtras(); },
     tab() {
-      S.tab = b.dataset.v; S.campana = null;
+      S.tab = b.dataset.v; S.indice = false; S.campana = null;
       if (S.modulo === "evaluacion") S.ui.fase = S.tab === "talent" ? "talent" : (S.ui.fase === "talent" ? "obj" : S.ui.fase);
       if (S.modulo === "formacion") { S.curso = null; S.chuleta = false; S.vista = "recorrido"; }
       if (S.docs) { S.docs.sel = null; S.docs.edit = null; S.docs.busca = ""; }

@@ -94,7 +94,7 @@ function pintarBusqueda() {
     : `<p class="muted">Nada con «${esc(inp.value)}».</p>`;
 }
 function irA(d) {
-  S.modulo = d.m; S.campana = d.campana || null;
+  S.modulo = d.m; S.indice = false; S.campana = d.campana || null;
   S.tab = d.tab || tabPorDefecto(d.m);
   if (S.docs) { S.docs.sel = d.doc || null; S.docs.edit = null; S.docs.busca = ""; }
   if (d.m === "evaluacion") {
