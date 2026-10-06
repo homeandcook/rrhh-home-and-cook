@@ -107,9 +107,11 @@ function pintarPruebas(tipo) {
       <form class="inline-form" id="formInv" style="border:0;margin:0;padding:0">
         <label>Tienda<select name="tienda_id" required><option value="">Elige tienda</option>${tiendas.map(t => `<option value="${t.id}">${esc(t.nombre)}</option>`).join("")}</select></label>
         ${pl.anonima ? `<label>¿Cuántos códigos?<input name="n" type="number" min="1" max="30" value="6" class="short2"></label>`
-          : `<label>Para quién<input name="destinatario" placeholder="Nombre de la persona o del proveedor"></label>`}
+          : `<label>Nombre<input name="destinatario" placeholder="Nombre y apellido" required></label>
+             <label>Puesto<input name="puesto" placeholder="Store Manager, vendedor/a…"></label>
+             <label>Correo<input name="email" type="email" placeholder="nombre@correo.com"></label>`}
         <button class="btn primary" type="submit">Generar</button></form>
-      <p class="hint">${pl.anonima ? "Al ser anónima se generan códigos sueltos, sin nombre: se reparten en la tienda y nadie puede asociarlos a una persona." : "Cada código sirve una sola vez y queda asociado a esa persona."}</p></section>`;
+      <p class="hint">${pl.anonima ? "Al ser anónima se generan códigos sueltos, sin nombre: se reparten en la tienda y nadie puede asociarlos a una persona." : "Cada código sirve una sola vez y queda asociado a esa persona. No hace falta que sea usuario de la plataforma: con el nombre y el correo basta, y se borra cuando borres la campaña."}</p></section>`;
   }
 
   // Tabla de invitaciones
@@ -121,12 +123,13 @@ function pintarPruebas(tipo) {
     h += `<div class="tablewrap"><table><thead><tr><th>Código</th><th>Tienda</th>${pl.anonima ? "" : "<th>Para quién</th>"}<th>Estado</th><th class="n">Resultado</th><th></th></tr></thead><tbody>
     ${mias.map(i => {
       const t = tiendaDe(i.tienda_id), p = i.estado === "respondida" ? SC.puntuar(pl, i.respuestas) : null;
-      return `<tr><td><code class="cod">${esc(i.codigo)}</code></td><td>${esc(t ? t.nombre : "–")}</td>${pl.anonima ? "" : `<td>${esc(i.destinatario || "–")}</td>`}
+      return `<tr><td><code class="cod">${esc(i.codigo)}</code></td><td>${esc(t ? t.nombre : "–")}</td>${pl.anonima ? "" : `<td><b>${esc(i.destinatario || "–")}</b>${i.puesto ? `<br><small>${esc(i.puesto)}</small>` : ""}${i.email ? `<br><small class="mail">${esc(i.email)}</small>` : ""}</td>`}
         <td><span class="st ${i.estado === "respondida" ? "cerrado" : i.estado === "abierta" ? "encurso" : "pendiente"}">${esc(i.estado === "abierta" ? "abierto, sin enviar" : i.estado)}</span></td>
         <td class="n">${p ? `<b>${SC.pct(p.pct, 0)}</b>` : "–"}</td>
         <td class="n"><span class="fila-acc">${i.estado === "respondida"
-          ? (pl.anonima ? `<span class="muted">Anónima</span>` : `<button class="btn small ghost" data-action="verRespuestas" data-id="${i.id}">Ver respuestas</button>`)
-          : `<button class="btn small ghost" data-action="copiarInv" data-id="${i.id}">Copiar mensaje</button>`}
+          ? `<button class="btn small ghost" data-action="verRespuestas" data-id="${i.id}">Ver respuestas</button>`
+          : `${i.email ? `<button class="btn small ghost" data-action="enviarInv" data-id="${i.id}">Enviar correo</button>` : ""}
+             <button class="btn small ghost" data-action="copiarInv" data-id="${i.id}">Copiar mensaje</button>`}
           ${esAdmin() ? `<button class="btn small ghost danger" data-action="borrarInv" data-id="${i.id}" title="Borrar este código">Borrar</button>` : ""}</span></td></tr>`;
     }).join("")}</tbody></table></div>`;
   }
@@ -213,7 +216,11 @@ async function generarInvitaciones(ev) {
   const c = (S.campanas || []).find(x => x.id === S.campana), pl = SC.plantilla(c.plantilla);
   const n = pl.anonima ? Math.min(30, Math.max(1, Number(f.n) || 1)) : 1;
   const filas = [];
-  for (let i = 0; i < n; i++) filas.push({ campana_id: c.id, tienda_id: f.tienda_id, destinatario: pl.anonima ? null : (f.destinatario || "").trim(), codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} });
+  for (let i = 0; i < n; i++) filas.push({ campana_id: c.id, tienda_id: f.tienda_id,
+    destinatario: pl.anonima ? null : (f.destinatario || "").trim(),
+    puesto: pl.anonima ? null : ((f.puesto || "").trim() || null),
+    email: pl.anonima ? null : ((f.email || "").trim().toLowerCase() || null),
+    codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} });
   const { error } = await sb.from("invitaciones").insert(filas);
   if (error) { alert("No se han podido generar los códigos: " + traducirError(error)); return; }
   log(`${n} código(s) de ${c.titulo} para ${(tiendaDe(f.tienda_id) || {}).nombre || ""}`);
@@ -229,18 +236,22 @@ async function recargarPruebas() {
 }
 function mensajeInvitacion(inv) {
   const c = (S.campanas || []).find(x => x.id === inv.campana_id), pl = SC.plantilla(c.plantilla);
-  const url = location.origin + location.pathname + "?codigo=" + inv.codigo;
+  const url = location.origin + location.pathname + "?codigo=";
   return `Hola${inv.destinatario ? " " + inv.destinatario.split(" ")[0] : ""},
 
-Te envío el acceso a "${c.titulo}". Se entra sin usuario ni contraseña, solo con este código:
+Te envío el acceso a "${c.titulo}". No necesitas usuario ni contraseña: abre el enlace y escribe este código.
 
 Enlace: ${url}
 Código: ${inv.codigo}
 
-Son ${pl.preguntas.length} preguntas y se tarda unos ${pl.id === "clima-tienda" ? "5" : "10"} minutos. El código sirve una sola vez.
+Son ${pl.preguntas.length} preguntas y se tarda unos ${pl.id === "clima-tienda" ? "5" : "10"} minutos. El código sirve una sola vez y es solo tuyo, no lo reenvíes.
 
 Gracias,
 ${S.me.nombre}`;
+}
+function asuntoInvitacion(inv) {
+  const c = (S.campanas || []).find(x => x.id === inv.campana_id);
+  return c ? c.titulo : "Acceso";
 }
 
 const ACCIONES_PRUEBAS = {
@@ -307,6 +318,15 @@ const ACCIONES_PRUEBAS = {
     if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
     log(`Campaña borrada: ${c.titulo}`); S.campana = null; await recargarPruebas(); toast("Campaña borrada");
   },
+  enviarInv(b) {
+    const inv = S.invitaciones.find(i => i.id === b.dataset.id);
+    if (!inv || !inv.email) return false;
+    const href = `mailto:${encodeURIComponent(inv.email)}?subject=${encodeURIComponent(asuntoInvitacion(inv))}&body=${encodeURIComponent(mensajeInvitacion(inv))}`;
+    const a = document.createElement("a"); a.href = href; a.rel = "noopener";
+    document.body.appendChild(a); a.click(); a.remove();
+    toast("Se abre tu correo con el mensaje listo para enviar");
+    return false;
+  },
   copiarInv(b) {
     const inv = S.invitaciones.find(i => i.id === b.dataset.id), txt = mensajeInvitacion(inv);
     const mostrar = () => {
@@ -333,14 +353,23 @@ const ACCIONES_PRUEBAS = {
     const inv = S.invitaciones.find(i => i.id === b.dataset.id);
     const c = S.campanas.find(x => x.id === inv.campana_id), pl = SC.plantilla(c.plantilla), p = SC.puntuar(pl, inv.respuestas);
     $("print").innerHTML = "";
-    const cuerpo = pl.preguntas.map((q, i) => {
+    /* Cada tipo de pregunta guarda la respuesta de una forma distinta y no
+       todas tienen opciones: las de escala van contra pl.escala y la de
+       eNPS es un número suelto. Dar por hecho que q.o existe rompía la
+       ficha en cuanto la plantilla llevaba un eNPS, como la de clima. */
+    const cuerpo = pl.preguntas.map(q => {
       const r = (inv.respuestas || {})[q.id];
-      const txt = q.tipo === "texto" ? (r || "–") : q.tipo === "likert" ? (pl.escala[r] || "–") : (q.o[r] ? `${q.o[r].t} (${q.o[r].v} puntos)` : "–");
-      return `<li><b>${esc(q.t)}</b><span>${esc(txt)}</span></li>`;
+      let txt;
+      if (q.tipo === "texto") txt = (r || "").trim() || "Sin respuesta";
+      else if (q.tipo === "likert") { const e = SC.txt2(pl.escala) || []; txt = e[r] != null ? e[r] : "Sin respuesta"; }
+      else if (q.tipo === "nps") txt = typeof r === "number" ? `${r} sobre 10` : "Sin respuesta";
+      else { const o = q.o && q.o[r]; txt = o ? `${SC.txt(o.t)}${o.v != null && !q.sinPuntuar ? ` (${o.v} ${o.v === 1 ? "punto" : "puntos"})` : ""}` : "Sin respuesta"; }
+      return `<li><b>${esc(SC.txt(q.t))}</b><span>${esc(txt)}</span></li>`;
     }).join("");
     document.body.insertAdjacentHTML("beforeend", `<div class="modal" id="modalResp"><div class="modal-c">
-      <div class="card-h"><h2>${esc(inv.destinatario || "Respuestas")}</h2><button class="btn small ghost" data-action="cerrarModal">Cerrar</button></div>
+      <div class="card-h"><h2>${esc(pl.anonima ? "Respuesta anónima" : (inv.destinatario || "Respuestas"))}</h2><button class="btn small ghost" data-action="cerrarModal">Cerrar</button></div>
       <p class="hint">${esc(c.titulo)} · ${esc((tiendaDe(inv.tienda_id) || {}).nombre || "")} · Resultado ${SC.pct(p.pct, 0)} (${p.obt} de ${p.max})</p>
+      ${pl.anonima ? `<p class="aviso-anon">Esta encuesta es anónima. Se ve lo que contestó este código, pero no quién lo usó: la plataforma no guarda ese dato en ninguna parte.</p>` : ""}
       <ul class="resp">${cuerpo}</ul></div></div>`);
     return false;
   },

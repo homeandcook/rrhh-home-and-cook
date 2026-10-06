@@ -282,7 +282,7 @@ function rpEvaluacion() {
     }).join("")}</div>
     <div class="bloques" style="margin-top:18px">
       <div class="bloque"><h3>Lo hiciste bien</h3><ul class="lista">${(v.bien || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
-      <div class="bloque"><h3>A mejorar</h3><ul class="lista ojo">${(v.mejorar || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
+      <div class="bloque"><h3>A mejorar</h3><ul class="lista cuidado">${(v.mejorar || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
     ${v.frase ? `<div class="frases" style="margin-top:6px">
       <blockquote class="frase"><span class="ctx">Dijiste</span><p>${esc(v.frase.tuya)}</p></blockquote>
       <blockquote class="frase"><span class="ctx">Quedaría mejor así</span><p>${esc(v.frase.mejor)}</p></blockquote></div>` : ""}

@@ -139,6 +139,8 @@ create table if not exists public.invitaciones (
   campana_id   uuid not null references public.campanas(id) on delete cascade,
   tienda_id    uuid references public.tiendas(id) on delete set null,
   destinatario text,                       -- null en las campañas anónimas
+  puesto       text,                       -- null en las campañas anónimas
+  email        text,                       -- null en las campañas anónimas
   codigo       text not null unique,
   estado       text not null default 'pendiente' check (estado in ('pendiente', 'abierta', 'respondida')),
   respuestas   jsonb not null default '{}'::jsonb,

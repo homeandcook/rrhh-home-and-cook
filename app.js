@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.17.0";
+const APP_VERSION = "0.18.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -74,8 +74,11 @@ function arrancar() {
   } else {
     sb = window.supabase.createClient(K.supabaseUrl, K.supabaseAnonKey);
   }
-  const cod = par.get("codigo");
-  if (cod !== null) return abrirInvitacion(cod);
+  /* El enlace del correo lleva a la pantalla de acceso, nunca el código
+     dentro. Quien recibe la invitación teclea el código: es lo único que
+     demuestra que el correo le llegó a quien tenía que llegarle, y evita
+     que un enlace reenviado abra la prueba de otra persona. */
+  if (par.has("codigo")) return abrirInvitacion("");
   sb.auth.getSession().then(({ data }) => (data && data.session ? entrar() : pantallaLogin()));
 }
 function pantallaSinLibreria() {

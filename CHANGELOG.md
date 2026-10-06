@@ -161,6 +161,15 @@ Borrar y vaciar en las encuestas y pruebas (Clima, Pruebas situacionales, Onboar
 - Todo esto solo para el administrador, igual que la política de la base de datos, que ya permitía borrar solo a admin. No ha hecho falta tocar SQL.
 - Las confirmaciones pasan a hacerse dentro de la página, no con el diálogo del navegador: en algunos entornos `confirm()` devuelve "no" sin llegar a preguntar, y una acción que borra datos no puede depender de eso. Cerrar una campaña usa ya el mismo cuadro.
 
+## 0.18.0 · 06/10/2026 · **SQL: SÍ** — ejecuta `supabase/migracion_0.17.sql`
+El código de acceso ahora hay que teclearlo, y se puede invitar a una persona que no es usuaria de la plataforma.
+- **El enlace del correo ya no lleva el código dentro.** Antes abría la prueba directamente, así que el código no servía de nada y un correo reenviado daba acceso a la prueba de otra persona. Ahora el enlace lleva a la pantalla de acceso y hay que escribir el código.
+- **Alta temporal de la persona**: nombre, puesto y correo al generar el código, sin que tenga que ser usuaria de la plataforma. Se borra con la campaña.
+- **Enviar correo** desde la fila: abre tu cliente de correo con destinatario, asunto y mensaje puestos. El envío sale de tu buzón, con tu firma.
+- **Ver respuestas también en las encuestas anónimas**: se ve lo que contestó cada código, nunca quién lo usó, con el aviso puesto en la propia ficha.
+- Corregido: la ficha de respuestas se rompía en cuanto la plantilla llevaba una pregunta de eNPS, como la de clima. Daba por hecho que todas las preguntas tienen opciones.
+- Corregido: en las formaciones, la lista de «Cuidado con» se salía de su columna y se montaba encima de «Qué haces». La clase `ojo` se llamaba igual que el botón que enseña la contraseña en el acceso, que va posicionado en absoluto. Renombrada a `cuidado`.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

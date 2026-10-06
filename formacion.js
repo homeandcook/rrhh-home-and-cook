@@ -268,7 +268,7 @@ function pintarCurso() {
 
       <div class="bloques">
         <div class="bloque"><h3>Qué haces</h3><ul class="lista">${p.haces.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
-        <div class="bloque"><h3>Cuidado con</h3><ul class="lista ojo">${p.ojo.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+        <div class="bloque"><h3>Cuidado con</h3><ul class="lista cuidado">${p.ojo.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
       </div>
 
       <h3 class="tit-frases">${esCircuito ? "Qué dices" : "Frases que ayudan"}</h3>
