@@ -185,6 +185,15 @@ Repartir los códigos de una encuesta anónima, sin romper el anonimato.
 - No hay envío individual por correo en las anónimas, y es deliberado: mandar un código a cada persona deja en tu bandeja de enviados qué código tiene quién, que es justo lo que la encuesta promete no saber. El aviso lo explica en la propia pantalla.
 - En las campañas nominativas (pruebas situacionales, onboarding, offboarding, formaciones) sigue estando el envío persona a persona, que ahí sí tiene sentido.
 
+## 0.20.0 · 06/10/2026 · **SQL: no**
+La encuesta de clima puede ser anónima o con nombre, y el equipo de cada tienda vive en la plataforma.
+- **Dos versiones de cada encuesta de clima.** Al crear la campaña eliges plantilla: «anónima» (la de siempre, intacta) o «con nombre». En la nominativa, la primera pantalla que ve la persona dice sin rodeos que su nombre va asociado a sus respuestas y quién las lee. No se promete lo que no se puede cumplir.
+- **Tiendas y equipos de tienda**, apartado nuevo en Usuarios y tiendas: nombre, puesto y correo de cada persona de sala, editable en la propia tabla. No son usuarios de la plataforma ni entran en el Scorecard. Botón para traer el SM y el ASM del Scorecard sin volver a teclearlos, y descarga en CSV.
+- **Generar códigos desde el equipo**: en las campañas con nombre sale la lista de la tienda con casillas. Quien no tiene correo o ya tiene código aparece desactivado, así que no se duplica ni se genera un código que no se puede enviar.
+- **Añadir a una persona a mano** sigue estando, para quien no está en la libreta.
+- **Enviar a todos los pendientes**: abre un correo por persona, con un respiro entre uno y otro.
+- En las campañas anónimas no aparece nada de esto: solo el reparto en tienda de la 0.19.1.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

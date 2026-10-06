@@ -124,7 +124,29 @@ function pintarPruebas(tipo) {
   // Generar invitaciones
   if (sel.estado === "abierta") {
     const tiendas = esAdmin() ? S.tiendas : S.tiendas.filter(t => t.rm_id === S.me.id);
-    h += `<section class="card"><h2>Generar códigos</h2>
+    // En una campaña con nombre se puede tirar del equipo que ya está dado de
+    // alta en Usuarios y tiendas, en vez de teclear a cada persona.
+    if (!pl.anonima) {
+      const tEq = tiendas.find(t => t.id === S.invT) || tiendas[0];
+      if (tEq) S.invT = tEq.id;
+      const eq = tEq ? (tEq.equipo || []) : [];
+      const yaTiene = n => invs.some(i => i.tienda_id === tEq.id && (i.destinatario || "").trim().toLowerCase() === (n || "").trim().toLowerCase());
+      h += `<section class="card"><div class="card-h"><h2>Elegir del equipo de la tienda</h2></div>
+        <div class="inline-form" style="border:0;margin:0 0 12px;padding:0">
+          <label>Tienda<select data-action="invTienda">${tiendas.map(t => `<option value="${t.id}" ${t.id === (tEq || {}).id ? "selected" : ""}>${esc(t.nombre)} · ${(t.equipo || []).length} en el equipo</option>`).join("")}</select></label></div>
+        ${eq.length ? `<div class="tablewrap"><table><thead><tr><th style="width:36px"><input type="checkbox" data-action="eqTodos" class="chk"></th><th>Nombre</th><th>Puesto</th><th>Correo</th><th>Estado</th></tr></thead><tbody>
+          ${eq.map((x, i) => {
+            const sinMail = !(x.email || "").trim(), ya = yaTiene(x.nombre);
+            return `<tr class="${sinMail || ya ? "fila-off" : ""}"><td><input type="checkbox" class="chk eqchk" data-i="${i}" ${sinMail || ya ? "disabled" : ""}></td>
+              <td>${esc(x.nombre)}</td><td>${esc(x.puesto || "")}</td>
+              <td>${x.email ? `<small class="mail">${esc(x.email)}</small>` : `<small class="muted">Sin correo</small>`}</td>
+              <td>${ya ? `<span class="badge ok">Ya tiene código</span>` : sinMail ? `<span class="badge">Falta el correo</span>` : `<span class="muted">Listo</span>`}</td></tr>`;
+          }).join("")}</tbody></table></div>
+          <div class="actions" style="justify-content:flex-start"><button class="btn primary" data-action="generarEquipo">Generar los códigos de los marcados</button></div>`
+        : `<p class="empty">Esta tienda no tiene equipo dado de alta. Añádelo en <b>Usuarios y tiendas → Tiendas y equipos de tienda</b>, o mete a la persona a mano aquí abajo.</p>`}
+      </section>`;
+    }
+    h += `<section class="card"><h2>${pl.anonima ? "Generar códigos" : "Añadir a una persona a mano"}</h2>
       <form class="inline-form" id="formInv" style="border:0;margin:0;padding:0">
         <label>Tienda<select name="tienda_id" required><option value="">Elige tienda</option>${tiendas.map(t => `<option value="${t.id}">${esc(t.nombre)}</option>`).join("")}</select></label>
         ${pl.anonima ? `<label>¿Cuántos códigos?<input name="n" type="number" min="1" max="30" value="6" class="short2"></label>`
@@ -157,6 +179,7 @@ function pintarPruebas(tipo) {
   // Tabla de invitaciones
   const sinResp = mias.filter(i => i.estado !== "respondida").length;
   h += `<section class="card"><div class="card-h"><h2>Códigos</h2><span class="muted">${mias.length}</span>
+    ${!pl.anonima && mias.some(i => i.estado !== "respondida" && i.email) ? `<button class="btn small ghost" data-action="enviarTodos">Enviar a todos los pendientes</button>` : ""}
     ${esAdmin() && sinResp ? `<button class="btn small ghost danger" data-action="vaciarCodigos">Borrar los ${sinResp} sin responder</button>` : ""}</div>`;
   if (!mias.length) h += `<p class="empty">Todavía no hay códigos generados.</p>`;
   else {
@@ -357,6 +380,38 @@ const ACCIONES_PRUEBAS = {
     const { error } = await sb.from("campanas").delete().eq("id", c.id);
     if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
     log(`Campaña borrada: ${c.titulo}`); S.campana = null; await recargarPruebas(); toast("Campaña borrada");
+  },
+  invTienda(b) { S.invT = b.value; },
+  eqTodos(b) { document.querySelectorAll(".eqchk:not(:disabled)").forEach(c => { c.checked = b.checked; }); return false; },
+  async generarEquipo() {
+    const t2 = S.tiendas.find(x => x.id === S.invT); if (!t2) return false;
+    const eq = t2.equipo || [];
+    const elegidos = [...document.querySelectorAll(".eqchk:checked")].map(c => eq[Number(c.dataset.i)]).filter(Boolean);
+    if (!elegidos.length) { toast("Marca al menos a una persona"); return false; }
+    const c = S.campanas.find(x => x.id === S.campana);
+    const filas = elegidos.map(x => ({ campana_id: c.id, tienda_id: t2.id, destinatario: x.nombre,
+      puesto: x.puesto || null, email: (x.email || "").toLowerCase() || null,
+      codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
+    const { error } = await sb.from("invitaciones").insert(filas);
+    if (error) { alert("No se han podido generar los códigos: " + traducirError(error)); return false; }
+    log(`${filas.length} código(s) de ${c.titulo} para ${t2.nombre}`);
+    await recargarPruebas(); pintar();
+    toast(filas.length === 1 ? "1 código generado" : filas.length + " códigos generados");
+    return false;
+  },
+  async enviarTodos() {
+    const c = S.campanas.find(x => x.id === S.campana);
+    const pend = invitacionesDe(c.id).filter(i => i.estado !== "respondida" && i.email);
+    if (!pend.length) { toast("No hay nadie con correo pendiente de enviar"); return false; }
+    const ok = await confirmar({ titulo: `Enviar ${pend.length} ${pend.length === 1 ? "correo" : "correos"}`, ok: "Abrir el correo",
+      texto: "Se abrirá tu programa de correo con un mensaje por persona. Si son muchos, puede tardar unos segundos y tendrás que enviarlos uno a uno." });
+    if (!ok) return false;
+    pend.forEach((inv, k) => setTimeout(() => {
+      const a = document.createElement("a");
+      a.href = `mailto:${encodeURIComponent(inv.email)}?subject=${encodeURIComponent(asuntoInvitacion(inv))}&body=${encodeURIComponent(mensajeInvitacion(inv))}`;
+      document.body.appendChild(a); a.click(); a.remove();
+    }, k * 700));
+    return false;
   },
   repartoLista() {
     const t2 = $("repTienda") ? $("repTienda").value : null;

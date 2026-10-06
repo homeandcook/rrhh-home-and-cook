@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.19.1";
+const APP_VERSION = "0.20.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -8,7 +8,7 @@ const C = SC.CONFIG, esc = SC.esc, K = window.APP_CONFIG || {};
 let sb = null;
 const S = {
   me: null, perfiles: [], tiendas: [], actividad: [],
-  modulo: "inicio", indice: false, tab: "eval", curso: null, paso: null, chuleta: false, fam: 0, prod: null, busca: "", campanas: [], invitaciones: [], campana: null, vista: "recorrido", ui: { t: null, p: null, fase: "obj" },
+  modulo: "inicio", indice: false, tab: "eval", equipoT: null, invT: null, curso: null, paso: null, chuleta: false, fam: 0, prod: null, busca: "", campanas: [], invitaciones: [], campana: null, vista: "recorrido", ui: { t: null, p: null, fase: "obj" },
   sucios: new Set(), guardando: false, errorGuardado: null,
   f: { per: "fy", rm: "", puesto: "", estado: "", orden: "bonus", dir: -1 }
 };
@@ -222,7 +222,7 @@ async function recargarMarketing() {
   S.tiendas = (data || []).map(r => ({
     id: r.id, nombre: r.nombre, codigo: r.codigo, rm_id: null, version: 1,
     objetivos: { s1: {}, fy: {} }, resultados: { s1: {}, fy: {} },
-    objetivosValidados: null, personas: [], kpis: r.kpis || {}
+    objetivosValidados: null, personas: [], equipo: [], kpis: r.kpis || {}
   }));
   S.perfiles = [S.me];
   await recargarPruebas();
@@ -241,9 +241,9 @@ function desdeFila(r) {
   const d = r.datos || {};
   return { id: r.id, rm_id: r.rm_id, version: r.version, actualizado: r.actualizado, nombre: r.nombre, codigo: r.codigo,
     objetivos: d.objetivos || { s1: {}, fy: {} }, resultados: d.resultados || { s1: {}, fy: {} },
-    objetivosValidados: d.objetivosValidados || null, personas: d.personas || [], kpis: d.kpis || {}, bajas: d.bajas || [], prl: d.prl || {} };
+    objetivosValidados: d.objetivosValidados || null, personas: d.personas || [], equipo: d.equipo || [], kpis: d.kpis || {}, bajas: d.bajas || [], prl: d.prl || {} };
 }
-function aDatos(t) { return { objetivos: t.objetivos, resultados: t.resultados, objetivosValidados: t.objetivosValidados, personas: t.personas, kpis: t.kpis || {}, bajas: t.bajas || [], prl: t.prl || {} }; }
+function aDatos(t) { return { objetivos: t.objetivos, resultados: t.resultados, objetivosValidados: t.objetivosValidados, personas: t.personas, equipo: t.equipo || [], kpis: t.kpis || {}, bajas: t.bajas || [], prl: t.prl || {} }; }
 function guardar(t) { t = t || tienda(); if (!t) return; S.sucios.add(t.id); pintarEstado(); clearTimeout(guardar.h); guardar.h = setTimeout(volcar, 700); }
 async function volcar() {
   if (S.guardando) { clearTimeout(guardar.h); guardar.h = setTimeout(volcar, 400); return; }
@@ -833,12 +833,15 @@ function pintarGestion() {
     <button class="btn small" data-action="cargarRed">Crear las que faltan</button>
     Se crean sin asignar; después repartes con el desplegable de cada una.</p>` : ""}</section>
 
+  ${bloqueEquipos()}
+
   <section class="card"><h2>Actividad reciente</h2><div class="tablewrap act"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th></tr></thead><tbody>
   ${S.actividad.length ? S.actividad.map(a => `<tr><td class="num">${new Date(a.fecha).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc((perfil(a.usuario_id) || {}).nombre || "–")}</td><td>${esc(a.accion)}</td></tr>`).join("") : `<tr><td colspan="3" class="muted">Sin actividad todavía.</td></tr>`}
   </tbody></table></div></section></div>`;
   $("vista").innerHTML = h;
   $("formUsuario").addEventListener("submit", crearUsuario);
   $("formTienda").addEventListener("submit", crearTienda);
+  const fe = $("formEquipo"); if (fe) fe.addEventListener("submit", anadirAEquipo);
 }
 async function crearUsuario(ev) {
   ev.preventDefault();
@@ -907,6 +910,14 @@ document.addEventListener("input", e => {
 document.addEventListener("change", async e => {
   const el = e.target;
   if (el.dataset.scope && (el.type === "radio" || el.tagName === "SELECT")) { pintar(); return; }
+  if (el.dataset.action === "equipoTienda") { S.equipoT = el.value; pintarGestion(); return; }
+  if (el.dataset.action === "invTienda") { S.invT = el.value; pintar(); return; }
+  if (el.dataset.eq !== undefined) {
+    const t = S.tiendas.find(x => x.id === S.equipoT), p = t && equipoDe(t)[Number(el.dataset.eq)];
+    if (!p) return;
+    p[el.dataset.campo] = el.dataset.campo === "email" ? el.value.trim().toLowerCase() : el.value;
+    guardar(t); return;
+  }
   if (el.dataset.pdc) { filtroPDC()[el.dataset.pdc] = el.value; pintarPDC(); return; }
   if (el.dataset.bajas) { filtroBajas()[el.dataset.bajas] = el.value; pintarBajas(); return; }
   if (el.dataset.action === "selTiendaSel") { S.ui.t = el.value; S.ui.p = null; pintar(); return; }
@@ -1028,10 +1039,91 @@ document.addEventListener("click", async e => {
       if (error) { alert(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
-  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_RP === "undefined" ? {} : ACCIONES_RP, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY);
+  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_RP === "undefined" ? {} : ACCIONES_RP, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO);
   if (!acciones[a]) return;
   const res = await acciones[a](b, t);
   if (res !== false) pintar();
 });
 window.addEventListener("beforeunload", e => { if (S.sucios.size || S.guardando) { e.preventDefault(); e.returnValue = ""; } });
 arrancar();
+
+/* =================== Equipos de tienda ===================
+   El equipo de sala no tiene cuenta en la plataforma y no sale en Scorecard
+   (ahí solo van SM y ASM, que son los que llevan bonus). Esto es una libreta
+   de nombre, puesto y correo por tienda, para no volver a teclearlos cada vez
+   que se manda una encuesta o una formación.
+   Vive en el mismo jsonb de la tienda, así que no hace falta tabla nueva: lo
+   ve y lo edita quien ya puede editar esa tienda.
+   ========================================================== */
+const PUESTOS_EQUIPO = ["Store Manager", "Assistant Store Manager", "Vendedor/a", "Vendedor/a a tiempo parcial", "Visual", "Suplente", "Becario/a"];
+function equipoDe(t) { return (t && t.equipo) || []; }
+function tiendasQueVeo() { return esAdmin() ? S.tiendas : S.tiendas.filter(t => t.rm_id === S.me.id); }
+function bloqueEquipos() {
+  const ts = tiendasQueVeo();
+  if (!ts.length) return "";
+  const sel = ts.find(t => t.id === S.equipoT) || ts[0];
+  S.equipoT = sel.id;
+  const eq = equipoDe(sel), total = ts.reduce((a, t) => a + equipoDe(t).length, 0);
+  const conMail = eq.filter(p => (p.email || "").trim()).length;
+  return `<section class="card" id="equipos"><div class="card-h"><h2>Tiendas y equipos de tienda</h2>
+      <span class="muted">${total} ${total === 1 ? "persona" : "personas"} en la red</span></div>
+    <p class="hint" style="margin-top:0">Quién trabaja en cada tienda, con su correo. No son usuarios de la plataforma ni entran en el Scorecard: sirve para mandarles encuestas y formaciones sin teclear los datos cada vez.</p>
+    <div class="inline-form" style="border:0;margin:0 0 14px;padding:0">
+      <label>Tienda<select data-action="equipoTienda">${ts.map(t => `<option value="${t.id}" ${t.id === sel.id ? "selected" : ""}>${esc(t.nombre || "Sin nombre")} · ${equipoDe(t).length}</option>`).join("")}</select></label>
+      ${sel.personas.length ? `<button class="btn" data-action="equipoDesdeScorecard">Traer SM y ASM del Scorecard</button>` : ""}
+      ${eq.length ? `<button class="btn" data-action="equipoCsv">Descargar CSV</button>` : ""}</div>
+    ${eq.length ? `<div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Puesto</th><th>Correo</th><th></th></tr></thead><tbody>
+      ${eq.map((p, i) => `<tr><td><input data-eq="${i}" data-campo="nombre" value="${esc(p.nombre || "")}"></td>
+        <td><select data-eq="${i}" data-campo="puesto">${PUESTOS_EQUIPO.map(x => `<option ${x === p.puesto ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></td>
+        <td><input data-eq="${i}" data-campo="email" type="email" value="${esc(p.email || "")}" placeholder="nombre@correo.com"></td>
+        <td class="n"><button class="btn small ghost danger" data-action="equipoBorrar" data-i="${i}">Quitar</button></td></tr>`).join("")}
+      </tbody></table></div>
+      ${conMail < eq.length ? `<p class="hint">${eq.length - conMail} ${eq.length - conMail === 1 ? "persona no tiene correo y no podrá recibir el enlace" : "personas no tienen correo y no podrán recibir el enlace"}.</p>` : ""}`
+      : `<p class="empty">Esta tienda todavía no tiene equipo. Añádelo abajo.</p>`}
+    <form class="inline-form" id="formEquipo"><h3>Añadir a ${esc(sel.nombre || "la tienda")}</h3>
+      <label>Nombre<input name="nombre" required placeholder="Nombre y apellido"></label>
+      <label>Puesto<select name="puesto">${PUESTOS_EQUIPO.map(x => `<option>${esc(x)}</option>`).join("")}</select></label>
+      <label>Correo<input name="email" type="email" placeholder="nombre@correo.com"></label>
+      <button class="btn primary" type="submit">Añadir</button></form>
+    <p class="hint">Dato personal de empleados: antes de meter correos reales, confírmalo con IT y con el responsable de protección de datos. La plataforma no guarda nada más que nombre, puesto y correo.</p></section>`;
+}
+const ACCIONES_EQUIPO = {
+  equipoTienda(b) { S.equipoT = b.value; },
+  equipoBorrar(b) {
+    const t = S.tiendas.find(x => x.id === S.equipoT); if (!t) return false;
+    t.equipo = equipoDe(t).filter((_, i) => i !== Number(b.dataset.i));
+    guardar(t); pintar(); return false;
+  },
+  equipoDesdeScorecard() {
+    const t = S.tiendas.find(x => x.id === S.equipoT); if (!t) return false;
+    const eq = equipoDe(t).slice();
+    let n = 0;
+    t.personas.forEach(p => {
+      const nom = (p.nombre || "").trim(); if (!nom) return;
+      if (eq.some(x => (x.nombre || "").trim().toLowerCase() === nom.toLowerCase())) return;
+      eq.push({ nombre: nom, puesto: (C.bonus[p.puesto] || {}).nombre || p.puesto || PUESTOS_EQUIPO[0], email: "" }); n++;
+    });
+    if (!n) { toast("No hay nadie nuevo que traer"); return false; }
+    t.equipo = eq; guardar(t); pintar();
+    toast(n === 1 ? "1 persona traída, ponle el correo" : n + " personas traídas, ponles el correo");
+    return false;
+  },
+  equipoCsv() {
+    const t = S.tiendas.find(x => x.id === S.equipoT); if (!t) return false;
+    const filas = [["Tienda", "Nombre", "Puesto", "Correo"]].concat(equipoDe(t).map(p => [t.nombre, p.nombre, p.puesto, p.email || ""]));
+    const csv = "﻿" + filas.map(f => f.map(x => `"${String(x == null ? "" : x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `equipo-${(t.codigo || t.nombre || "tienda")}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    return false;
+  }
+};
+function anadirAEquipo(ev) {
+  ev.preventDefault();
+  const f = Object.fromEntries(new FormData(ev.target));
+  const t = S.tiendas.find(x => x.id === S.equipoT); if (!t) return;
+  const nom = (f.nombre || "").trim(); if (!nom) return;
+  t.equipo = equipoDe(t).concat([{ nombre: nom, puesto: f.puesto, email: (f.email || "").trim().toLowerCase() }]);
+  guardar(t); pintar(); toast("Añadido a " + (t.nombre || "la tienda"));
+}

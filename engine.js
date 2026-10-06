@@ -529,7 +529,7 @@ const ENPS = { id: "nps", tipo: "nps", t: { es: "¿Qué probabilidad hay de que 
 CONFIG.plantillas.push(
   {
     id: "clima-completo", tipo: "clima", anonima: true, escala: ESCALA5, dimensiones: true,
-    nombre: { es: "Clima: encuesta completa", en: "Engagement: full survey", fr: "Climat : enquête complète" },
+    nombre: { es: "Clima: encuesta completa, anónima", en: "Engagement: full survey, anonymous", fr: "Climat : enquête complète, anonyme" },
     intro: { es: "Es anónima. RR.HH. solo ve resultados agregados de tu tienda, nunca respuestas individuales, y no se publican resultados de tiendas con menos de 4 respuestas.",
              en: "This is anonymous. HR only sees aggregated results for your store, never individual answers, and results are not published for stores with fewer than 4 responses.",
              fr: "Anonyme. Les RH ne voient que des résultats agrégés par magasin, jamais les réponses individuelles, et rien n'est publié en dessous de 4 réponses." },
@@ -542,10 +542,36 @@ CONFIG.plantillas.push(
   },
   {
     id: "clima-pulso", tipo: "clima", anonima: true, escala: ESCALA5, dimensiones: true,
-    nombre: { es: "Clima: pulso trimestral", en: "Engagement: quarterly pulse", fr: "Climat : pulse trimestriel" },
+    nombre: { es: "Clima: pulso trimestral, anónimo", en: "Engagement: quarterly pulse, anonymous", fr: "Climat : pulse trimestriel, anonyme" },
     intro: { es: "Seis preguntas para tomar el pulso entre encuestas completas. Anónima igual que la larga.",
              en: "Six questions to take the pulse between full surveys. Anonymous, same as the long one.",
              fr: "Six questions entre deux enquêtes complètes. Anonyme, comme la longue." },
+    aviso: { es: "Dos minutos. Los resultados se comparan con la ola anterior.", en: "Two minutes. Results are compared with the previous wave.", fr: "Deux minutes. Les résultats sont comparés à la vague précédente." },
+    preguntas: CLIMA_ITEMS.filter(q => ["c1", "l1", "r1", "e2", "d2"].includes(q.id)).concat([ENPS,
+      TXT("t1", "¿Algo que quieras contar?", "Anything you want to tell us?", "Quelque chose à nous dire ?")])
+  },
+  {
+    /* La misma encuesta, pero con nombre. No promete lo que no puede cumplir:
+       el aviso dice en la primera pantalla que RR.HH. ve quién contesta qué.
+       Quien la elija tiene que contárselo al equipo antes de repartirla. */
+    id: "clima-completo-nom", tipo: "clima", anonima: false, escala: ESCALA5, dimensiones: true,
+    nombre: { es: "Clima: encuesta completa, con nombre", en: "Engagement: full survey, named", fr: "Climat : enquête complète, nominative" },
+    intro: { es: "Esta encuesta no es anónima: tu nombre va asociado a tus respuestas y RR.HH. y tu Regional Manager las ven. Se usa para poder hablar contigo de lo que cuentes, no para calificarte.",
+             en: "This survey is not anonymous: your name is attached to your answers and HR and your Regional Manager can see them. It is used to follow up with you, not to rate you.",
+             fr: "Cette enquête n'est pas anonyme : votre nom est associé à vos réponses, que les RH et votre Regional Manager peuvent voir. Elle sert à échanger avec vous, pas à vous évaluer." },
+    aviso: { es: "Se tarda unos 6 minutos. Como no es anónima, contesta solo lo que estés dispuesto a comentar en una conversación.",
+             en: "It takes about 6 minutes. As it is not anonymous, answer only what you are willing to discuss in a conversation.",
+             fr: "Environ 6 minutes. Comme elle n'est pas anonyme, ne répondez que ce que vous accepteriez d'évoquer de vive voix." },
+    preguntas: CLIMA_ITEMS.concat([ENPS,
+      TXT("t1", "Si pudieras cambiar una sola cosa de tu tienda, ¿cuál sería?", "If you could change one single thing about your store, what would it be?", "Si vous pouviez changer une seule chose dans votre magasin, laquelle ?"),
+      TXT("t2", "¿Qué no deberíamos cambiar nunca?", "What should we never change?", "Qu'est-ce qu'il ne faudrait jamais changer ?")])
+  },
+  {
+    id: "clima-pulso-nom", tipo: "clima", anonima: false, escala: ESCALA5, dimensiones: true,
+    nombre: { es: "Clima: pulso trimestral, con nombre", en: "Engagement: quarterly pulse, named", fr: "Climat : pulse trimestriel, nominatif" },
+    intro: { es: "Seis preguntas para tomar el pulso. No es anónima: tu nombre va asociado a tus respuestas.",
+             en: "Six questions to take the pulse. Not anonymous: your name is attached to your answers.",
+             fr: "Six questions pour prendre le pouls. Non anonyme : votre nom est associé à vos réponses." },
     aviso: { es: "Dos minutos. Los resultados se comparan con la ola anterior.", en: "Two minutes. Results are compared with the previous wave.", fr: "Deux minutes. Les résultats sont comparés à la vague précédente." },
     preguntas: CLIMA_ITEMS.filter(q => ["c1", "l1", "r1", "e2", "d2"].includes(q.id)).concat([ENPS,
       TXT("t1", "¿Algo que quieras contar?", "Anything you want to tell us?", "Quelque chose à nous dire ?")])
