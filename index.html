@@ -256,10 +256,13 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--mist)}
 /* Plataforma */
 .logo{display:block;flex:none}
 .brand .logo{width:36px;height:36px}
-.mainnav{display:flex;gap:4px;margin-left:8px}
-.mainnav button{border:0;background:transparent;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;color:var(--muted)}
-.mainnav button:hover{color:var(--ink);background:var(--mist)}
-.mainnav button.on{color:var(--ink);background:var(--mist);box-shadow:inset 0 -2px 0 var(--red)}
+/* Las pestañas del apartado van en su propia fila, debajo de la cabecera */
+.mainnav{order:9;flex-basis:100%;display:flex;gap:0;min-width:0;margin:4px -20px -8px;padding:0 14px;
+  border-top:1px solid var(--mist);overflow-x:auto;scrollbar-width:thin}
+.mainnav button{white-space:nowrap;flex:none;border:0;background:transparent;padding:9px 12px 8px;
+  cursor:pointer;font-weight:600;font-size:14px;color:var(--muted);border-bottom:2px solid transparent}
+.mainnav button:hover{color:var(--ink)}
+.mainnav button.on{color:var(--ink);border-bottom-color:var(--red)}
 .user{position:relative}
 .user summary{list-style:none;cursor:pointer;padding:6px 10px;border-radius:6px;font-weight:600;display:flex;gap:8px;align-items:baseline}
 .user summary::-webkit-details-marker{display:none}
@@ -356,8 +359,8 @@ input.short2{max-width:140px}
 .act{max-height:360px;overflow:auto}
 code{font-size:13px;background:var(--mist);padding:1px 6px;border-radius:4px}
 .pr-head{display:flex;gap:14px;align-items:center}
-@media (max-width:1000px){ .kpis{grid-template-columns:1fr 1fr} aside#side{top:auto;height:auto;position:static;max-height:50vh} .mainnav{order:5;flex-basis:100%;margin:0;overflow-x:auto} }
-@media (max-width:640px){ .page{padding:16px} .user summary small{display:none} }
+@media (max-width:1000px){ .kpis{grid-template-columns:1fr 1fr} aside#side{top:auto;height:auto;position:static;max-height:50vh} }
+@media (max-width:640px){ .page{padding:16px} .user summary small{display:none} .mainnav{margin:4px -16px -8px;padding:0 10px} header.top{padding:8px 16px} }
 
 
 :root{--solid:#1C2733;--infobg:#E6EEF6;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -669,7 +672,7 @@ svg.chart .lbl{fill:var(--ink);font-size:11.5px;font-weight:700}
 .hoy-l span{flex:1;min-width:0;font-size:14.5px}
 .hoy-l small{flex:none;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
 .hoy-ok{margin:0;color:var(--l2);font-weight:600}
-.busca-g{position:relative;flex:0 1 300px;min-width:0}
+.busca-g{position:relative;flex:1 1 190px;min-width:0;max-width:320px}
 .busca-g input{padding:6px 10px;font-size:13.5px;border-radius:8px;background:var(--mist);border-color:transparent}
 .busca-g input:focus{background:var(--paper);border-color:var(--ink)}
 #buscaRes{position:absolute;top:calc(100% + 6px);left:0;right:0;min-width:320px;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:6px;z-index:12;max-height:60vh;overflow:auto}
@@ -678,7 +681,7 @@ svg.chart .lbl{fill:var(--ink);font-size:11.5px;font-weight:700}
 #buscaRes small{flex:none;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--red);min-width:64px}
 #buscaRes b{font-weight:600} #buscaRes span{font-size:12.5px;color:var(--muted);flex-basis:100%;padding-left:72px}
 #buscaRes p{margin:0;padding:8px 10px;font-size:13px}
-@media (max-width:1000px){.busca-g{order:6;flex-basis:100%}#buscaRes{right:auto;width:min(420px,100%)}}
+@media (max-width:1000px){.busca-g{order:6;flex-basis:100%;max-width:none}#buscaRes{right:auto;width:min(420px,100%)}}
 @media (max-width:640px){.busca-g input{font-size:15px}}
 
 .mod.externo{text-decoration:none;border-style:dashed}

@@ -112,6 +112,28 @@ Todos los apartados de la portada quedan en marcha. Desaparece el bloque «En pr
 
 - **El aviso del modo demostración listaba usuarios que ya no existen** (`rm.norte`, `rm.centro`, `rm.sur`, de una versión anterior). Los que crea hoy son `admin`, `rm.es`, `rm.pt` y `marketing`. Quien abría `?demo` y los copiaba recibía «Usuario o contraseña incorrectos». Corregido en los tres idiomas, y el aviso explica además cómo volver al acceso real quitando `?demo` de la dirección.
 
+## 0.15.0 · 06/10/2026 · **SQL: no**
+
+El menú pasa de **catorce tarjetas a seis**. No se ha quitado ninguna función: lo que antes era un apartado suelto ahora es una pestaña dentro del apartado que le corresponde.
+
+| Apartado | Pestañas |
+|---|---|
+| **Evaluación y Desarrollo** | Scorecard · Consolidado (RR.HH.) · Talent Matrix · Mapa 9-Box (RR.HH.) · Onboarding · Offboarding |
+| **People Data Centre** | — |
+| **PRL** | Bajas y absentismo · Prevención · Clima |
+| **Formaciones** | Formaciones · Pruebas situacionales |
+| **Process Book y Políticas** | Process Book · Políticas |
+| **HomeTime** | enlace externo |
+
+Más, en detalle:
+
+- **Mystery Shopper sale del menú.** Las campañas y respuestas que hubiera siguen en la base de datos intactas; simplemente ya no hay tarjeta que las abra. Si algún día se quiere recuperar, es una línea de código. Retail Marketing, que antes veía People Data Centre y Mystery Shopper, ahora solo ve el primero.
+- **La tarjeta del People Data Centre pierde la lista de KPIs** (productividad por hora trabajada, headcount por hora de apertura…). Se veía bien en la portada pero cargaba la tarjeta de texto que solo importa una vez dentro.
+- **Las pestañas van en su propia fila**, bajo la cabecera, con la activa subrayada en rojo. Con seis pestañas ya no caben al lado del nombre del apartado, y así se comportan igual en móvil y en escritorio.
+- **El resumen de cada tarjeta se ha rehecho** para que resuma el conjunto: Evaluación y Desarrollo muestra cierres anuales y fichas de talento; PRL, absentismo y formación de prevención al día; Formaciones, cursos completados y pruebas respondidas; Process Book y Políticas, cuántas fichas hay de cada uno.
+- **Internamente**, la pestaña del apartado pasa a vivir en `S.tab`, separada de `S.vista`, que queda solo para las vistas internas de Formaciones (recorrido, chuleta, test, práctica con IA y arcade). Antes compartían variable y al agrupar habrían chocado.
+- **Arreglado en el modo demostración**: al abrir un cuestionario con código, las respuestas se devolvían por referencia, así que ir respondiendo modificaba la fila guardada antes de pulsar Enviar. Ahora se devuelve una copia. En Supabase real nunca pasó, porque los datos viajan por la red.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

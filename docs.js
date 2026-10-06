@@ -10,6 +10,8 @@
    volver a la versión base.
    ============================================================================= */
 const DOCS_TIPOS = ["process", "politica"];
+/* Qué libro se está mirando: lo dice la pestaña del apartado */
+function docTipo() { return DOCS_TIPOS.includes(S.tab) ? S.tab : "process"; }
 
 function docsEstado() {
   S.docs = S.docs || { sel: null, busca: "", edit: null };
@@ -171,40 +173,40 @@ const ACCIONES_DOCS = {
   docAbrir(b) { docsEstado().sel = b.dataset.id; window.scrollTo(0, 0); },
   docVolver() { docsEstado().sel = null; },
   docCheck(b) {
-    const st = docsEstado(), i = Number(b.dataset.i), lista = checksDe(S.modulo, st.sel);
+    const st = docsEstado(), i = Number(b.dataset.i), lista = checksDe(docTipo(), st.sel);
     const k = lista.indexOf(i); if (k >= 0) lista.splice(k, 1); else lista.push(i);
-    guardarChecks(S.modulo, st.sel, lista);
+    guardarChecks(docTipo(), st.sel, lista);
   },
-  docDesmarcar() { guardarChecks(S.modulo, docsEstado().sel, []); },
-  docImprimir() { $("print").innerHTML = informeDoc(S.modulo); window.print(); return false; },
+  docDesmarcar() { guardarChecks(docTipo(), docsEstado().sel, []); },
+  docImprimir() { $("print").innerHTML = informeDoc(docTipo()); window.print(); return false; },
   docNuevo() { if (!esAdmin()) return false; docsEstado().edit = { nuevo: true, id: "d" + Date.now().toString(36) }; window.scrollTo(0, 0); },
-  docEditar(b) { if (!esAdmin()) return false; const L = libro(S.modulo), x = L.items.find(y => y.id === b.dataset.id); docsEstado().edit = JSON.parse(JSON.stringify(x)); window.scrollTo(0, 0); },
+  docEditar(b) { if (!esAdmin()) return false; const L = libro(docTipo()), x = L.items.find(y => y.id === b.dataset.id); docsEstado().edit = JSON.parse(JSON.stringify(x)); window.scrollTo(0, 0); },
   docEditCancelar() { docsEstado().edit = null; },
   async docBorrar() {
-    const st = docsEstado(), cuerpo = cuerpoEditable(S.modulo), x = cuerpo.items.find(y => y.id === st.edit.id);
+    const st = docsEstado(), cuerpo = cuerpoEditable(docTipo()), x = cuerpo.items.find(y => y.id === st.edit.id);
     if (!confirm(`¿Eliminar la ficha «${x.t}»? Se puede recuperar restaurando la versión base.`)) return false;
     cuerpo.items = cuerpo.items.filter(y => y.id !== x.id);
-    if (!(await guardarDocumento(S.modulo, cuerpo))) return false;
-    log(`${DOCS_BASE[S.modulo].titulo}: ficha «${x.t}» eliminada`); st.edit = null; st.sel = null;
+    if (!(await guardarDocumento(docTipo(), cuerpo))) return false;
+    log(`${DOCS_BASE[docTipo()].titulo}: ficha «${x.t}» eliminada`); st.edit = null; st.sel = null;
   },
   async docMover(b) {
-    const st = docsEstado(), cuerpo = cuerpoEditable(S.modulo), d = Number(b.dataset.d);
+    const st = docsEstado(), cuerpo = cuerpoEditable(docTipo()), d = Number(b.dataset.d);
     const i = cuerpo.items.findIndex(y => y.id === st.edit.id), j = i + d;
     if (i < 0 || j < 0 || j >= cuerpo.items.length) return false;
     [cuerpo.items[i], cuerpo.items[j]] = [cuerpo.items[j], cuerpo.items[i]];
-    if (!(await guardarDocumento(S.modulo, cuerpo))) return false;
+    if (!(await guardarDocumento(docTipo(), cuerpo))) return false;
     toast("Orden guardado"); return false;
   },
   async docRestaurar() {
     if (!confirm("Se descartan todas las ediciones de RR.HH. y vuelve el contenido base de la plataforma. ¿Seguimos?")) return false;
-    const r = await sb.from("documentos").delete().eq("clave", S.modulo);
+    const r = await sb.from("documentos").delete().eq("clave", docTipo());
     if (r.error) { alert(traducirError(r.error)); return false; }
-    delete S.documentos[S.modulo]; log(`${DOCS_BASE[S.modulo].titulo}: restaurada la versión base`); toast("Versión base restaurada");
+    delete S.documentos[docTipo()]; log(`${DOCS_BASE[docTipo()].titulo}: restaurada la versión base`); toast("Versión base restaurada");
   }
 };
 document.addEventListener("input", e => {
   if (e.target.id !== "docsBusca") return;
   docsEstado().busca = e.target.value; const foco = e.target.selectionStart;
-  pintarDocs(S.modulo);
+  pintarDocs(docTipo());
   const n = $("docsBusca"); if (n) { n.focus(); n.setSelectionRange(foco, foco); }
 });

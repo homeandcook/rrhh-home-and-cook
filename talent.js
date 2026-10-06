@@ -235,6 +235,6 @@ const ACCIONES_TALENT = {
     if (!confirm("La ficha volverá a ser editable. La reapertura queda registrada.")) return false;
     delete talFicha(p).cerrado; log(`Ficha de talento reabierta: ${p.nombre} (${t.nombre})`, t); guardar(t);
   },
-  talAbrir(b) { S.modulo = "talent"; S.vista = "eval"; S.ui = { t: b.dataset.t, p: b.dataset.p, fase: "talent" }; },
+  talAbrir(b) { S.modulo = "evaluacion"; S.tab = "talent"; S.ui = { t: b.dataset.t, p: b.dataset.p, fase: "talent" }; },
   talCsv() { talCsv(); return false; }
 };

@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.14.1";
+const APP_VERSION = "0.15.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -8,7 +8,7 @@ const C = SC.CONFIG, esc = SC.esc, K = window.APP_CONFIG || {};
 let sb = null;
 const S = {
   me: null, perfiles: [], tiendas: [], actividad: [],
-  modulo: "inicio", curso: null, paso: null, chuleta: false, fam: 0, prod: null, busca: "", campanas: [], invitaciones: [], campana: null, vista: "eval", ui: { t: null, p: null, fase: "obj" },
+  modulo: "inicio", tab: "eval", curso: null, paso: null, chuleta: false, fam: 0, prod: null, busca: "", campanas: [], invitaciones: [], campana: null, vista: "recorrido", ui: { t: null, p: null, fase: "obj" },
   sucios: new Set(), guardando: false, errorGuardado: null,
   f: { per: "fy", rm: "", puesto: "", estado: "", orden: "bonus", dir: -1 }
 };
@@ -24,7 +24,7 @@ const esAdmin = () => S.me && S.me.rol === "admin";
    toda la red. El corte de verdad está en la base de datos (no puede leer
    la tabla de tiendas); esto solo evita enseñarle puertas cerradas. */
 const esMarketing = () => S.me && S.me.rol === "marketing";
-const MODULOS_MARKETING = ["pdc", "mystery"];
+const MODULOS_MARKETING = ["pdc"];
 const puedeVer = id => !esMarketing() || MODULOS_MARKETING.includes(id);
 const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
 function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove("on"), 2800); }
@@ -172,7 +172,7 @@ async function entrar() {
   const { data: me, error } = await sb.from("perfiles").select("*").eq("id", ses.session.user.id).maybeSingle();
   if (error) return pantallaLogin(traducirError(error));
   if (!me || !me.activo) { await sb.auth.signOut(); return pantallaLogin("Tu usuario no tiene acceso a la plataforma. Contacta con RR.HH."); }
-  S.me = me; S.modulo = "inicio"; S.vista = "eval"; S.ui = { t: null, p: null, fase: "obj" };
+  S.me = me; S.modulo = "inicio"; S.tab = "eval"; S.vista = "recorrido"; S.ui = { t: null, p: null, fase: "obj" };
   await recargar();
 }
 async function recargar() {
@@ -264,45 +264,40 @@ function autoGrow(el) { el.style.height = "auto"; el.style.height = el.scrollHei
 
 /* =================== Estructura =================== */
 const MODULOS = [
-  { id: "scorecard", t: "Scorecard Retail", grupo: "activo",
-    d: "Objetivos de tienda, seguimiento de 6 meses, cierre anual y cálculo del bonus del Store Manager y del Assistant Store Manager.",
-    tabs: [["eval", "Evaluaciones"], ["consolidado", "Consolidado", true]] },
-  { id: "talent", t: "Talent Matrix", grupo: "activo",
-    d: "Desempeño y potencial de cada responsable de tienda, riesgo de salida, sucesión y plan de desarrollo. Matriz 9-Box para RR.HH.",
-    tabs: [["eval", "Fichas"], ["mapa", "Mapa de talento", true]] },
-  { id: "pdc", t: "People Data Centre", grupo: "activo", abrible: true,
-    d: "El cuadro de mando de personas de la red: productividad, dotación por hora de apertura y ajuste de la plantilla al tráfico.",
-    kpis: [
-      { t: "Productividad por hora trabajada", f: "Facturación del periodo ÷ horas realmente trabajadas",
-        q: "Cuánta venta genera cada hora de trabajo en la tienda.", d: "Ventas del TPV y horas del control horario." },
-      { t: "Headcount por hora de apertura", f: "Horas de plantilla en sala ÷ horas de apertura",
-        q: "Cuántas personas hay de media en sala mientras la tienda está abierta.", d: "Horarios publicados y calendario de apertura de cada tienda." },
-      { t: "Horas contratadas por hora de apertura", f: "Horas contratadas de la semana ÷ horas de apertura de la semana",
-        q: "Si la plantilla contratada da para cubrir el horario comercial sin tensión.", d: "Contratos vigentes y horario comercial." },
-      { t: "Facturación por hora contratada", f: "Facturación del periodo ÷ horas contratadas",
-        q: "El coste de plantilla que sostiene cada euro vendido, en horas.", d: "Ventas del TPV y contratos vigentes." },
-      { t: "Staff adaptation to traffic", f: "Reparto de horas planificadas frente al tráfico por franja horaria",
-        q: "Si las horas están donde está la gente: mañanas, tardes, fines de semana y campaña.", d: "Contador de tráfico por franja y horarios planificados." }
-    ] },
-  { id: "bajas", t: "Bajas y absentismo", grupo: "activo",
-    d: "Registro de bajas por tienda y tasa de absentismo de la red. Se guarda la contingencia y las fechas, nunca el diagnóstico." },
-  { id: "onboarding", t: "Onboarding y Offboarding", grupo: "activo", tipoPrueba: "onboarding",
-    tabs: [["onboarding", "Onboarding"], ["offboarding", "Offboarding"]], d: "" },
-  { id: "formacion", t: "Formaciones", grupo: "activo", d: "" },
-  { id: "hometime", t: "HomeTime", grupo: "externo", enlace: "hometime", d: "" },
-  { id: "process", t: "Process Book", grupo: "activo",
-    d: "Los procesos de tienda en un solo sitio: apertura y cierre, caja, inventario, incidencias y onboarding del nuevo equipo." },
-  { id: "politica", t: "Política de RR.HH.", grupo: "activo",
-    d: "Las normas que el equipo de tienda consulta a diario: vacaciones, permisos, fichaje, uniformidad, gastos y canal de dudas." },
-  { id: "clima", t: "Encuesta de Clima", grupo: "activo", tipoPrueba: "clima",
-    d: "Encuesta anónima por tienda: se reparten códigos sueltos, el equipo responde sin usuario y los resultados se ven agregados." },
+  { id: "evaluacion", t: "Evaluación y Desarrollo", grupo: "activo",
+    d: "Objetivos y bonus del Store Manager, mapa de talento de la red, y las encuestas de incorporación y de salida.",
+    tabs: [["eval", "Scorecard"], ["consolidado", "Consolidado", true], ["talent", "Talent Matrix"],
+           ["mapa", "Mapa 9-Box", true], ["onboarding", "Onboarding"], ["offboarding", "Offboarding"]] },
+  { id: "pdc", t: "People Data Centre", grupo: "activo",
+    d: "El cuadro de mando de personas de la red: productividad, dotación por hora de apertura y ajuste de la plantilla al tráfico." },
   { id: "prl", t: "PRL", grupo: "activo",
-    d: "Prevención de riesgos en tienda: formación asignada y realizada, evaluaciones de riesgos, reconocimientos médicos e incidencias." },
-  { id: "mystery", t: "Mystery Shopper", grupo: "activo", tipoPrueba: "mystery",
-    d: "Ficha de visita por tienda: el visitante entra con un código, rellena y el resultado aparece aquí por tienda y por pregunta." },
-  { id: "psico", t: "Pruebas situacionales", grupo: "activo", tipoPrueba: "psico",
-    d: "Envío de pruebas situacionales de tienda con un código de un solo uso, seguimiento de quién ha respondido y resultado por persona." }
+    d: "Salud y seguridad de la red: bajas y absentismo, formación y revisiones de prevención, y el clima de las tiendas, que es donde se ven los riesgos psicosociales.",
+    tabs: [["bajas", "Bajas y absentismo"], ["prevencion", "Prevención"], ["clima", "Clima"]] },
+  { id: "formacion", t: "Formaciones", grupo: "activo",
+    d: "Cinco formaciones breves para el equipo de tienda, con test, y las pruebas situacionales de selección.",
+    tabs: [["cursos", "Formaciones"], ["psico", "Pruebas situacionales"]] },
+  { id: "docs", t: "Process Book y Políticas", grupo: "activo",
+    d: "Los procesos de tienda paso a paso y las normas que el equipo consulta a diario, en un solo sitio.",
+    tabs: [["process", "Process Book"], ["politica", "Políticas"]] },
+  { id: "hometime", t: "HomeTime", grupo: "externo", enlace: "hometime", d: "" }
 ];
+/* Qué apartado y qué pestaña corresponden a cada cuestionario con código */
+const TAB_PRUEBA = { onboarding: ["evaluacion", "onboarding"], offboarding: ["evaluacion", "offboarding"],
+                     clima: ["prl", "clima"], psico: ["formacion", "psico"] };
+/* Pestaña por defecto al entrar en un apartado */
+function tabPorDefecto(id) {
+  const m = MODULOS.find(x => x.id === id);
+  if (!m || !m.tabs) return null;
+  const t = m.tabs.filter(x => !x[2] || esAdmin());
+  return (t[0] || [])[0];
+}
+/* La pestaña activa, siempre válida para el apartado en el que estamos */
+function tabActual() {
+  const m = modActual();
+  if (!m || !m.tabs) return null;
+  const ok = m.tabs.filter(x => !x[2] || esAdmin()).map(x => x[0]);
+  return ok.includes(S.tab) ? S.tab : (S.tab = ok[0]);
+}
 function modActual() { return MODULOS.find(m => m.id === S.modulo); }
 function pintar() {
   if (!S.me) return;
@@ -311,7 +306,7 @@ function pintar() {
   $("app").innerHTML = `<header class="top">
       <button class="brand" data-action="inicio" title="${t("inicio")}">${logo(30)}${marcaSVG("linea", 17)}</button>
       ${m ? `<span class="modname">${esc(modTxt(m.id, 0))}</span>` : ""}
-      ${tabs.length > 1 ? `<nav class="mainnav">${tabs.map(([id, t]) => `<button class="${S.vista === id ? "on" : ""}" data-action="vista" data-v="${id}">${t}</button>`).join("")}</nav>` : ""}
+      ${tabs.length > 1 ? `<nav class="mainnav">${tabs.map(([id, t]) => `<button class="${tabActual() === id ? "on" : ""}" data-action="tab" data-v="${id}">${t}</button>`).join("")}</nav>` : ""}
       <div class="spacer"></div>
       <div class="busca-g"><input id="buscaGlobal" type="search" placeholder="Buscar tienda, persona o apartado" autocomplete="off" aria-label="Búsqueda rápida"><div id="buscaRes" hidden></div></div>
       <span id="estadoGuardado" class="saved"></span>
@@ -323,14 +318,22 @@ function pintar() {
     <div id="vista"></div><div id="print"></div>`;
   pintarEstado();
   if (S.modulo === "gestion" && esAdmin()) return pintarGestion();
-  if (S.modulo === "scorecard") return S.vista === "consolidado" && esAdmin() ? pintarConsolidado() : pintarModulo("scorecard");
-  if (S.modulo === "talent") return S.vista === "mapa" && esAdmin() ? pintarMapaTalento() : pintarModulo("talent");
+  const tab = tabActual();
+  if (S.modulo === "evaluacion") {
+    if (tab === "consolidado") return pintarConsolidado();
+    if (tab === "mapa") return pintarMapaTalento();
+    if (tab === "talent") return pintarModulo("talent", "Talent Matrix");
+    if (tab === "onboarding" || tab === "offboarding") return pintarPruebas(tab);
+    return pintarModulo("scorecard", "Scorecard Retail");
+  }
+  if (S.modulo === "prl") {
+    if (tab === "bajas") return pintarBajas();
+    if (tab === "clima") return pintarPruebas("clima");
+    return pintarPrl();
+  }
+  if (S.modulo === "formacion") return tab === "psico" ? pintarPruebas("psico") : pintarFormaciones();
+  if (S.modulo === "docs") return pintarDocs(tab);
   if (S.modulo === "pdc") return pintarPDC();
-  if (S.modulo === "bajas") return pintarBajas();
-  if (S.modulo === "prl") return pintarPrl();
-  if (S.modulo === "formacion") return pintarFormaciones();
-  if (DOCS_TIPOS.includes(S.modulo)) return pintarDocs(S.modulo);
-  if (m && m.tipoPrueba) return pintarPruebas(m.id === "onboarding" ? (S.vista === "offboarding" ? "offboarding" : "onboarding") : m.tipoPrueba);
   pintarInicio();
 }
 function pintarInicio() {
@@ -338,37 +341,29 @@ function pintarInicio() {
     if (m.grupo === "pendiente") return t("enPreparacion");
     if (m.id === "formacion") {
       const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0;
-      const enCurso = CURSOS.filter(c => !progresoCurso(c.id).completado && (progresoCurso(c.id).vistos || []).length).length;
-      return n === CURSOS.length ? "Las 5 formaciones completadas" : `${CURSOS.length} formaciones · ${n} ${n === 1 ? "completada" : "completadas"}${enCurso ? `, ${enCurso} en curso` : ""}`;
-    }
-    if (m.tipoPrueba) {
-      const cs = (S.campanas || []).filter(c => c.tipo === m.tipoPrueba);
-      if (!cs.length) return "Sin campañas todavía";
+      const cs = (S.campanas || []).filter(c => c.tipo === "psico");
       const inv = (S.invitaciones || []).filter(i => cs.some(c => c.id === i.campana_id));
-      return `${inv.filter(i => i.estado === "respondida").length} de ${inv.length} códigos respondidos`;
+      const pruebas = inv.length ? ` · ${inv.filter(i => i.estado === "respondida").length} de ${inv.length} pruebas` : "";
+      return `${CURSOS.length} formaciones · ${n} ${n === 1 ? "completada" : "completadas"}${pruebas}`;
     }
-    if (DOCS_TIPOS.includes(m.id)) { const L = libro(m.id); return `${L.items.length} fichas${L.editado ? " · editado por RR.HH." : ""}`; }
+    if (m.id === "docs") return `${libro("process").items.length} procesos · ${libro("politica").items.length} fichas de política`;
     if (m.id === "prl") {
-      const R = S.tiendas.map(resumenPrl), per = R.reduce((s, x) => s + x.personas, 0), ok = R.reduce((s, x) => s + x.alDia, 0), pend = R.reduce((s, x) => s + x.revVencidas, 0);
-      if (!per) return "Sin plantilla registrada todavía";
-      return `${SC.pct(ok / per, 0)} con formación al día · ${pend} ${pend === 1 ? "revisión pendiente" : "revisiones pendientes"}`;
-    }
-    if (m.id === "bajas") {
       const a = SC.absentismo(S.tiendas, mesesDisponibles());
-      if (!a.procesos) return "Sin bajas registradas";
-      return a.tasa == null ? `${a.dias} días perdidos en ${a.procesos} procesos`
-        : `${SC.fmt(a.tasa, 1)} % de absentismo · ${a.abiertos} sin alta`;
+      const R = S.tiendas.map(resumenPrl), per = R.reduce((s2, x) => s2 + x.personas, 0), ok = R.reduce((s2, x) => s2 + x.alDia, 0);
+      const abs = a.tasa == null ? (a.procesos ? `${a.dias} días perdidos` : "Sin bajas registradas") : `${SC.fmt(a.tasa, 1)} % de absentismo`;
+      return per ? `${abs} · ${SC.pct(ok / per, 0)} con formación PRL al día` : abs;
     }
     if (m.id === "pdc") {
       const ms = mesesDisponibles(), k = ms.length ? SC.kpis(S.tiendas, ms) : null;
       return k && k.ventas ? `${SC.eur(k.ventas, 0)} en ${k.nTiendas} tiendas` : "Sin datos cargados todavía";
     }
-    if (m.id === "scorecard") {
-      const n = S.tiendas.reduce((s, t) => s + t.personas.filter(p => (p.evals || {}).fy && p.evals.fy.cerrado).length, 0);
-      return `${n} de ${S.tiendas.reduce((s, t) => s + t.personas.length, 0)} cierres anuales completados`;
+    if (m.id === "evaluacion") {
+      const cierres = S.tiendas.reduce((s2, t2) => s2 + t2.personas.filter(p => (p.evals || {}).fy && p.evals.fy.cerrado).length, 0);
+      const total = S.tiendas.reduce((s2, t2) => s2 + t2.personas.length, 0);
+      const fichas = S.tiendas.flatMap(t2 => t2.personas.map(p => SC.talent(t2, p)));
+      return `${cierres} de ${total} cierres anuales · ${fichas.filter(x => x.cerrado).length} de ${fichas.length} fichas de talento`;
     }
-    const xs = S.tiendas.flatMap(t => t.personas.map(p => SC.talent(t, p)));
-    return `${xs.filter(x => x.cerrado).length} de ${xs.length} fichas cerradas`;
+    return "";
   };
   const tarjeta = m => m.grupo === "externo"
     ? `<a class="mod externo" href="${esc((K.enlaces || {})[m.enlace] || "#")}" target="_blank" rel="noopener noreferrer">
@@ -424,7 +419,7 @@ function pintarSide() {
   el.innerHTML = h;
 }
 const FASES = [["obj", "1", "Objetivos"], ["s1", "2", "Seguimiento 6 meses"], ["fy", "3", "Cierre anual"], ["pdi", "4", "Desarrollo"]];
-function pintarModulo(modulo) {
+function pintarModulo(modulo, rotulo) {
   $("vista").innerHTML = `<div class="layout"><aside id="side"></aside><main id="main"></main></div>`;
   pintarSide();
   const m = $("main"), t = tienda();
@@ -432,7 +427,7 @@ function pintarModulo(modulo) {
     <button class="step aux ${S.ui.fase === "reglas" ? "on" : ""}" data-action="fase" data-f="reglas">Reglas de cálculo</button></nav>` : "";
   if (modulo === "scorecard" && S.ui.fase === "reglas") { m.innerHTML = cab + vistaReglas(); return; }
   if (!t) {
-    m.innerHTML = cab + `<div class="empty big"><h1>${esc(modActual().t)}</h1><p>${S.tiendas.length ? "Elige una tienda en la lista para trabajar en ella." : esAdmin() ? "Empieza creando los usuarios de los Regional Managers y sus tiendas." : "Cuando RR.HH. te asigne tiendas aparecerán aquí."}</p>
+    m.innerHTML = cab + `<div class="empty big"><h1>${esc(rotulo || modActual().t)}</h1><p>${S.tiendas.length ? "Elige una tienda en la lista para trabajar en ella." : esAdmin() ? "Empieza creando los usuarios de los Regional Managers y sus tiendas." : "Cuando RR.HH. te asigne tiendas aparecerán aquí."}</p>
       ${esAdmin() && !S.tiendas.length ? `<button class="btn primary" data-action="modulo" data-m="gestion">Ir a Usuarios y tiendas</button>` : ""}</div>`;
     return;
   }
@@ -825,12 +820,12 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", async e => {
   const el = e.target;
-  if (el.dataset.scope && (el.type === "radio" || el.tagName === "SELECT")) { pintarModulo(S.modulo); return; }
+  if (el.dataset.scope && (el.type === "radio" || el.tagName === "SELECT")) { pintar(); return; }
   if (el.dataset.pdc) { filtroPDC()[el.dataset.pdc] = el.value; pintarPDC(); return; }
   if (el.dataset.bajas) { filtroBajas()[el.dataset.bajas] = el.value; pintarBajas(); return; }
   if (el.dataset.action === "selTiendaSel") { S.ui.t = el.value; S.ui.p = null; pintar(); return; }
   if (el.dataset.alta) { if (el.value) cerrarBaja(el.dataset.alta, el.value); return; }
-  if (el.dataset.f) { S.f[el.dataset.f] = el.value; S.modulo === "talent" ? pintarMapaTalento() : pintarConsolidado(); return; }
+  if (el.dataset.f) { S.f[el.dataset.f] = el.value; S.tab === "mapa" ? pintarMapaTalento() : pintarConsolidado(); return; }
   if (el.dataset.asignar) {
     const t = S.tiendas.find(x => x.id === el.dataset.asignar);
     const { error } = await sb.from("tiendas").update({ rm_id: el.value || null }).eq("id", t.id).select();
@@ -854,11 +849,22 @@ document.addEventListener("click", async e => {
   const acciones = Object.assign({
     idioma() { setLang(b.dataset.l); },
     inicio() { S.modulo = "inicio"; b.closest("details") && (b.closest("details").open = false); },
-    modulo() { if (!puedeVer(b.dataset.m)) return false; S.modulo = b.dataset.m; S.campana = null;
+    modulo() {
+      if (!puedeVer(b.dataset.m)) return false;
+      S.modulo = b.dataset.m; S.campana = null;
       if (S.docs) { S.docs.sel = null; S.docs.edit = null; S.docs.busca = ""; }
-      if (S.modulo === "formacion") { S.curso = null; S.chuleta = false; b.closest("details") && (b.closest("details").open = false); return; }
-      if (MODULOS.some(x => x.id === S.modulo && x.tipoPrueba)) { b.closest("details") && (b.closest("details").open = false); return; } if (S.modulo === "pdc") { b.closest("details") && (b.closest("details").open = false); return; } S.vista = S.modulo === "talent" ? (esAdmin() ? "mapa" : "eval") : "eval"; if (S.modulo === "talent") S.ui.fase = "talent"; else if (S.ui.fase === "talent") S.ui.fase = "obj"; b.closest("details") && (b.closest("details").open = false); },
-    vista() { S.vista = b.dataset.v; if (S.vista === "eval" && S.modulo === "talent") S.ui.fase = "talent"; },
+      S.tab = tabPorDefecto(S.modulo);
+      if (S.modulo === "formacion") { S.curso = null; S.chuleta = false; S.vista = "recorrido"; }
+      if (S.modulo === "evaluacion") S.ui.fase = "obj";
+      b.closest("details") && (b.closest("details").open = false);
+    },
+    tab() {
+      S.tab = b.dataset.v; S.campana = null;
+      if (S.modulo === "evaluacion") S.ui.fase = S.tab === "talent" ? "talent" : (S.ui.fase === "talent" ? "obj" : S.ui.fase);
+      if (S.modulo === "formacion") { S.curso = null; S.chuleta = false; S.vista = "recorrido"; }
+      if (S.docs) { S.docs.sel = null; S.docs.edit = null; S.docs.busca = ""; }
+      window.scrollTo(0, 0);
+    },
     salir() { salir(); return false; },
     reintentar() { S.errorGuardado = null; volcar(); return false; },
     async miPassword() {
@@ -870,8 +876,8 @@ document.addEventListener("click", async e => {
       alert(error ? "No se ha podido cambiar: " + traducirError(error) : "Contraseña cambiada."); return false;
     },
     selTienda() { S.ui.t = b.dataset.id; S.ui.p = null; if (S.ui.fase === "reglas") S.ui.fase = "obj"; },
-    irTienda() { S.modulo = "scorecard"; S.vista = "eval"; S.ui.t = b.dataset.id; S.ui.p = null; S.ui.fase = "obj"; },
-    abrirEval() { S.modulo = "scorecard"; S.vista = "eval"; S.ui.t = b.dataset.t; S.ui.p = b.dataset.p; S.ui.fase = S.f.per; },
+    irTienda() { S.modulo = "evaluacion"; S.tab = "eval"; S.ui.t = b.dataset.id; S.ui.p = null; S.ui.fase = "obj"; },
+    abrirEval() { S.modulo = "evaluacion"; S.tab = "eval"; S.ui.t = b.dataset.t; S.ui.p = b.dataset.p; S.ui.fase = S.f.per; },
     fase() { S.ui.fase = b.dataset.f; },
     selPersona() { S.ui.p = b.dataset.id; },
     nuevaPersona() { const np = { id: SC.uid(), nombre: "", puesto: t.personas.some(p => p.puesto === "SM") ? "ASM" : "SM", prorrata: 100, evals: {}, pdi: {} }; t.personas.push(np); S.ui.p = np.id; guardar(t); },

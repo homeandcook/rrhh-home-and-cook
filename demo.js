@@ -112,7 +112,8 @@ window.crearClienteDemo = function () {
           const c = db.campanas.find(x => x.id === i.campana_id), t = db.tiendas.find(x => x.id === i.tienda_id);
           if (i.estado === "pendiente" && c.estado === "abierta") { i.estado = "abierta"; i.abierto = new Date().toISOString(); save(); }
           return r({ data: { titulo: c.titulo, plantilla: c.plantilla, tipo: c.tipo, campana_estado: c.estado, estado: i.estado,
-            destinatario: i.destinatario, tienda: t ? t.nombre : null, respuestas: i.estado === "respondida" ? {} : (i.respuestas || {}) }, error: null });
+            destinatario: i.destinatario, tienda: t ? t.nombre : null,
+            respuestas: i.estado === "respondida" ? {} : clone(i.respuestas || {}) }, error: null });
         }
         if (fn === "invitacion_responder") {
           const i = db.invitaciones.find(x => x.codigo === String(a.p_codigo || "").trim().toUpperCase());
