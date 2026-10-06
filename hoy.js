@@ -64,10 +64,11 @@ function avisosHoy() {
   const orden = { alerta: 0, aviso: 1, info: 2 };
   return A.sort((a, b) => orden[a.nivel] - orden[b.nivel]);
 }
-function bloqueHoy() {
-  const A = avisosHoy();
+function bloqueHoy(A) {
+  A = A || avisosHoy();
   const hoy = (d => d.charAt(0).toUpperCase() + d.slice(1))(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }));
-  return `<section class="hoy"><div class="hoy-h"><h2 class="grupo" style="margin:0">Para hoy</h2><span class="muted">${esc(hoy)}</span></div>
+  const urge = A.filter(a => a.nivel !== "info").length;
+  return `<section class="hoy${urge ? " urge" : ""}"><div class="hoy-h"><h2 class="grupo" style="margin:0">Para hoy${urge ? `<em>${urge}</em>` : ""}</h2><span class="muted">${esc(hoy)}</span></div>
     ${A.length ? `<ul class="hoy-l">${A.map(a => `<li class="${a.nivel}"><button data-action="irAviso" data-m="${esc(a.modulo)}" ${a.tab ? `data-tab="${esc(a.tab)}"` : ""} ${a.t ? `data-t="${esc(a.t)}"` : ""} ${a.p ? `data-p="${esc(a.p)}"` : ""} ${a.fase ? `data-fase="${esc(a.fase)}"` : ""} ${a.tienda ? `data-tienda="${esc(a.tienda)}"` : ""} ${a.campana ? `data-campana="${esc(a.campana)}"` : ""} ${a.carga ? `data-carga="1"` : ""}><i></i><span>${esc(a.txt)}</span><small>${esc(modTxt(a.modulo, 0))} →</small></button></li>`).join("")}</ul>`
       : `<p class="hoy-ok">Todo al día. Nada pide atención en ningún apartado.</p>`}</section>`;
 }

@@ -134,6 +134,14 @@ Más, en detalle:
 - **Internamente**, la pestaña del apartado pasa a vivir en `S.tab`, separada de `S.vista`, que queda solo para las vistas internas de Formaciones (recorrido, chuleta, test, práctica con IA y arcade). Antes compartían variable y al agrupar habrían chocado.
 - **Arreglado en el modo demostración**: al abrir un cuestionario con código, las respuestas se devolvían por referencia, así que ir respondiendo modificaba la fila guardada antes de pulsar Enviar. Ahora se devuelve una copia. En Supabase real nunca pasó, porque los datos viajan por la red.
 
+## 0.15.1 · 06/10/2026 · **SQL: no**
+Portada: jerarquía visual.
+- Cabecera en una sola fila: logotipo Home & Cook y título a la izquierda, sello Groupe SEB a la derecha. Antes los dos logotipos quedaban apilados y descolocados.
+- "Para hoy" pasa a una fila por aviso: el texto ya no se parte en tres líneas y el apartado de destino queda alineado a la derecha. Contador de lo urgente junto al título y filo rojo cuando hay algo que no es informativo.
+- El pie de cada tarjeta deja de ser rojo. El rojo pasa a significar algo: cada tarjeta lleva un contador de lo que pide atención en ese apartado, enlazado con "Para hoy".
+- "Usuarios y tiendas" deja de ser una tarjeta huérfana en su propia fila y pasa a una barra de gestión bajo la rejilla.
+- HomeTime deja el borde discontinuo (parecía sin terminar) y se distingue por fondo.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

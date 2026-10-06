@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.15.0";
+const APP_VERSION = "0.15.1";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -365,27 +365,29 @@ function pintarInicio() {
     }
     return "";
   };
+  const AV = typeof avisosHoy === "function" ? avisosHoy() : [];
+  const pend = AV.reduce((a, x) => { if (x.nivel !== "info") a[x.modulo] = (a[x.modulo] || 0) + 1; return a; }, {});
   const tarjeta = m => m.grupo === "externo"
     ? `<a class="mod externo" href="${esc((K.enlaces || {})[m.enlace] || "#")}" target="_blank" rel="noopener noreferrer">
         <span class="mod-t">${esc(modTxt(m.id, 0))}<span class="badge">${t("externo")}</span></span>
         <span class="mod-d">${esc(modTxt(m.id, 1))}</span>
         <span class="mod-f">${t("abrirEnPestana")} ↗</span></a>`
     : `<button class="mod ${m.grupo}" data-action="modulo" data-m="${m.id}" ${m.grupo === "pendiente" ? "disabled" : ""}>
-      <span class="mod-t">${esc(modTxt(m.id, 0))}${m.grupo === "destacado" ? `<span class="badge oro">${t("enDiseno")}</span>` : m.grupo === "pendiente" ? `<span class="badge">${t("pendiente")}</span>` : ""}</span>
+      <span class="mod-t">${esc(modTxt(m.id, 0))}${pend[m.id] ? `<span class="mod-n" title="${pend[m.id] === 1 ? "1 cosa pide atención" : pend[m.id] + " cosas piden atención"}">${pend[m.id]}</span>` : ""}${m.grupo === "destacado" ? `<span class="badge oro">${t("enDiseno")}</span>` : m.grupo === "pendiente" ? `<span class="badge">${t("pendiente")}</span>` : ""}</span>
       <span class="mod-d">${esc(modTxt(m.id, 1))}</span>
       ${m.kpis ? `<span class="mod-k">${m.kpis.map(k => `<i>${esc(k.t)}</i>`).join("")}</span>` : ""}
       <span class="mod-f">${esc(resumen(m))}</span></button>`;
   const visibles = MODULOS.filter(m => puedeVer(m.id));
   const enMarcha = visibles.filter(m => m.grupo !== "pendiente"), pendientes = visibles.filter(m => m.grupo === "pendiente");
   $("vista").innerHTML = `<div class="home">
-    <div class="home-seb"><span class="chipseb">${logoSEB(38)}</span></div>
-    <div class="home-h">${logo(76)}<div>${marcaSVG("grande", 34)}
-      <p>${t("homeIntro")} ${esAdmin() ? t("homeAdmin") : esMarketing() ? t("homeMk") : t("homeRM")}</p></div></div>
-    ${bloqueHoy()}
-    <h2 class="grupo">${t("enMarcha")}</h2><div class="cards">${enMarcha.map(tarjeta).join("")}
-      ${esAdmin() ? `<button class="mod admin" data-action="modulo" data-m="gestion"><span class="mod-t">${t("gestionUsuarios")}</span>
-        <span class="mod-d">${esc(modTxt("gestion", 1))}</span>
-        <span class="mod-f">${S.perfiles.length} usuarios, ${S.tiendas.length} tiendas</span></button>` : ""}</div>
+    <div class="home-h">${logo(76)}<div class="home-txt">${marcaSVG("grande", 34)}
+      <p>${t("homeIntro")} ${esAdmin() ? t("homeAdmin") : esMarketing() ? t("homeMk") : t("homeRM")}</p></div>
+      <span class="chipseb home-seb">${logoSEB(34)}</span></div>
+    ${bloqueHoy(AV)}
+    <h2 class="grupo">${t("enMarcha")}</h2><div class="cards">${enMarcha.map(tarjeta).join("")}</div>
+    ${esAdmin() ? `<button class="adminbar" data-action="modulo" data-m="gestion">
+      <span class="adminbar-t"><b>${t("gestionUsuarios")}</b><small>${esc(modTxt("gestion", 1))}</small></span>
+      <span class="adminbar-f">${S.perfiles.length} ${S.perfiles.length === 1 ? "usuario" : "usuarios"} · ${S.tiendas.length} ${S.tiendas.length === 1 ? "tienda" : "tiendas"} →</span></button>` : ""}
     ${pendientes.length ? `<h2 class="grupo">${t("enPreparacion")}</h2><div class="cards">${pendientes.map(tarjeta).join("")}</div>` : ""}
     ${bandaMarcas()}</div>`;
 }
