@@ -150,6 +150,9 @@ Navegación de dos niveles y sello de Groupe SEB en la cabecera.
 - People Data Centre y PRL intercambian su sitio en la portada. El título de People Data Centre pasa a dorado, igual que HomeTime va en azul.
 - Descripciones nuevas en los tres idiomas para Consolidado, Mapa 9-Box, Prevención, Offboarding y Formaciones.
 
+## 0.16.1 · 06/10/2026 · **SQL: no**
+- En la cabecera, arriba a la izquierda, queda solo el logotipo de Groupe SEB, en el sitio que ocupaba el de Home & Cook. El de Home & Cook sigue presidiendo la portada.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.16.0";
+const APP_VERSION = "0.16.1";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -307,8 +307,7 @@ function pintar() {
   const m = modActual();
   const tabs = m && m.tabs ? m.tabs.filter(x => !x[2] || esAdmin()) : [];
   $("app").innerHTML = `<header class="top">
-      <button class="brand" data-action="inicio" title="${t("inicio")}">${logo(30)}${marcaSVG("linea", 17)}</button>
-      <span class="topseb" title="Groupe SEB">${logoSEB(38)}</span>
+      <button class="brand" data-action="inicio" title="${t("inicio")}">${logoSEB(36)}${marcaSVG("linea", 17)}</button>
       ${S.modulo !== "inicio" ? `<button class="atras" data-action="atras">← ${esc(etiquetaAtras())}</button>` : ""}
       ${m && !S.indice && etiquetaAtras() !== modTxt(m.id, 0) ? `<span class="modname">${esc(modTxt(m.id, 0))}</span>` : ""}
       ${tabs.length > 1 && !S.indice ? `<nav class="mainnav">${tabs.map(([id, t]) => `<button class="${tabActual() === id ? "on" : ""}" data-action="tab" data-v="${id}">${t}</button>`).join("")}</nav>` : ""}
