@@ -179,7 +179,7 @@ function pintarPruebas(tipo) {
   // Tabla de invitaciones
   const sinResp = mias.filter(i => i.estado !== "respondida").length;
   h += `<section class="card"><div class="card-h"><h2>Códigos</h2><span class="muted">${mias.length}</span>
-    ${!pl.anonima && mias.some(i => i.estado !== "respondida" && i.email) ? `<button class="btn small ghost" data-action="enviarTodos">Enviar a todos los pendientes</button>` : ""}
+    ${!pl.anonima && mias.some(i => i.estado !== "respondida" && i.email) ? `<button class="btn small ${envioDirecto() ? "primary" : "ghost"}" data-action="${envioDirecto() ? "enviarTodosYa" : "enviarTodos"}">${envioDirecto() ? "Enviar a todos los pendientes" : "Abrir el correo de todos los pendientes"}</button>` : ""}
     ${esAdmin() && sinResp ? `<button class="btn small ghost danger" data-action="vaciarCodigos">Borrar los ${sinResp} sin responder</button>` : ""}</div>`;
   if (!mias.length) h += `<p class="empty">Todavía no hay códigos generados.</p>`;
   else {
@@ -187,11 +187,11 @@ function pintarPruebas(tipo) {
     ${mias.map(i => {
       const t = tiendaDe(i.tienda_id), p = i.estado === "respondida" ? SC.puntuar(pl, i.respuestas) : null;
       return `<tr><td><code class="cod">${esc(i.codigo)}</code></td><td>${esc(t ? t.nombre : "–")}</td>${pl.anonima ? "" : `<td><b>${esc(i.destinatario || "–")}</b>${i.puesto ? `<br><small>${esc(i.puesto)}</small>` : ""}${i.email ? `<br><small class="mail">${esc(i.email)}</small>` : ""}</td>`}
-        <td><span class="st ${i.estado === "respondida" ? "cerrado" : i.estado === "abierta" ? "encurso" : "pendiente"}">${esc(i.estado === "abierta" ? "abierto, sin enviar" : i.estado)}</span></td>
+        <td><span class="st ${i.estado === "respondida" ? "cerrado" : i.estado === "abierta" ? "encurso" : "pendiente"}">${esc(i.estado === "abierta" ? "abierto, sin enviar" : i.estado)}</span>${i.enviado && i.estado !== "respondida" ? `<br><small class="muted">enviado ${new Date(i.enviado).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</small>` : ""}</td>
         <td class="n">${p ? `<b>${SC.pct(p.pct, 0)}</b>` : "–"}</td>
         <td class="n"><span class="fila-acc">${i.estado === "respondida"
           ? `<button class="btn small ghost" data-action="verRespuestas" data-id="${i.id}">Ver respuestas</button>`
-          : `${i.email ? `<button class="btn small ghost" data-action="enviarInv" data-id="${i.id}">Enviar correo</button>` : ""}
+          : `${i.email ? `<button class="btn small ghost" data-action="${envioDirecto() ? "enviarYa" : "enviarInv"}" data-id="${i.id}">${i.enviado ? "Reenviar" : "Enviar correo"}</button>` : ""}
              <button class="btn small ghost" data-action="copiarInv" data-id="${i.id}">Copiar mensaje</button>`}
           ${esAdmin() ? `<button class="btn small ghost danger" data-action="borrarInv" data-id="${i.id}" title="Borrar este código">Borrar</button>` : ""}</span></td></tr>`;
     }).join("")}</tbody></table></div>`;
@@ -297,6 +297,19 @@ async function recargarPruebas() {
   ]);
   S.campanas = c.data || []; S.invitaciones = i.data || [];
 }
+/* El envío directo solo existe si está montada la función de Supabase y
+   config.js lo declara. Mientras no lo esté, el botón abre tu correo, que
+   funciona desde el primer día y no depende de nadie. */
+const envioDirecto = () => !!(K.correoDirecto && sb && sb.functions && !sb.demo);
+async function enviarPorLaPlataforma(ids) {
+  const { data, error } = await sb.functions.invoke("enviar-invitacion", { body: { ids } });
+  if (error) {
+    let det = "";
+    try { det = (await error.context.json()).error || ""; } catch (e) {}
+    throw new Error(det || error.message || "No se ha podido enviar");
+  }
+  return data;
+}
 function mensajeInvitacion(inv) {
   const c = (S.campanas || []).find(x => x.id === inv.campana_id), pl = SC.plantilla(c.plantilla);
   const url = location.origin + location.pathname + "?codigo=";
@@ -397,6 +410,47 @@ const ACCIONES_PRUEBAS = {
     log(`${filas.length} código(s) de ${c.titulo} para ${t2.nombre}`);
     await recargarPruebas(); pintar();
     toast(filas.length === 1 ? "1 código generado" : filas.length + " códigos generados");
+    return false;
+  },
+  async enviarYa(b) {
+    const inv = S.invitaciones.find(i => i.id === b.dataset.id); if (!inv) return false;
+    const ok = await confirmar({ titulo: `Enviar a ${inv.destinatario || inv.email}`, ok: "Enviar ahora",
+      texto: `Se envía el código ${inv.codigo} a ${inv.email} desde la dirección de la empresa. La persona lo recibe en unos segundos.` });
+    if (!ok) return false;
+    b.disabled = true; b.textContent = "Enviando…";
+    try {
+      const r = await enviarPorLaPlataforma([inv.id]);
+      const mal = (r.resultados || []).find(x => !x.ok);
+      if (mal) { alert("No se ha enviado: " + (mal.motivo || "motivo desconocido")); }
+      else { log(`Código enviado a ${inv.email}`); toast("Correo enviado"); }
+    } catch (e) { alert("No se ha podido enviar: " + e.message); }
+    await recargarPruebas(); pintar();
+    return false;
+  },
+  async enviarTodosYa() {
+    const c = S.campanas.find(x => x.id === S.campana);
+    const pend = invitacionesDe(c.id).filter(i => i.estado !== "respondida" && i.email);
+    if (!pend.length) { toast("No hay nadie con correo pendiente"); return false; }
+    const nuevos = pend.filter(i => !i.enviado).length;
+    const ok = await confirmar({ titulo: `Enviar ${pend.length} ${pend.length === 1 ? "correo" : "correos"}`, ok: "Enviar ahora",
+      texto: `Se envían desde la dirección de la empresa.${nuevos < pend.length ? ` ${pend.length - nuevos} ${pend.length - nuevos === 1 ? "ya se envió antes y se reenviará" : "ya se enviaron antes y se reenviarán"}.` : ""} Esto no se puede deshacer: el correo sale.` });
+    if (!ok) return false;
+    toast("Enviando…");
+    let bien = 0; const fallos = [];
+    for (let i = 0; i < pend.length; i += 25) {
+      try {
+        const r = await enviarPorLaPlataforma(pend.slice(i, i + 25).map(x => x.id));
+        bien += r.enviados || 0;
+        (r.resultados || []).filter(x => !x.ok).forEach(x => {
+          const inv = pend.find(y => y.id === x.id);
+          fallos.push(`${(inv && (inv.destinatario || inv.email)) || "?"}: ${x.motivo}`);
+        });
+      } catch (e) { fallos.push(e.message); break; }
+    }
+    log(`${bien} códigos enviados de ${c.titulo}`);
+    await recargarPruebas(); pintar();
+    if (fallos.length) alert(`Enviados ${bien} de ${pend.length}.\n\nNo han salido:\n` + fallos.slice(0, 12).join("\n"));
+    else toast(bien === 1 ? "1 correo enviado" : bien + " correos enviados");
     return false;
   },
   async enviarTodos() {

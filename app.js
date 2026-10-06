@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.20.0";
+const APP_VERSION = "0.21.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();

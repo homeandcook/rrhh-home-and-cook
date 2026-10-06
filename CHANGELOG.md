@@ -194,6 +194,14 @@ La encuesta de clima puede ser anónima o con nombre, y el equipo de cada tienda
 - **Enviar a todos los pendientes**: abre un correo por persona, con un respiro entre uno y otro.
 - En las campañas anónimas no aparece nada de esto: solo el reparto en tienda de la 0.19.1.
 
+## 0.21.0 · 06/10/2026 · **SQL: SÍ** — `supabase/migracion_0.20.sql`, y hay que montar la función
+Envío real de correos desde una dirección de la empresa.
+- **Función `enviar-invitacion`** en Supabase (Edge Function), en `supabase/funciones/`. La plataforma es un sitio estático y no puede enviar nada por sí misma; la clave del proveedor de correo tampoco puede estar en el navegador. La función hace las dos cosas.
+- Antes de enviar comprueba: lee las invitaciones **con la sesión de quien llama**, así que las políticas de la base de datos ya filtran (un RM solo escribe a su gente); si alguna no le sale, no envía ninguna; no envía a campañas cerradas, a quien ya respondió, ni a direcciones mal formadas; máximo 50 por llamada.
+- **`correoDirecto` en config.js**: con `false` (por defecto) el botón abre tu programa de correo, como hasta ahora. Con `true` envía la plataforma. Nada se rompe mientras no esté montado.
+- Columna **`enviado`**: la tabla de códigos dice cuándo se envió cada uno y el botón pasa a decir «Reenviar». La escribe la función; la plataforma sigue sin tener permiso de UPDATE sobre invitaciones.
+- **`supabase/CORREO.md`**: el paso a paso completo, incluido lo que tiene que hacer IT con el DNS.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

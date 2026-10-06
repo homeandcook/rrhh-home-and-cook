@@ -144,6 +144,7 @@ create table if not exists public.invitaciones (
   codigo       text not null unique,
   estado       text not null default 'pendiente' check (estado in ('pendiente', 'abierta', 'respondida')),
   respuestas   jsonb not null default '{}'::jsonb,
+  enviado      timestamptz,              -- último envío por correo desde la plataforma
   abierto      timestamptz,
   respondido   timestamptz,
   creado       timestamptz not null default now()
