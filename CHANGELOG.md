@@ -153,6 +153,14 @@ Navegación de dos niveles y sello de Groupe SEB en la cabecera.
 ## 0.16.1 · 06/10/2026 · **SQL: no**
 - En la cabecera, arriba a la izquierda, queda solo el logotipo de Groupe SEB, en el sitio que ocupaba el de Home & Cook. El de Home & Cook sigue presidiendo la portada.
 
+## 0.17.0 · 06/10/2026 · **SQL: no**
+Borrar y vaciar en las encuestas y pruebas (Clima, Pruebas situacionales, Onboarding y Offboarding).
+- **Borrar** en cada fila de la tabla de códigos. Si el código ya está respondido, el aviso dice que esa respuesta se pierde.
+- **Borrar los N sin responder**, en la cabecera de la tabla: limpia los códigos que nadie ha contestado y deja intactas las respuestas recibidas. Sirve para repetir un reparto sin perder lo ya recogido.
+- **Borrar campaña**, junto a "Nueva campaña": se lleva la campaña, sus códigos y sus respuestas. Pide escribir BORRAR.
+- Todo esto solo para el administrador, igual que la política de la base de datos, que ya permitía borrar solo a admin. No ha hecho falta tocar SQL.
+- Las confirmaciones pasan a hacerse dentro de la página, no con el diálogo del navegador: en algunos entornos `confirm()` devuelve "no" sin llegar a preguntar, y una acción que borra datos no puede depender de eso. Cerrar una campaña usa ya el mismo cuadro.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

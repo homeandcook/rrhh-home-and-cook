@@ -80,7 +80,8 @@ function pintarPruebas(tipo) {
   if (sel) S.campana = sel.id;
   const plantillas = SC.CONFIG.plantillas.filter(p => p.tipo === tipo);
   let h = `<div class="page"><div class="page-h"><h1>${esc(nombreTipo)}</h1>
-    ${esAdmin() ? `<button class="btn primary" data-action="nuevaCampana" data-tipo="${tipo}">Nueva campaña</button>` : ""}</div>`;
+    <div class="page-h-b">${esAdmin() && cs.length ? `<button class="btn peligro-g" data-action="borrarCampana">Borrar campaña</button>` : ""}
+    ${esAdmin() ? `<button class="btn primary" data-action="nuevaCampana" data-tipo="${tipo}">Nueva campaña</button>` : ""}</div></div>`;
   if (!cs.length) {
     h += `<div class="empty big"><p>${esAdmin() ? "Todavía no hay ninguna campaña. Crea una y genera los códigos que quieras enviar." : "Todavía no hay ninguna campaña abierta. RR.HH. la creará cuando toque."}</p>
       ${esAdmin() ? `<p class="hint">Plantilla disponible: ${plantillas.map(p => esc(SC.txt(p.nombre))).join(", ")}.</p>` : ""}</div></div>`;
@@ -112,7 +113,9 @@ function pintarPruebas(tipo) {
   }
 
   // Tabla de invitaciones
-  h += `<section class="card"><div class="card-h"><h2>Códigos</h2><span class="muted">${mias.length}</span></div>`;
+  const sinResp = mias.filter(i => i.estado !== "respondida").length;
+  h += `<section class="card"><div class="card-h"><h2>Códigos</h2><span class="muted">${mias.length}</span>
+    ${esAdmin() && sinResp ? `<button class="btn small ghost danger" data-action="vaciarCodigos">Borrar los ${sinResp} sin responder</button>` : ""}</div>`;
   if (!mias.length) h += `<p class="empty">Todavía no hay códigos generados.</p>`;
   else {
     h += `<div class="tablewrap"><table><thead><tr><th>Código</th><th>Tienda</th>${pl.anonima ? "" : "<th>Para quién</th>"}<th>Estado</th><th class="n">Resultado</th><th></th></tr></thead><tbody>
@@ -121,9 +124,10 @@ function pintarPruebas(tipo) {
       return `<tr><td><code class="cod">${esc(i.codigo)}</code></td><td>${esc(t ? t.nombre : "–")}</td>${pl.anonima ? "" : `<td>${esc(i.destinatario || "–")}</td>`}
         <td><span class="st ${i.estado === "respondida" ? "cerrado" : i.estado === "abierta" ? "encurso" : "pendiente"}">${esc(i.estado === "abierta" ? "abierto, sin enviar" : i.estado)}</span></td>
         <td class="n">${p ? `<b>${SC.pct(p.pct, 0)}</b>` : "–"}</td>
-        <td class="n">${i.estado === "respondida"
+        <td class="n"><span class="fila-acc">${i.estado === "respondida"
           ? (pl.anonima ? `<span class="muted">Anónima</span>` : `<button class="btn small ghost" data-action="verRespuestas" data-id="${i.id}">Ver respuestas</button>`)
-          : `<button class="btn small ghost" data-action="copiarInv" data-id="${i.id}">Copiar mensaje</button>`}</td></tr>`;
+          : `<button class="btn small ghost" data-action="copiarInv" data-id="${i.id}">Copiar mensaje</button>`}
+          ${esAdmin() ? `<button class="btn small ghost danger" data-action="borrarInv" data-id="${i.id}" title="Borrar este código">Borrar</button>` : ""}</span></td></tr>`;
     }).join("")}</tbody></table></div>`;
   }
   h += `</section>`;
@@ -261,10 +265,47 @@ const ACCIONES_PRUEBAS = {
   async toggleCampana() {
     const c = S.campanas.find(x => x.id === S.campana);
     const nuevo = c.estado === "abierta" ? "cerrada" : "abierta";
-    if (nuevo === "cerrada" && !confirm("Al cerrarla, los códigos pendientes dejarán de funcionar. ¿Cerrar la campaña?")) return false;
+    if (nuevo === "cerrada" && !await confirmar({ titulo: "Cerrar la campaña", ok: "Cerrar campaña",
+      texto: "Los códigos que nadie haya contestado dejarán de funcionar. Puedes reabrirla después." })) return false;
     const { error } = await sb.from("campanas").update({ estado: nuevo }).eq("id", c.id);
     if (error) { alert(traducirError(error)); return false; }
     log(`Campaña ${nuevo}: ${c.titulo}`); await recargarPruebas();
+  },
+  async borrarInv(b) {
+    const inv = S.invitaciones.find(i => i.id === b.dataset.id); if (!inv) return false;
+    const resp = inv.estado === "respondida";
+    const ok = await confirmar({ titulo: `Borrar el código ${inv.codigo}`, ok: "Borrar", peligro: true,
+      texto: resp ? "Este código ya está respondido. Al borrarlo se pierde esa respuesta y deja de contar en los resultados. No se puede deshacer."
+                  : "El código dejará de funcionar. Si ya lo has repartido, quien lo tenga no podrá entrar. No se puede deshacer." });
+    if (!ok) return false;
+    const { error } = await sb.from("invitaciones").delete().eq("id", inv.id);
+    if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
+    log(`Código borrado: ${inv.codigo}`); await recargarPruebas(); toast("Código borrado");
+  },
+  async vaciarCodigos() {
+    const c = S.campanas.find(x => x.id === S.campana); if (!c) return false;
+    const n = invitacionesDe(c.id).filter(i => i.estado !== "respondida").length;
+    if (!n) { toast("No hay códigos sin responder"); return false; }
+    const ok = await confirmar({ titulo: `Borrar ${n} ${n === 1 ? "código" : "códigos"} sin responder`, ok: "Borrar", peligro: true,
+      texto: "Se borran solo los que nadie ha contestado todavía. Las respuestas ya recibidas se quedan como están. Después puedes volver a generar los que necesites." });
+    if (!ok) return false;
+    for (const est of ["pendiente", "abierta"]) {
+      const { error } = await sb.from("invitaciones").delete().eq("campana_id", c.id).eq("estado", est);
+      if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
+    }
+    log(`Códigos sin responder borrados: ${c.titulo}`); await recargarPruebas(); toast("Códigos borrados");
+  },
+  async borrarCampana() {
+    const c = S.campanas.find(x => x.id === S.campana); if (!c) return false;
+    const inv = invitacionesDe(c.id), r = inv.filter(i => i.estado === "respondida").length;
+    const ok = await confirmar({ titulo: `Borrar «${c.titulo}»`, ok: "Borrar la campaña", peligro: true, escribe: "BORRAR",
+      texto: `Se borra la campaña entera con sus ${inv.length} ${inv.length === 1 ? "código" : "códigos"}${r ? ` y las ${r} ${r === 1 ? "respuesta recibida" : "respuestas recibidas"}` : ""}. No se puede deshacer.` });
+    if (!ok) return false;
+    const e1 = (await sb.from("invitaciones").delete().eq("campana_id", c.id)).error;
+    if (e1) { alert("No se ha podido borrar: " + traducirError(e1)); return false; }
+    const { error } = await sb.from("campanas").delete().eq("id", c.id);
+    if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
+    log(`Campaña borrada: ${c.titulo}`); S.campana = null; await recargarPruebas(); toast("Campaña borrada");
   },
   copiarInv(b) {
     const inv = S.invitaciones.find(i => i.id === b.dataset.id), txt = mensajeInvitacion(inv);

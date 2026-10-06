@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.16.1";
+const APP_VERSION = "0.17.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -27,6 +27,27 @@ const esMarketing = () => S.me && S.me.rol === "marketing";
 const MODULOS_MARKETING = ["pdc"];
 const puedeVer = id => !esMarketing() || MODULOS_MARKETING.includes(id);
 const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
+/* Confirmación en la propia página: confirm() del navegador no funciona en
+   todos los sitios donde corre esto, y una acción que borra datos no puede
+   depender de un diálogo que a veces devuelve "no" sin preguntar. */
+function confirmar(o) {
+  return new Promise(res => {
+    const v = $("modalConf"); if (v) v.remove();
+    document.body.insertAdjacentHTML("beforeend", `<div class="modal" id="modalConf"><div class="modal-c estrecho">
+      <h2>${esc(o.titulo)}</h2><p class="conf-t">${esc(o.texto)}</p>
+      ${o.escribe ? `<label class="conf-e"><span>Escribe <b>${esc(o.escribe)}</b> para confirmar</span><input id="confTxt" autocomplete="off" spellcheck="false"></label>` : ""}
+      <div class="actions"><button class="btn" id="confNo">Cancelar</button>
+      <button class="btn ${o.peligro ? "peligro" : "primary"}" id="confSi"${o.escribe ? " disabled" : ""}>${esc(o.ok || "Confirmar")}</button></div></div></div>`);
+    const cerrar = x => { const m = $("modalConf"); if (m) m.remove(); document.removeEventListener("keydown", tecla, true); res(x); };
+    const tecla = e => { if (e.key === "Escape") { e.stopPropagation(); cerrar(false); } };
+    document.addEventListener("keydown", tecla, true);
+    $("confNo").onclick = () => cerrar(false);
+    $("confSi").onclick = () => cerrar(true);
+    const c = $("confTxt");
+    if (c) { c.oninput = () => { $("confSi").disabled = c.value.trim().toUpperCase() !== o.escribe.toUpperCase(); }; c.focus(); }
+    else $("confSi").focus();
+  });
+}
 function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove("on"), 2800); }
 function fechaES(iso) { return iso ? new Date(iso).toLocaleDateString("es-ES") : ""; }
 function traducirError(e) {
