@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.18.0";
+const APP_VERSION = "0.19.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -299,18 +299,18 @@ const MODULOS = [
     d: "El cuadro de mando de personas de la red: productividad, dotación por hora de apertura y ajuste de la plantilla al tráfico." },
   { id: "formacion", t: "Formaciones", grupo: "activo",
     d: "Cinco formaciones breves para el equipo de tienda, con test, y las pruebas situacionales de selección.",
-    tabs: [["cursos", "Formaciones"], ["psico", "Pruebas situacionales"]] },
+    tabs: [["cursos", "Formaciones"], ["envios", "Enviar a tienda"], ["psico", "Pruebas situacionales"]] },
   { id: "docs", t: "Process Book y Políticas", grupo: "activo",
     d: "Los procesos de tienda paso a paso y las normas que el equipo consulta a diario, en un solo sitio.",
     tabs: [["process", "Process Book"], ["politica", "Políticas"]] },
   { id: "hometime", t: "HomeTime", grupo: "externo", enlace: "hometime", d: "" }
 ];
 /* Qué apartado y qué pestaña corresponden a cada cuestionario con código */
-const TAB_TXT = { eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
+const TAB_TXT = { envios: "envios", eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
   onboarding: "onboarding", offboarding: "offboarding", bajas: "bajas", prevencion: "prevencion",
   clima: "clima", cursos: "cursos", psico: "psico", process: "process", politica: "politica" };
 const TAB_PRUEBA = { onboarding: ["evaluacion", "onboarding"], offboarding: ["evaluacion", "offboarding"],
-                     clima: ["prl", "clima"], psico: ["formacion", "psico"] };
+                     clima: ["prl", "clima"], psico: ["formacion", "psico"], formacion: ["formacion", "envios"] };
 /* Pestaña por defecto al entrar en un apartado */
 function tabPorDefecto(id) {
   const m = MODULOS.find(x => x.id === id);
@@ -360,7 +360,7 @@ function pintar() {
     if (tab === "clima") return pintarPruebas("clima");
     return pintarPrl();
   }
-  if (S.modulo === "formacion") return tab === "psico" ? pintarPruebas("psico") : pintarFormaciones();
+  if (S.modulo === "formacion") return tab === "psico" ? pintarPruebas("psico") : tab === "envios" ? pintarPruebas("formacion") : pintarFormaciones();
   if (S.modulo === "docs") return pintarDocs(tab);
   if (S.modulo === "pdc") return pintarPDC();
   pintarInicio();

@@ -127,7 +127,7 @@ grant execute on function public.admin_cambiar_password(uuid, text) to authentic
 create table if not exists public.campanas (
   id         uuid primary key default gen_random_uuid(),
   anio       int  not null,
-  tipo       text not null check (tipo in ('psico', 'mystery', 'clima', 'onboarding', 'offboarding')),
+  tipo       text not null check (tipo in ('psico', 'mystery', 'clima', 'onboarding', 'offboarding', 'formacion')),
   plantilla  text not null,
   titulo     text not null,
   estado     text not null default 'abierta' check (estado in ('abierta', 'cerrada')),

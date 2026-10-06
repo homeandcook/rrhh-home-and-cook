@@ -6,7 +6,7 @@
    ================================================================== */
 
 /* ---------- Acceso de invitado (sin usuario) ---------- */
-const INV = { codigo: "", datos: null, respuestas: {}, enviado: false, error: "" };
+const INV = { codigo: "", datos: null, respuestas: {}, enviado: false, error: "", fase: "curso", paso: 0 };
 
 async function abrirInvitacion(codigo) {
   INV.codigo = (codigo || "").trim().toUpperCase();
@@ -15,7 +15,7 @@ async function abrirInvitacion(codigo) {
   const { data, error } = await sb.rpc("invitacion_abrir", { p_codigo: INV.codigo });
   if (error) { INV.error = traducirError(error); INV.datos = null; }
   else if (!data) { INV.error = "Ese código no existe o ya ha caducado. Revisa que lo has copiado entero."; INV.datos = null; }
-  else { INV.datos = data; INV.respuestas = data.respuestas || {}; }
+  else { INV.datos = data; INV.respuestas = data.respuestas || {}; INV.fase = "curso"; INV.paso = 0; }
   pintarInvitado();
 }
 function pintarInvitado() {
@@ -27,11 +27,31 @@ function pintarInvitado() {
       <p class="login-err">${esc(INV.error)}</p>
       <button class="btn primary block" type="submit">${t("entrar")}</button></form>
       <p class="hint" style="text-align:center">${t("soyRRHH")} <a href="#" data-action="irLogin">${t("entraUsuario")}</a></p>`;
+  } else if (INV.enviado && pl && pl.curso) {
+    /* En una formación la persona tiene derecho a ver su nota y a saber qué
+       falló: de eso va la formación. En una encuesta no hay nota que dar. */
+    const n = SC.puntuar(pl, INV.respuestas), apto = n.pct >= 0.6;
+    $("app").innerHTML = `<div class="guest wide"><div class="esquina"><span class="chipseb">${logoSEB(32)}</span></div>
+      <div class="guest-card wide">${selectorIdioma()}<div class="guest-h">${logo(56)}<div>
+        <h1>${esc(SC.txt(pl.nombre))}</h1><p class="sub">${esc(d.destinatario || "")}${d.tienda ? " · " + esc(d.tienda) : ""}</p></div></div>
+      <div class="nota-inv ${apto ? "ok" : "ko"}"><b>${n.obt} de ${n.puntuables}</b>
+        <span>${apto ? "Formación superada" : "No llega al 60 %. Habla con tu responsable para repetirla."}</span></div>
+      <ul class="repaso">${pl.preguntas.map(q => {
+        const r = INV.respuestas[q.id], mia = q.o[r], ok = !!(mia && mia.v === 1), buena = q.o.find(o => o.v === 1) || {};
+        return `<li class="${ok ? "ok" : "ko"}"><b>${esc(SC.txt(q.t))}</b>
+          <span>${ok ? "Correcto: " + esc(SC.txt(buena.t)) : `Contestaste «${esc(mia ? SC.txt(mia.t) : "nada")}». La correcta es «${esc(SC.txt(buena.t))}».`}</span>
+          ${q.por ? `<small>${esc(SC.txt(q.por))}</small>` : ""}</li>`;
+      }).join("")}</ul>
+      <p class="hint" style="text-align:center">${t("cerrarVentana")}</p>
+      </div>${bandaMarcas()}</div>`;
+    return;
   } else if (d.estado === "respondida" || INV.enviado) {
     h += `<h1>${t("gracias")}</h1><p class="sub">${pl && pl.anonima ? t("graciasAnon") : t("graciasNom")}</p>
       <p class="hint" style="text-align:center">${t("cerrarVentana")}</p>`;
   } else if (d.campana_estado === "cerrada") {
     h += `<h1>${t("campanaCerrada")}</h1><p class="sub">${t("campanaCerradaTxt")}</p>`;
+  } else if (pl.curso && INV.fase !== "test" && typeof pasoInvitado === "function") {
+    $("app").innerHTML = pasoInvitado(pl); return;
   } else {
     const r = SC.puntuar(pl, INV.respuestas);
     h = `<div class="guest wide"><div class="esquina"><span class="chipseb">${logoSEB(32)}</span></div><div class="guest-card wide">${selectorIdioma()}
@@ -39,7 +59,8 @@ function pintarInvitado() {
         <p class="sub">${esc(d.tienda || "")}${d.destinatario ? " · " + esc(d.destinatario) : ""}</p></div></div>
       <p class="intro">${esc(SC.txt(pl.intro))}</p><p class="aviso">${esc(SC.txt(pl.aviso))}</p>
       <div class="qlist">${pl.preguntas.map((q, i) => pregunta(q, i, pl)).join("")}</div>
-      <div class="guest-f"><span class="muted num">${r.contestadas} ${t("respondidas")} ${r.puntuables}</span>
+      <div class="guest-f">${pl.curso ? `<button class="btn" data-action="invVolverCurso">Volver al curso</button>` : ""}
+        <span class="muted num">${r.contestadas} ${t("respondidas")} ${r.puntuables}</span>
         <button class="btn primary" data-action="invEnviar" ${r.completa ? "" : "disabled"}>${t("enviar")}</button></div>
       ${r.completa ? "" : `<p class="hint">${t("faltanPreguntas")}</p>`}
       </div>${bandaMarcas()}</div>`;

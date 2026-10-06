@@ -482,6 +482,21 @@ h2.grupo:first-of-type{margin-top:0}
 .cod{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;letter-spacing:.06em}
 .modal{position:fixed;inset:0;background:rgba(10,14,19,.55);display:grid;place-items:center;padding:20px;z-index:40}
 .modal-c{background:var(--paper);border-radius:14px;padding:22px;max-width:640px;width:100%;max-height:85vh;overflow:auto}
+.ruta-inv{display:flex;align-items:center;gap:14px;margin:0 0 18px}
+.ruta-inv .ruta-linea{flex:1;position:static}
+.ruta-inv .muted{font-size:13px;white-space:nowrap}
+.curso-inv .paso{border:1px solid var(--line);border-radius:12px;padding:20px}
+.nota-inv{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;border-radius:12px;padding:18px;margin:18px 0}
+.nota-inv b{font-size:30px;line-height:1.1}
+.nota-inv span{font-size:14px}
+.nota-inv.ok{background:var(--okbg);color:var(--l2)}
+.nota-inv.ko{background:var(--warnbg);color:var(--warn)}
+.repaso{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.repaso li{border:1px solid var(--line);border-left:3px solid var(--l2);border-radius:0 10px 10px 0;padding:12px 16px;display:grid;gap:4px}
+.repaso li.ko{border-left-color:var(--l0)}
+.repaso b{font-size:14.5px;line-height:1.45}
+.repaso span{font-size:13.5px;color:var(--ink)}
+.repaso small{color:var(--muted);line-height:1.5}
 small.mail{color:var(--muted);word-break:break-all}
 .aviso-anon{background:var(--mist);border-left:3px solid var(--l1);border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 14px;color:var(--muted);font-size:13.5px;line-height:1.5}
 .modal-c.estrecho{max-width:460px}

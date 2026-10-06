@@ -437,3 +437,80 @@ const ACCIONES_FORMACION = {
   },
   testRepetir() { S.test = { resp: {}, corregido: false }; window.scrollTo(0, 0); }
 };
+
+/* ============ El curso visto por quien entra con un código ============
+   Mismas pantallas que dentro de la plataforma, pero sin menú, sin guardar
+   progreso en el navegador (el código solo sirve una vez) y terminando en el
+   test. Reutiliza las clases del recorrido interno, así que se ve igual.
+   ====================================================================== */
+function pasoInvitado(pl) {
+  const P = pasosDe(pl.curso), n = P.length;
+  const i = Math.min(Math.max(0, INV.paso | 0), n - 1), p = P[i];
+  if (!p) { INV.fase = "test"; return ""; }
+  const curso = CURSOS.find(c => c.id === pl.curso) || { t: "" };
+  return `<div class="guest wide"><div class="esquina"><span class="chipseb">${logoSEB(32)}</span></div>
+    <div class="guest-card wide curso-inv">${selectorIdioma()}
+      <div class="guest-h">${logo(56)}<div><h1>${esc(curso.t)}</h1>
+        <p class="sub">${esc(INV.datos.tienda || "")}${INV.datos.destinatario ? " · " + esc(INV.datos.destinatario) : ""}</p></div></div>
+      <div class="ruta-inv"><div class="ruta-linea"><i style="width:${Math.round((i + 1) / n * 100)}%"></i></div>
+        <span class="muted">Pantalla ${i + 1} de ${n}</span></div>
+      <section class="paso">
+        <div class="paso-h"><span class="paso-n">${i + 1}</span><div><h2>${esc(p.t)}</h2>
+          <p class="muted">${esc(p.sub)} · ${p.min} min</p></div></div>
+        <p class="idea">${esc(p.idea)}</p>
+        <div class="bloques">
+          <div class="bloque"><h3>Qué haces</h3><ul class="lista">${p.haces.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+          <div class="bloque"><h3>Cuidado con</h3><ul class="lista cuidado">${p.ojo.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+        </div>
+        <h3 class="tit-frases">Frases que ayudan</h3>
+        <div class="frases">${p.dices.map(f => `<blockquote class="frase"><span class="ctx">${esc(f.c)}</span><p>${esc(f.f)}</p></blockquote>`).join("")}</div>
+      </section>
+      <div class="guest-f">
+        <button class="btn" data-action="invPasoAnt" ${i === 0 ? "disabled" : ""}>Anterior</button>
+        <span class="muted num">${i + 1} / ${n}</span>
+        <button class="btn primary" data-action="invPasoSig">${i === n - 1 ? "Ir al test" : "Siguiente"}</button>
+      </div></div>${bandaMarcas()}</div>`;
+}
+const ACCIONES_INV_CURSO = {
+  invPasoAnt() { INV.paso = Math.max(0, (INV.paso | 0) - 1); window.scrollTo(0, 0); pintarInvitado(); return false; },
+  invPasoSig() {
+    const pl = SC.plantilla(INV.datos.plantilla), n = pasosDe(pl.curso).length;
+    if ((INV.paso | 0) >= n - 1) INV.fase = "test"; else INV.paso = (INV.paso | 0) + 1;
+    window.scrollTo(0, 0); pintarInvitado(); return false;
+  },
+  invVolverCurso() { INV.fase = "curso"; window.scrollTo(0, 0); pintarInvitado(); return false; }
+};
+
+/* ===================== FORMACIONES PARA GENTE SIN CUENTA =====================
+   El equipo de tienda no tiene usuario en la plataforma. Para que puedan hacer
+   una formación se usa el mismo circuito que la Encuesta de Clima: RR.HH. crea
+   una campaña, genera un código por persona y se lo envía. Quien recibe el
+   código lee el curso y hace el test; la nota vuelve aquí.
+
+   El test de cada curso se convierte en una plantilla igual que las demás, así
+   que todo lo que ya existe (puntuar, resultados por tienda, ficha de
+   respuestas, borrar, enviar el correo) funciona sin tocar nada. La opción
+   correcta vale 1 punto y las demás 0.
+   ============================================================================ */
+(function () {
+  const C = SC.CONFIG;
+  C.tiposPrueba.formacion = { t: { es: "Formación a tienda", en: "Store training", fr: "Formation magasin" } };
+  CURSOS.forEach(curso => {
+    const test = testDe(curso.id), pasos = pasosDe(curso.id);
+    if (!test || !test.length) return;   // el Circuito de Venta no lleva test
+    C.plantillas.push({
+      id: "form-" + curso.id, tipo: "formacion", anonima: false, curso: curso.id,
+      nombre: { es: "Formación: " + curso.t, en: "Training: " + curso.t, fr: "Formation : " + curso.t },
+      intro: { es: `Primero lee las ${pasos.length} pantallas del curso y después contesta las ${test.length} preguntas. Puedes volver atrás cuando quieras.`,
+               en: `First read the ${pasos.length} screens of the course, then answer the ${test.length} questions. You can go back at any time.`,
+               fr: `Lisez d'abord les ${pasos.length} écrans du cours, puis répondez aux ${test.length} questions. Vous pouvez revenir en arrière.` },
+      aviso: { es: `Se tarda unos ${curso.min} minutos. El código sirve una sola vez, así que termínalo de una sentada.`,
+               en: `It takes about ${curso.min} minutes. The code works only once, so finish it in one go.`,
+               fr: `Environ ${curso.min} minutes. Le code ne sert qu'une fois : terminez d'une traite.` },
+      preguntas: test.map((q, k) => ({ id: "p" + (k + 1), t: q.t, por: q.por,
+        o: q.o.map((op, j) => ({ t: op, v: j === q.r ? 1 : 0 })) }))
+    });
+  });
+})();
+
+if (typeof ACCIONES_INVITADO !== "undefined") Object.assign(ACCIONES_INVITADO, ACCIONES_INV_CURSO);

@@ -170,6 +170,15 @@ El código de acceso ahora hay que teclearlo, y se puede invitar a una persona q
 - Corregido: la ficha de respuestas se rompía en cuanto la plantilla llevaba una pregunta de eNPS, como la de clima. Daba por hecho que todas las preguntas tienen opciones.
 - Corregido: en las formaciones, la lista de «Cuidado con» se salía de su columna y se montaba encima de «Qué haces». La clase `ojo` se llamaba igual que el botón que enseña la contraseña en el acceso, que va posicionado en absoluto. Renombrada a `cuidado`.
 
+## 0.19.0 · 06/10/2026 · **SQL: SÍ** — vuelve a ejecutar `supabase/migracion_0.17.sql`
+Las formaciones se pueden enviar a gente que no tiene cuenta, con el mismo circuito que la Encuesta de Clima.
+- Pestaña nueva en Formaciones: **Enviar a tienda**. RR.HH. crea una campaña eligiendo el curso, genera un código por persona (nombre, puesto y correo) y lo envía.
+- Quien recibe el código lee el curso pantalla a pantalla desde su móvil, con Anterior y Siguiente, y al final hace el test. Puede volver al curso desde el test.
+- Al enviar ve **su nota y la corrección**: qué contestó, cuál era la respuesta correcta y por qué. En una formación eso es el contenido, no un extra. Se aprueba con el 60 %.
+- La nota vuelve a la plataforma: participación, resultado medio, resultado por pregunta y por tienda, los mismos cuadros que ya existían.
+- El test de cada curso se convierte en una plantilla igual que las demás, así que puntuar, ver respuestas, enviar el correo y borrar funcionan sin código nuevo. El Circuito de Venta queda fuera porque no tiene test.
+- La migración 0.17 añade `formacion` a los tipos de campaña permitidos. Si ya la habías ejecutado, vuelve a pasarla: está escrita para poder repetirse.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

@@ -19,3 +19,13 @@ comment on column public.invitaciones.email is
 -- La función invitacion_abrir() devuelve una lista cerrada de campos y no
 -- incluye ni el puesto ni el correo: quien entra con el código no los
 -- necesita para responder, así que no se tocan sus permisos.
+
+-- ===================================================================
+-- Formaciones enviadas a gente sin cuenta
+-- El equipo de tienda no es usuario de la plataforma. Para que pueda
+-- hacer una formación se reutiliza el circuito de códigos, así que
+-- 'formacion' pasa a ser un tipo de campaña más.
+-- ===================================================================
+alter table public.campanas drop constraint if exists campanas_tipo_check;
+alter table public.campanas add  constraint campanas_tipo_check
+  check (tipo in ('psico', 'mystery', 'clima', 'onboarding', 'offboarding', 'formacion'));
