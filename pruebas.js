@@ -135,6 +135,25 @@ function pintarPruebas(tipo) {
       <p class="hint">${pl.anonima ? "Al ser anónima se generan códigos sueltos, sin nombre: se reparten en la tienda y nadie puede asociarlos a una persona." : "Cada código sirve una sola vez y queda asociado a esa persona. No hace falta que sea usuario de la plataforma: con el nombre y el correo basta, y se borra cuando borres la campaña."}</p></section>`;
   }
 
+  // Reparto en tienda: en una encuesta anónima no se puede mandar un código a
+  // una persona por correo sin dejar escrito en tu bandeja de enviados qué
+  // código tiene quién. Se reparten en la tienda, en papel o en un mensaje al
+  // grupo, y nadie controla quién coge cuál.
+  if (pl.anonima && sel.estado === "abierta") {
+    const conPend = [...new Set(mias.filter(i => i.estado !== "respondida").map(i => i.tienda_id))];
+    if (conPend.length) {
+      h += `<section class="card"><h2>Repartir en la tienda</h2>
+        <div class="inline-form" style="border:0;margin:0;padding:0">
+          <label>Tienda<select id="repTienda">${conPend.map(id => {
+            const t2 = tiendaDe(id), n = mias.filter(i => i.tienda_id === id && i.estado !== "respondida").length;
+            return `<option value="${id}">${esc(t2 ? t2.nombre : "–")} · ${n} sin usar</option>`;
+          }).join("")}</select></label>
+          <button class="btn" data-action="repartoCopiar">Copiar el mensaje</button>
+          <button class="btn" data-action="repartoImprimir">Imprimir las papeletas</button></div>
+        <p class="hint">Al ser anónima, los códigos no van dirigidos a nadie. Mándalos de una vez al responsable de tienda, o imprime las papeletas y que cada persona coja una. Si enviaras un código por correo a cada persona, tu bandeja de enviados diría quién tiene cuál y la encuesta dejaría de ser anónima.</p></section>`;
+    }
+  }
+
   // Tabla de invitaciones
   const sinResp = mias.filter(i => i.estado !== "respondida").length;
   h += `<section class="card"><div class="card-h"><h2>Códigos</h2><span class="muted">${mias.length}</span>
@@ -338,6 +357,56 @@ const ACCIONES_PRUEBAS = {
     const { error } = await sb.from("campanas").delete().eq("id", c.id);
     if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
     log(`Campaña borrada: ${c.titulo}`); S.campana = null; await recargarPruebas(); toast("Campaña borrada");
+  },
+  repartoLista() {
+    const t2 = $("repTienda") ? $("repTienda").value : null;
+    const c = S.campanas.find(x => x.id === S.campana);
+    return { c, t: tiendaDe(t2), cods: invitacionesDe(S.campana).filter(i => i.tienda_id === t2 && i.estado !== "respondida") };
+  },
+  repartoCopiar() {
+    const { c, t: t2, cods } = ACCIONES_PRUEBAS.repartoLista();
+    if (!cods.length) { toast("No quedan códigos sin usar en esa tienda"); return false; }
+    const pl = SC.plantilla(c.plantilla);
+    const url = location.origin + location.pathname + "?codigo=";
+    const txt = `Hola,
+
+Os paso los códigos de "${c.titulo}" para ${t2 ? t2.nombre : "la tienda"}. Repártelos en el equipo: cada persona coge uno, el que quiera, y no hace falta apuntar quién coge cuál. La encuesta es anónima.
+
+Enlace: ${url}
+
+Códigos:
+${cods.map(i => "  " + i.codigo).join("\n")}
+
+Son ${pl.preguntas.length} preguntas, unos 6 minutos, desde el móvil. Cada código sirve una sola vez.
+
+Gracias,
+${S.me.nombre}`;
+    const mostrar = () => {
+      ACCIONES_PRUEBAS.cerrarModal();
+      document.body.insertAdjacentHTML("beforeend", `<div class="modal" id="modalResp"><div class="modal-c">
+        <div class="card-h"><h2>Mensaje para ${esc(t2 ? t2.nombre : "la tienda")}</h2><button class="btn small ghost" data-action="cerrarModal">Cerrar</button></div>
+        <p class="hint">Selecciónalo y pégalo en tu correo o en el grupo de la tienda.</p>
+        <textarea rows="16" id="msgInv" readonly>${esc(txt)}</textarea>
+        <div class="actions"><button class="btn primary" data-action="copiarCuadro">Copiar</button></div></div></div>`);
+      const el = $("msgInv"); if (el) { el.focus(); el.select(); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(txt).then(() => toast(`${cods.length} códigos copiados, ya puedes pegarlos`), mostrar);
+    else mostrar();
+    return false;
+  },
+  repartoImprimir() {
+    const { c, t: t2, cods } = ACCIONES_PRUEBAS.repartoLista();
+    if (!cods.length) { toast("No quedan códigos sin usar en esa tienda"); return false; }
+    const pl = SC.plantilla(c.plantilla);
+    const url = (location.origin + location.pathname).replace(/^https?:\/\//, "") + "?codigo=";
+    $("print").innerHTML = `<div class="papeletas"><h1>${esc(c.titulo)} · ${esc(t2 ? t2.nombre : "")}</h1>
+      <p class="pap-sub">Recorta y reparte. Cada persona coge una, la que quiera. Es anónima: nadie apunta quién coge cuál.</p>
+      <div class="pap-g">${cods.map(i => `<div class="pap"><b>${esc(c.titulo)}</b>
+        <span class="pap-url">${esc(url)}</span><code>${esc(i.codigo)}</code>
+        <small>${pl.preguntas.length} preguntas · unos 6 minutos · desde el móvil</small></div>`).join("")}</div></div>`;
+    window.print();
+    return false;
   },
   enviarInv(b) {
     const inv = S.invitaciones.find(i => i.id === b.dataset.id);

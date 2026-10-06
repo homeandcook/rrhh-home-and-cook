@@ -179,6 +179,12 @@ Las formaciones se pueden enviar a gente que no tiene cuenta, con el mismo circu
 - El test de cada curso se convierte en una plantilla igual que las demás, así que puntuar, ver respuestas, enviar el correo y borrar funcionan sin código nuevo. El Circuito de Venta queda fuera porque no tiene test.
 - La migración 0.17 añade `formacion` a los tipos de campaña permitidos. Si ya la habías ejecutado, vuelve a pasarla: está escrita para poder repetirse.
 
+## 0.19.1 · 06/10/2026 · **SQL: no**
+Repartir los códigos de una encuesta anónima, sin romper el anonimato.
+- Tarjeta **Repartir en la tienda** en las campañas anónimas: eliges la tienda y obtienes, o bien un único mensaje con todos sus códigos sin usar para mandárselo al responsable, o bien las papeletas listas para imprimir y recortar.
+- No hay envío individual por correo en las anónimas, y es deliberado: mandar un código a cada persona deja en tu bandeja de enviados qué código tiene quién, que es justo lo que la encuesta promete no saber. El aviso lo explica en la propia pantalla.
+- En las campañas nominativas (pruebas situacionales, onboarding, offboarding, formaciones) sigue estando el envío persona a persona, que ahí sí tiene sentido.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).
