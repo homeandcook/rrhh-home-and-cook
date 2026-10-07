@@ -42,13 +42,38 @@ que funciona sin verificar nada. Úsala solo contigo.
 
 ## 3. Desplegar la función
 
-### 3.1 Crear la función
+### 3.0 (Recomendado) Que se despliegue solo
+
+Si configuras esto una vez, cada cambio en la función se despliega solo al
+subirlo a GitHub y no hay que volver a copiar y pegar nunca más.
+
+1. Supabase → tu avatar (arriba a la derecha) → **Account preferences** →
+   **Access tokens** → **Generate new token**. Nombre: `github-acciones`.
+   Cópialo: solo se ve una vez.
+2. GitHub → el repositorio → **Settings** → **Secrets and variables** →
+   **Actions**.
+3. Pestaña **Secrets** → **New repository secret**
+   - Name: `SUPABASE_ACCESS_TOKEN`
+   - Secret: el token del paso 1
+4. Pestaña **Variables** → **New repository variable**
+   - Name: `SUPABASE_PROJECT_REF`
+   - Value: `hrybclllymcsbujancuw`
+
+Ya está. El token queda cifrado en GitHub: no aparece en el código, ni en
+los registros de ejecución, ni lo ve nadie más.
+
+Para lanzarlo a mano: GitHub → pestaña **Actions** → *Desplegar funciones de
+Supabase* → **Run workflow**.
+
+Si prefieres no configurarlo, sigue el paso 3.1 y hazlo a mano cada vez.
+
+### 3.1 Crear la función (a mano)
 
 1. Supabase → tu proyecto → **Edge Functions** (menú de la izquierda).
 2. **Deploy a new function → Via Editor**.
 3. Nombre: `enviar-invitacion` (exactamente así).
 4. Borra el ejemplo y pega entero el contenido de
-   `supabase/funciones/enviar-invitacion.ts`.
+   `supabase/functions/enviar-invitacion/index.ts`.
 5. **Deploy function**. Tarda unos segundos.
 
 ### 3.2 Poner los secretos

@@ -1,0 +1,40 @@
+# Despliega las funciones de Supabase cuando cambian en main.
+#
+# Hace falta configurarlo una vez en GitHub (Settings del repositorio):
+#   Secrets and variables > Actions
+#     - Secret   SUPABASE_ACCESS_TOKEN  (token personal de Supabase)
+#     - Variable SUPABASE_PROJECT_REF   (el identificador del proyecto)
+# El token queda cifrado en GitHub: no aparece en el código ni en los logs.
+name: Desplegar funciones de Supabase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - ".github/workflows/desplegar-funciones.yml"
+  workflow_dispatch:
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Comprobar que está configurado
+        run: |
+          if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ] || [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then
+            echo "Falta SUPABASE_ACCESS_TOKEN (secret) o SUPABASE_PROJECT_REF (variable)."
+            echo "Se configuran en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Desplegar enviar-invitacion
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy enviar-invitacion --project-ref ${{ vars.SUPABASE_PROJECT_REF }}

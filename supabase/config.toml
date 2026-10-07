@@ -1,0 +1,11 @@
+# Configuración del proyecto para la CLI de Supabase.
+# Solo se usa al desplegar las funciones desde GitHub; el resto del
+# proyecto se administra desde el panel.
+project_id = "rrhh-home-and-cook"
+
+[functions.enviar-invitacion]
+# La función comprueba la sesión por su cuenta (lee las invitaciones con
+# el token de quien llama, así que las políticas de la base de datos ya
+# filtran). El filtro automático exige un token firmado con la clave
+# antigua y este proyecto usa las nuevas, así que se deja apagado.
+verify_jwt = false
