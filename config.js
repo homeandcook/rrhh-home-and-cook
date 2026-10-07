@@ -11,6 +11,7 @@ window.APP_CONFIG = {
   // Los usuarios entran con un nombre (p. ej. "rm.es"). Internamente se
   // convierte en rm.es@<dominio>. No se envía ningún correo.
   dominioUsuarios: "homeandcook.app",
+    correoDirecto: true,
   // Herramientas internas que se abren en una pestaña nueva (solo con la VPN conectada).
   // Deja la url vacía para que no aparezca la tarjeta.
   enlaces: {
