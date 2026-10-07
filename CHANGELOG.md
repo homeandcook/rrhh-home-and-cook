@@ -212,6 +212,11 @@ Seguimiento de formaciones: pestaña nueva en Formaciones.
 - **Descargar CSV** de todo el seguimiento, para el informe de formación o para RR.HH. corporativo.
 - Cada Regional Manager ve solo a la gente de sus tiendas; el administrador, toda la red.
 
+## 0.22.1 · 07/10/2026 · **SQL: no**, pero hay que volver a desplegar la función
+- **Botón Actualizar** en las campañas. La pantalla se pintaba con lo que había al entrar, así que quien respondía mientras tú mirabas no aparecía hasta recargar el navegador. Ahora se piden las respuestas nuevas y te dice cuántas han llegado.
+- **Correo rediseñado**: maquetado con tablas, que es lo único que Outlook renderiza igual que el resto; filete rojo SEB arriba, la marca en tipografía, el código en su propia caja, botón sólido, firma con el apartado y pie con las marcas del grupo. Sin imágenes remotas, por dos motivos: la mayoría de los clientes las bloquean y, además, la plataforma está en privado, así que un logotipo alojado ahí no cargaría.
+- Comprobado a 760 y a 400 píxeles: sin desbordes. La dirección larga ya parte de línea, que era lo que descuadraba el móvil.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

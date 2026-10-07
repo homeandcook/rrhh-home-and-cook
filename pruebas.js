@@ -101,7 +101,8 @@ function pintarPruebas(tipo) {
   if (sel) S.campana = sel.id;
   const plantillas = SC.CONFIG.plantillas.filter(p => p.tipo === tipo);
   let h = `<div class="page"><div class="page-h"><h1>${esc(nombreTipo)}</h1>
-    <div class="page-h-b">${esAdmin() && cs.length ? `<button class="btn peligro-g" data-action="borrarCampana">Borrar campaña</button>` : ""}
+    <div class="page-h-b"><button class="btn" data-action="actualizarPruebas" title="Traer las últimas respuestas">Actualizar</button>
+    ${esAdmin() && cs.length ? `<button class="btn peligro-g" data-action="borrarCampana">Borrar campaña</button>` : ""}
     ${esAdmin() ? `<button class="btn primary" data-action="nuevaCampana" data-tipo="${tipo}">Nueva campaña</button>` : ""}</div></div>`;
   if (!cs.length) {
     h += `<div class="empty big"><p>${esAdmin() ? "Todavía no hay ninguna campaña. Crea una y genera los códigos que quieras enviar." : "Todavía no hay ninguna campaña abierta. RR.HH. la creará cuando toque."}</p>
@@ -393,6 +394,18 @@ const ACCIONES_PRUEBAS = {
     const { error } = await sb.from("campanas").delete().eq("id", c.id);
     if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
     log(`Campaña borrada: ${c.titulo}`); S.campana = null; await recargarPruebas(); toast("Campaña borrada");
+  },
+  /* La pantalla se pinta con lo que había al entrar. Quien está esperando
+     respuestas necesita poder pedirlas sin recargar el navegador entero. */
+  async actualizarPruebas(b) {
+    b.disabled = true; b.textContent = "Actualizando…";
+    const antes = (S.invitaciones || []).filter(i => i.estado === "respondida").length;
+    await recargarPruebas();
+    const ahora = (S.invitaciones || []).filter(i => i.estado === "respondida").length;
+    pintar();
+    const n = ahora - antes;
+    toast(n > 0 ? (n === 1 ? "1 respuesta nueva" : n + " respuestas nuevas") : "Sin novedades");
+    return false;
   },
   invTienda(b) { S.invT = b.value; },
   eqTodos(b) { document.querySelectorAll(".eqchk:not(:disabled)").forEach(c => { c.checked = b.checked; }); return false; },

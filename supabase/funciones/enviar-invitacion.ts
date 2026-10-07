@@ -103,16 +103,79 @@ El código sirve una sola vez y es solo tuyo, no lo reenvíes.
 Gracias,
 ${quien.nombre}`;
 
+    /* Correo corporativo, maquetado con tablas: es lo único que Outlook
+       renderiza igual que el resto. Sin imágenes remotas, por dos motivos:
+       la mayoría de los clientes las bloquean por defecto, y la plataforma
+       está en privado, así que un logotipo alojado ahí no cargaría. La
+       marca se construye con tipografía y color. */
+    const R = "#E52143", TINTA = "#1C2733", GRIS = "#5E6B78", LINEA = "#D9DEE5", FONDO = "#F2F4F7";
+    const SANS = "'Segoe UI',system-ui,-apple-system,Helvetica,Arial,sans-serif";
+    const MONO = "'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace";
     const html =
-`<div style="font-family:system-ui,-apple-system,'Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.6;color:#1C2733;max-width:520px">
-  <p>${saludo}</p>
-  <p>Te envío el acceso a <b>${esc(c.titulo)}</b>. No necesitas usuario ni contraseña: abre el enlace y escribe este código.</p>
-  <p style="margin:22px 0"><a href="${esc(URL_APP)}?codigo=" style="background:#E52143;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;display:inline-block">Abrir</a></p>
-  <p style="margin:0 0 4px;color:#5E6B78;font-size:13px">Tu código</p>
-  <p style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:26px;font-weight:700;letter-spacing:.08em;margin:0 0 22px">${esc(inv.codigo)}</p>
-  <p style="color:#5E6B78;font-size:13px">El código sirve una sola vez y es solo tuyo, no lo reenvíes.</p>
-  <p>Gracias,<br>${esc(quien.nombre)}</p>
-</div>`;
+`<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<title>${esc(c.titulo)}</title>
+<style>
+@media only screen and (max-width:600px){
+  .caja{width:100%!important}
+  .pad{padding-left:20px!important;padding-right:20px!important}
+  .cod{font-size:25px!important;letter-spacing:.06em!important}
+}
+</style></head>
+<body style="margin:0;padding:0;background:${FONDO};-webkit-font-smoothing:antialiased">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Tu código de acceso es ${esc(inv.codigo)}. Se tarda unos minutos y el código sirve una sola vez.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${FONDO}">
+<tr><td align="center" style="padding:32px 12px">
+
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" class="caja" style="width:560px;max-width:100%;background:#ffffff;border:1px solid ${LINEA};border-radius:14px">
+
+  <tr><td style="height:5px;background:${R};font-size:0;line-height:0;border-radius:13px 13px 0 0">&nbsp;</td></tr>
+
+  <tr><td class="pad" style="padding:30px 36px 0">
+    <div style="font:700 21px/1.2 ${SANS};color:${TINTA};letter-spacing:-.01em">RRHH <span style="color:${R}">&#10005;</span> Home&amp;Cook</div>
+    <div style="font:600 10.5px/1.4 ${SANS};color:${GRIS};letter-spacing:.11em;text-transform:uppercase;padding-top:7px">Una plataforma de Groupe SEB Ibérica</div>
+  </td></tr>
+
+  <tr><td class="pad" style="padding:26px 36px 0">
+    <p style="margin:0 0 14px;font:400 16px/1.6 ${SANS};color:${TINTA}">${saludo}</p>
+    <p style="margin:0;font:400 16px/1.6 ${SANS};color:${TINTA}">Te envío el acceso a <strong style="font-weight:600">${esc(c.titulo)}</strong>. No necesitas usuario ni contraseña: abre el enlace y escribe el código.</p>
+  </td></tr>
+
+  <tr><td class="pad" style="padding:26px 36px 0">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${FONDO};border:1px solid ${LINEA};border-radius:10px">
+      <tr><td align="center" style="padding:20px 20px 22px">
+        <div style="font:600 10.5px/1 ${SANS};color:${GRIS};letter-spacing:.11em;text-transform:uppercase">Tu código</div>
+        <div class="cod" style="font:700 29px/1.2 ${MONO};color:${TINTA};letter-spacing:.09em;padding-top:11px">${esc(inv.codigo)}</div>
+      </td></tr>
+    </table>
+  </td></tr>
+
+  <tr><td class="pad" align="center" style="padding:24px 36px 0">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td align="center" bgcolor="${R}" style="border-radius:9px">
+        <a href="${esc(URL_APP)}?codigo=" style="display:inline-block;padding:14px 34px;font:600 16px/1 ${SANS};color:#ffffff;text-decoration:none;border-radius:9px">Empezar</a>
+      </td>
+    </tr></table>
+    <p style="margin:13px 0 0;font:400 13px/1.5 ${SANS};color:${GRIS}">Si el botón no funciona, copia esta dirección:<br><span style="color:${TINTA};word-break:break-all">${esc(URL_APP)}?codigo=</span></p>
+  </td></tr>
+
+  <tr><td class="pad" style="padding:26px 36px 30px">
+    <p style="margin:0 0 18px;font:400 14px/1.6 ${SANS};color:${GRIS}">El código sirve una sola vez y es solo tuyo: no lo reenvíes.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid ${LINEA};padding-top:18px">
+      <p style="margin:0;font:400 15px/1.6 ${SANS};color:${TINTA}">Gracias,<br><strong style="font-weight:600">${esc(quien.nombre)}</strong><br><span style="color:${GRIS};font-size:13.5px">Recursos Humanos &middot; Home &amp; Cook</span></p>
+    </td></tr></table>
+  </td></tr>
+
+  <tr><td class="pad" style="background:${FONDO};border-top:1px solid ${LINEA};border-radius:0 0 13px 13px;padding:16px 36px">
+    <p style="margin:0;font:400 12px/1.6 ${SANS};color:${GRIS}">Has recibido este correo porque trabajas en la red de tiendas Home &amp; Cook. Si crees que no es para ti, responde a este mensaje y lo revisamos.</p>
+  </td></tr>
+
+</table>
+
+<div style="font:400 11.5px/1.6 ${SANS};color:${GRIS};padding:16px 0 0">Groupe SEB Ibérica &middot; Tefal &middot; Rowenta &middot; Moulinex &middot; Krups &middot; WMF</div>
+
+</td></tr></table></body></html>`;
 
     try {
       const r = await fetch("https://api.resend.com/emails", {
