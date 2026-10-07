@@ -514,3 +514,146 @@ const ACCIONES_INV_CURSO = {
 })();
 
 if (typeof ACCIONES_INVITADO !== "undefined") Object.assign(ACCIONES_INVITADO, ACCIONES_INV_CURSO);
+
+/* ===================== SEGUIMIENTO DE FORMACIONES =====================
+   "Enviar a tienda" vive dentro de una campaña: enseña una formación y una
+   tanda de códigos. Esto es lo contrario: todas las campañas a la vez, para
+   responder a la pregunta que de verdad se hace en una reunión de RR.HH.,
+   que es quién de la red ha hecho qué y quién no.
+   ====================================================================== */
+function campanasForm() { return (S.campanas || []).filter(c => c.tipo === "formacion"); }
+function cursoDeCampana(c) { const pl = SC.plantilla(c.plantilla); return pl && pl.curso ? pl.curso : null; }
+function filtroSeg() { return (S.fseg = S.fseg || { tienda: "", curso: "", estado: "" }); }
+
+/* Un registro por persona y curso, con lo que haga falta para la tabla. */
+function registrosForm() {
+  const out = [];
+  campanasForm().forEach(c => {
+    const pl = SC.plantilla(c.plantilla); if (!pl) return;
+    const curso = cursoDeCampana(c), nom = (cursoDe(curso) || {}).t || curso;
+    (S.invitaciones || []).filter(i => i.campana_id === c.id).forEach(i => {
+      const t = S.tiendas.find(x => x.id === i.tienda_id);
+      if (!esAdmin() && !(t && t.rm_id === S.me.id)) return;
+      const hecho = i.estado === "respondida";
+      const p = hecho ? SC.puntuar(pl, i.respuestas) : null;
+      out.push({
+        inv: i, campana: c, curso, cursoT: nom, tienda: t, plantilla: pl,
+        persona: i.destinatario || "–", puesto: i.puesto || "", email: i.email || "",
+        hecho, apto: p ? p.pct >= 0.6 : null, nota: p, fecha: i.respondido || null, enviado: i.enviado || null,
+        estado: hecho ? (p && p.pct >= 0.6 ? "apto" : "noapto") : i.enviado ? "enviado" : "sinenviar"
+      });
+    });
+  });
+  return out.sort((a, b) => (a.tienda ? a.tienda.nombre : "").localeCompare(b.tienda ? b.tienda.nombre : "") || a.persona.localeCompare(b.persona));
+}
+const ETIQ_SEG = { apto: "Superada", noapto: "No superada", enviado: "Enviado, sin hacer", sinenviar: "Sin enviar" };
+
+function pintarSegForm() {
+  const R = registrosForm(), f = filtroSeg();
+  if (!R.length) {
+    $("vista").innerHTML = `<div class="page"><h1>Seguimiento</h1>
+      <div class="empty big"><p>Todavía no has enviado ninguna formación.</p>
+      <p class="hint">Ve a <b>Enviar a tienda</b>, crea una campaña con el curso que quieras y genera los códigos. Aquí verás quién la ha hecho.</p></div></div>`;
+    return;
+  }
+  const cursos = [...new Set(R.map(x => x.curso))];
+  const tiendas = [...new Set(R.map(x => x.tienda && x.tienda.id).filter(Boolean))]
+    .map(id => S.tiendas.find(t => t.id === id)).filter(Boolean)
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  const vis = R.filter(x => (!f.tienda || (x.tienda && x.tienda.id === f.tienda))
+    && (!f.curso || x.curso === f.curso) && (!f.estado || x.estado === f.estado));
+
+  const hechos = R.filter(x => x.hecho), aptos = R.filter(x => x.estado === "apto");
+  const media = hechos.length ? hechos.reduce((s, x) => s + x.nota.pct, 0) / hechos.length : null;
+  const pendientes = R.filter(x => !x.hecho);
+
+  let h = `<div class="page"><div class="page-h"><h1>Seguimiento</h1>
+    <div class="page-h-b">${pendientes.filter(x => x.email).length ? `<button class="btn" data-action="recordarForm">Recordar a los ${pendientes.filter(x => x.email).length} pendientes</button>` : ""}
+      <button class="btn" data-action="segCsv">Descargar CSV</button></div></div>
+
+    <div class="kpis"><div><small>Formaciones hechas</small><b>${hechos.length} de ${R.length}</b><small>${SC.pct(hechos.length / R.length, 0)} de lo enviado</small></div>
+      <div><small>Superadas</small><b>${aptos.length}</b><small>${hechos.length ? SC.pct(aptos.length / hechos.length, 0) + " de las hechas" : "–"}</small></div>
+      <div><small>Nota media</small><b>${media == null ? "–" : SC.pct(media, 0)}</b><small>se aprueba con el 60 %</small></div>
+      <div><small>Pendientes</small><b>${pendientes.length}</b><small>${pendientes.filter(x => !x.enviado).length} sin enviar todavía</small></div></div>`;
+
+  // Matriz tiendas x cursos: la foto que se mira en una reunión
+  h += `<section class="card"><div class="card-h"><h2>Por tienda y curso</h2><span class="muted">hechas de enviadas</span></div>
+    <div class="tablewrap"><table class="mini"><thead><tr><th>Tienda</th>${cursos.map(c => `<th class="n">${esc((cursoDe(c) || {}).t || c)}</th>`).join("")}<th class="n">Total</th></tr></thead><tbody>
+    ${tiendas.map(t => {
+      const suyos = R.filter(x => x.tienda && x.tienda.id === t.id);
+      return `<tr><td>${esc(t.nombre)}</td>${cursos.map(c => {
+        const xs = suyos.filter(x => x.curso === c);
+        if (!xs.length) return `<td class="n muted">–</td>`;
+        const n = xs.filter(x => x.hecho).length;
+        return `<td class="n"><span class="celda ${n === xs.length ? "ok" : n ? "medio" : "no"}">${n}/${xs.length}</span></td>`;
+      }).join("")}<td class="n"><b>${suyos.filter(x => x.hecho).length}/${suyos.length}</b></td></tr>`;
+    }).join("")}</tbody></table></div></section>`;
+
+  // Tabla de personas
+  h += `<section class="card"><div class="card-h"><h2>Personas</h2><span class="muted">${vis.length} de ${R.length}</span></div>
+    <div class="inline-form" style="border:0;margin:0 0 12px;padding:0">
+      <label>Tienda<select data-seg="tienda"><option value="">Todas</option>${tiendas.map(t => `<option value="${t.id}" ${f.tienda === t.id ? "selected" : ""}>${esc(t.nombre)}</option>`).join("")}</select></label>
+      <label>Curso<select data-seg="curso"><option value="">Todos</option>${cursos.map(c => `<option value="${c}" ${f.curso === c ? "selected" : ""}>${esc((cursoDe(c) || {}).t || c)}</option>`).join("")}</select></label>
+      <label>Estado<select data-seg="estado"><option value="">Todos</option>${Object.keys(ETIQ_SEG).map(k => `<option value="${k}" ${f.estado === k ? "selected" : ""}>${ETIQ_SEG[k]}</option>`).join("")}</select></label></div>
+    ${vis.length ? `<div class="tablewrap"><table><thead><tr><th>Persona</th><th>Tienda</th><th>Formación</th><th>Estado</th><th class="n">Nota</th><th></th></tr></thead><tbody>
+      ${vis.map(x => `<tr><td><b>${esc(x.persona)}</b>${x.puesto ? `<br><small>${esc(x.puesto)}</small>` : ""}${x.email ? `<br><small class="mail">${esc(x.email)}</small>` : ""}</td>
+        <td>${esc(x.tienda ? x.tienda.nombre : "–")}</td>
+        <td>${esc(x.cursoT)}<br><small class="muted">${esc(x.campana.titulo)}</small></td>
+        <td><span class="st ${x.estado === "apto" ? "cerrado" : x.estado === "noapto" ? "encurso" : "pendiente"}">${ETIQ_SEG[x.estado]}</span>
+          ${x.fecha ? `<br><small class="muted">${new Date(x.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</small>`
+            : x.enviado ? `<br><small class="muted">enviado ${new Date(x.enviado).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</small>` : ""}</td>
+        <td class="n">${x.nota ? `<b>${x.nota.obt} de ${x.nota.puntuables}</b>` : "–"}</td>
+        <td class="n">${x.hecho ? `<button class="btn small ghost" data-action="verRespuestas" data-id="${x.inv.id}">Ver respuestas</button>`
+          : x.email ? `<button class="btn small ghost" data-action="${typeof envioDirecto === "function" && envioDirecto() ? "enviarYa" : "enviarInv"}" data-id="${x.inv.id}">${x.enviado ? "Reenviar" : "Enviar"}</button>` : `<span class="muted">Sin correo</span>`}</td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="empty">Nada con esos filtros.</p>`}</section></div>`;
+  $("vista").innerHTML = h;
+}
+
+const ACCIONES_SEG = {
+  segCsv() {
+    const R = registrosForm();
+    const filas = [["Tienda", "Persona", "Puesto", "Correo", "Formación", "Campaña", "Estado", "Aciertos", "Total", "Fecha"]]
+      .concat(R.map(x => [x.tienda ? x.tienda.nombre : "", x.persona, x.puesto, x.email, x.cursoT, x.campana.titulo,
+        ETIQ_SEG[x.estado], x.nota ? x.nota.obt : "", x.nota ? x.nota.puntuables : "",
+        x.fecha ? new Date(x.fecha).toLocaleDateString("es-ES") : ""]));
+    const csv = "﻿" + filas.map(f => f.map(v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `formaciones-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    return false;
+  },
+  async recordarForm() {
+    const pend = registrosForm().filter(x => !x.hecho && x.email);
+    if (!pend.length) { toast("No hay nadie pendiente con correo"); return false; }
+    const directo = typeof envioDirecto === "function" && envioDirecto();
+    const ok = await confirmar({ titulo: `Recordar a ${pend.length} ${pend.length === 1 ? "persona" : "personas"}`,
+      ok: directo ? "Enviar ahora" : "Abrir el correo",
+      texto: directo ? "Se les reenvía su código desde la dirección de la empresa. Son los que aún no han hecho su formación."
+                     : "Se abrirá tu programa de correo con un mensaje por persona." });
+    if (!ok) return false;
+    if (!directo) {
+      pend.forEach((x, k) => setTimeout(() => {
+        const a = document.createElement("a");
+        a.href = `mailto:${encodeURIComponent(x.email)}?subject=${encodeURIComponent(asuntoInvitacion(x.inv))}&body=${encodeURIComponent(mensajeInvitacion(x.inv))}`;
+        document.body.appendChild(a); a.click(); a.remove();
+      }, k * 700));
+      return false;
+    }
+    toast("Enviando…");
+    let bien = 0; const fallos = [];
+    for (let i = 0; i < pend.length; i += 25) {
+      try {
+        const r = await enviarPorLaPlataforma(pend.slice(i, i + 25).map(x => x.inv.id));
+        bien += r.enviados || 0;
+        (r.resultados || []).filter(z => !z.ok).forEach(z => fallos.push(z.motivo));
+      } catch (e) { fallos.push(e.message); break; }
+    }
+    log(`${bien} recordatorios de formación enviados`);
+    await recargarPruebas(); pintar();
+    if (fallos.length) alert(`Enviados ${bien} de ${pend.length}.\n\nNo han salido:\n` + fallos.slice(0, 12).join("\n"));
+    else toast(bien === 1 ? "1 recordatorio enviado" : bien + " recordatorios enviados");
+    return false;
+  }
+};
+if (typeof ACCIONES_FORMACION !== "undefined") Object.assign(ACCIONES_FORMACION, ACCIONES_SEG);

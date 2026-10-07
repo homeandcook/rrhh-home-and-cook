@@ -202,6 +202,16 @@ Envío real de correos desde una dirección de la empresa.
 - Columna **`enviado`**: la tabla de códigos dice cuándo se envió cada uno y el botón pasa a decir «Reenviar». La escribe la función; la plataforma sigue sin tener permiso de UPDATE sobre invitaciones.
 - **`supabase/CORREO.md`**: el paso a paso completo, incluido lo que tiene que hacer IT con el DNS.
 
+## 0.22.0 · 07/10/2026 · **SQL: no**
+Seguimiento de formaciones: pestaña nueva en Formaciones.
+- **Enviar a tienda** mira una campaña; **Seguimiento** las mira todas a la vez, que es la pregunta de una reunión de RR.HH.: quién de la red ha hecho qué y quién no.
+- Arriba, cuatro datos: formaciones hechas sobre enviadas, cuántas superadas, nota media y cuántas quedan pendientes (con cuántas ni siquiera se han enviado).
+- **Matriz de tiendas por curso**, con el color puesto: verde si la tienda lo tiene todo hecho, ámbar si va a medias, rojo si no ha empezado.
+- **Tabla de personas** filtrable por tienda, curso y estado, con la nota, la fecha y el botón para ver sus respuestas o reenviarle el código.
+- **Recordar a los pendientes**: un botón que escribe a todos los que aún no la han hecho. Usa el envío directo si está configurado, y si no, abre el correo.
+- **Descargar CSV** de todo el seguimiento, para el informe de formación o para RR.HH. corporativo.
+- Cada Regional Manager ve solo a la gente de sus tiendas; el administrador, toda la red.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).
