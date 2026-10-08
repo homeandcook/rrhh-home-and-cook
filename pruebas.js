@@ -162,10 +162,11 @@ function pintarPruebas(tipo) {
   // una persona por correo sin dejar escrito en tu bandeja de enviados qué
   // código tiene quién. Se reparten en la tienda, en papel o en un mensaje al
   // grupo, y nadie controla quién coge cuál.
-  if (pl.anonima && sel.estado === "abierta") {
+  if (sel.estado === "abierta") {
     const conPend = [...new Set(mias.filter(i => i.estado !== "respondida").map(i => i.tienda_id))];
     if (conPend.length) {
       h += `<section class="card"><h2>Repartir en la tienda</h2>
+        ${pl.anonima ? "" : `<p class="hint" style="margin-top:0">Para quien no tiene correo. Cada papeleta lleva el nombre de su persona, porque aquí el código sí va dirigido.</p>`}
         <div class="inline-form" style="border:0;margin:0;padding:0">
           <label>Tienda<select id="repTienda">${conPend.map(id => {
             const t2 = tiendaDe(id), n = mias.filter(i => i.tienda_id === id && i.estado !== "respondida").length;
@@ -173,7 +174,7 @@ function pintarPruebas(tipo) {
           }).join("")}</select></label>
           <button class="btn" data-action="repartoCopiar">Copiar el mensaje</button>
           <button class="btn" data-action="repartoImprimir">Imprimir las papeletas</button></div>
-        <p class="hint">Al ser anónima, los códigos no van dirigidos a nadie. Mándalos de una vez al responsable de tienda, o imprime las papeletas y que cada persona coja una. Si enviaras un código por correo a cada persona, tu bandeja de enviados diría quién tiene cuál y la encuesta dejaría de ser anónima.</p></section>`;
+        ${pl.anonima ? `<p class="hint">Al ser anónima, los códigos no van dirigidos a nadie. Mándalos de una vez al responsable de tienda, o imprime las papeletas y que cada persona coja una. Si enviaras un código por correo a cada persona, tu bandeja de enviados diría quién tiene cuál y la encuesta dejaría de ser anónima.</p>` : `<p class="hint">Entrégaselas en mano o mándale la lista al responsable de tienda. Lo que la persona haga vuelve igual al seguimiento, con su nombre.</p>`}</section>`;
     }
   }
 
@@ -293,7 +294,10 @@ async function generarInvitaciones(ev) {
 }
 async function recargarPruebas() {
   const [c, i] = await Promise.all([
-    sb.from("campanas").select("*").eq("anio", SC.CONFIG.anio).order("creado"),
+    /* El año anterior también, para que el seguimiento de formaciones pueda
+       decir quién la hizo y le ha caducado. Las pantallas de campaña siguen
+       filtrando por el año en curso (campanasDe), así que no cambian. */
+    sb.from("campanas").select("*").gte("anio", SC.CONFIG.anio - 1).order("creado"),
     sb.from("invitaciones").select("*").order("creado")
   ]);
   S.campanas = c.data || []; S.invitaciones = i.data || [];
@@ -490,7 +494,9 @@ const ACCIONES_PRUEBAS = {
     if (!cods.length) { toast("No quedan códigos sin usar en esa tienda"); return false; }
     const pl = SC.plantilla(c.plantilla);
     const url = location.origin + location.pathname + "?codigo=";
-    const txt = `Hola,
+    const esCurso = !!pl.curso;
+    const txt = pl.anonima
+      ? `Hola,
 
 Os paso los códigos de "${c.titulo}" para ${t2 ? t2.nombre : "la tienda"}. Repártelos en el equipo: cada persona coge uno, el que quiera, y no hace falta apuntar quién coge cuál. La encuesta es anónima.
 
@@ -500,6 +506,18 @@ Códigos:
 ${cods.map(i => "  " + i.codigo).join("\n")}
 
 Son ${pl.preguntas.length} preguntas, unos 6 minutos, desde el móvil. Cada código sirve una sola vez.
+
+Gracias,
+${S.me.nombre}`
+      : `Hola,
+
+Te paso los códigos de "${c.titulo}" para ${t2 ? t2.nombre : "la tienda"}. Cada uno va dirigido a una persona: dáselo a quien le corresponde, porque el resultado vuelve con su nombre.
+
+Enlace: ${url}
+
+${cods.map(i => "  " + (i.destinatario || "—") + ": " + i.codigo).join("\n")}
+
+${esCurso ? "Se lee el curso desde el móvil y al final hay un test. Se tarda unos minutos." : "Son " + pl.preguntas.length + " preguntas desde el móvil."} Cada código sirve una sola vez.
 
 Gracias,
 ${S.me.nombre}`;
@@ -522,11 +540,13 @@ ${S.me.nombre}`;
     if (!cods.length) { toast("No quedan códigos sin usar en esa tienda"); return false; }
     const pl = SC.plantilla(c.plantilla);
     const url = (location.origin + location.pathname).replace(/^https?:\/\//, "") + "?codigo=";
+    const pie = pl.curso ? "curso + test · desde el móvil" : pl.preguntas.length + " preguntas · unos 6 minutos · desde el móvil";
     $("print").innerHTML = `<div class="papeletas"><h1>${esc(c.titulo)} · ${esc(t2 ? t2.nombre : "")}</h1>
-      <p class="pap-sub">Recorta y reparte. Cada persona coge una, la que quiera. Es anónima: nadie apunta quién coge cuál.</p>
-      <div class="pap-g">${cods.map(i => `<div class="pap"><b>${esc(c.titulo)}</b>
+      <p class="pap-sub">${pl.anonima ? "Recorta y reparte. Cada persona coge una, la que quiera. Es anónima: nadie apunta quién coge cuál."
+        : "Recorta y entrega cada papeleta a la persona que lleva su nombre. El resultado vuelve asociado a ella."}</p>
+      <div class="pap-g">${cods.map(i => `<div class="pap">${pl.anonima ? "" : `<span class="pap-quien">${esc(i.destinatario || "—")}</span>`}<b>${esc(c.titulo)}</b>
         <span class="pap-url">${esc(url)}</span><code>${esc(i.codigo)}</code>
-        <small>${pl.preguntas.length} preguntas · unos 6 minutos · desde el móvil</small></div>`).join("")}</div></div>`;
+        <small>${pie}</small></div>`).join("")}</div></div>`;
     window.print();
     return false;
   },

@@ -46,6 +46,9 @@ window.crearClienteDemo = function () {
     update(v) { this.op = "update"; this.v = v; return this; }
     delete() { this.op = "delete"; return this; }
     eq(c, v) { this.f.push(r => r[c] === v); return this; }
+    gte(c, v) { this.f.push(r => r[c] >= v); return this; }
+    lte(c, v) { this.f.push(r => r[c] <= v); return this; }
+    in(c, vs) { this.f.push(r => (vs || []).includes(r[c])); return this; }
     order(c, o) { this.ord = [c, !(o && o.ascending === false)]; return this; }
     limit(n) { this.lim = n; return this; }
     single() { this.one = "single"; return this; }

@@ -217,10 +217,13 @@ Seguimiento de formaciones: pestaña nueva en Formaciones.
 - **Correo rediseñado**: maquetado con tablas, que es lo único que Outlook renderiza igual que el resto; filete rojo SEB arriba, la marca en tipografía, el código en su propia caja, botón sólido, firma con el apartado y pie con las marcas del grupo. Sin imágenes remotas, por dos motivos: la mayoría de los clientes las bloquean y, además, la plataforma está en privado, así que un logotipo alojado ahí no cargaría.
 - Comprobado a 760 y a 400 píxeles: sin desbordes. La dirección larga ya parte de línea, que era lo que descuadraba el móvil.
 
-## 0.22.2 · 07/10/2026 · **SQL: no**
-- La función pasa a `supabase/functions/enviar-invitacion/index.ts`, que es donde la busca la herramienta oficial, y se añade `supabase/config.toml`.
-- **Despliegue automático**: `.github/workflows/desplegar-funciones.yml`. Cuando cambia la función en main, GitHub la despliega solo. Hay que configurarlo una vez con un token de Supabase guardado como secreto del repositorio; queda cifrado y no aparece ni en el código ni en los registros.
-- Mientras no se configure, el aviso del flujo lo dice y no rompe nada: se sigue pudiendo desplegar a mano desde el panel.
+## 0.23.0 · 08/10/2026 · **SQL: no**
+Formación: un solo formato, el Circuito medible y caducidad anual.
+- **Fuera el role play con IA.** No encajaba y, sobre todo, no funcionaba: necesita el entorno de claude.ai, así que en Netlify y en GitHub Pages enseñaba un recuadro de error. Borrado el módulo entero, no escondido.
+- **El Circuito de Venta ya tiene test**: siete preguntas, una por parada, con la corrección explicada. Era la única formación para todo el equipo y la única que no se podía enviar ni medir. Ahora se envía como las demás.
+- **Caducidad anual**: una formación hecha en una campaña de un año anterior aparece como «Caducada» y deja de contar como vigente, ni en los contadores ni en la matriz. El seguimiento carga también el año anterior para poder decirlo. El recordatorio no las toca: una caducada necesita campaña nueva, no un reenvío.
+- **Repartir en la tienda, también en las formaciones**: el mensaje para el responsable lleva cada código con el nombre de su persona, y las papeletas imprimibles salen con el nombre encima. Es la vía para quien no tiene correo, que en tienda son la mayoría.
+- El cliente de demostración aprende `gte`, `lte` e `in`, que le faltaban.
 
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).

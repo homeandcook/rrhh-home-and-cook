@@ -20,9 +20,55 @@ const CURSOS = [
 ];
 /* Las paradas de cada curso. El Circuito tiene las suyas aquí abajo; el
    resto viven en cursos.js con el mismo formato. */
+/* El Circuito es el único curso que va a todo el equipo, así que es el que
+   más falta hace poder enviar y medir. Siete preguntas, una por parada. */
+const TEST_CIRCUITO = [
+  { t: "Entra una clienta, la saludas y te contesta «solo estoy mirando». ¿Qué haces?",
+    o: ["Le explicas las ofertas de la semana para engancharla",
+        "«Perfecto, mire con calma. Si necesita algo estoy por aquí», y te quedas cerca y atento",
+        "Asientes y te vas a ordenar el lineal",
+        "La sigues a dos metros por si cambia de opinión"],
+    r: 1, por: "«Solo estoy mirando» casi nunca significa que no vaya a comprar: significa que todavía no se fía. Le das espacio y te quedas disponible. Irte del todo la pierde; echársele encima la espanta." },
+  { t: "Un cliente quiere un aspirador. ¿Por dónde empiezas?",
+    o: ["Por el modelo más vendido, que acierta casi siempre",
+        "Por el de más margen, que es lo que pesa en el Scorecard",
+        "Por preguntar: qué suelo tiene, si hay mascotas, cuántos metros",
+        "Por enseñarle la gama entera para que elija"],
+    r: 2, por: "Sin saber para qué lo quiere, cualquier producto que propongas es una apuesta. Tres preguntas antes de abrir la boca convierten la recomendación en algo que el cliente reconoce como suyo." },
+  { t: "¿Cuál de estas frases argumenta bien?",
+    o: ["«Lleva 2.800 W y filtro HEPA de cuatro etapas»",
+        "«Es el más vendido de la marca»",
+        "«Con el pelo de su perro, este filtro le evita tener que pasarlo dos veces»",
+        "«Está en oferta esta semana»"],
+    r: 2, por: "La característica es el filtro; el valor es no tener que pasar el aspirador dos veces. Traduce siempre la ficha técnica a lo que le pasa a esa persona en su casa." },
+  { t: "«Es muy caro». ¿Cuál es el orden correcto?",
+    o: ["Rebatir con un hecho, empatizar y ofrecer una salida",
+        "Empatizar, rebatir con un hecho y ofrecer una salida",
+        "Ofrecer un descuento y pasar a caja",
+        "Enseñarle directamente el modelo más barato"],
+    r: 1, por: "Si rebates antes de empatizar, el cliente siente que no le has escuchado y se cierra. Y bajar al modelo barato sin entender la objeción suele perder la venta y el margen a la vez." },
+  { t: "Has argumentado, has resuelto la objeción y el cliente asiente. ¿Qué haces?",
+    o: ["Esperas a que lo diga él, que no hay que presionar",
+        "Le das más argumentos para asegurarte",
+        "Preguntas: «¿se lo preparo?»",
+        "Le propones que se lo piense y vuelva"],
+    r: 2, por: "El cierre no es un momento mágico: es preguntar. Si los pasos anteriores están bien hechos, es casi un trámite. No preguntar es la causa más habitual de una venta que se cae sola." },
+  { t: "El cliente ya ha dicho que sí al aspirador. ¿Qué dices?",
+    o: ["«¿Algo más?»",
+        "«Le pongo también el pack de filtros de recambio, que así no se queda tirado en seis meses»",
+        "Nada, no conviene presionar después del sí",
+        "Le enseñas la gama de cafeteras por si acaso"],
+    r: 1, por: "«¿Algo más?» se contesta que no por inercia. La venta cruzada es recomendar algo que protege o mejora lo que acaba de comprar, no ofrecer un producto cualquiera." },
+  { t: "Estáis en caja. ¿Qué es lo último que debe pasar?",
+    o: ["Cobrar rápido, que hay cola",
+        "Ofrecerle la tarjeta de fidelización y explicarle la garantía en una frase",
+        "Pedirle que valore la tienda en una encuesta",
+        "Darle el tique y despedirte"],
+    r: 1, por: "En caja todavía se vende, y es el último recuerdo que se lleva. La tarjeta y una frase sobre la garantía dan un motivo real para volver; la prisa se nota y se recuerda." }
+];
 function cursoDe(id) { return CURSOS.find(c => c.id === id); }
 function pasosDe(id) { return id === "circuito" ? CIRCUITO : ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).pasos || []; }
-function testDe(id) { return id === "circuito" ? null : ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).test || null; }
+function testDe(id) { return id === "circuito" ? TEST_CIRCUITO : ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).test || null; }
 
 const CIRCUITO = [
   {
@@ -216,10 +262,10 @@ function pintarFormaciones() {
     const p = progresoCurso(c.id), v = (p.vistos || []).length, n = pasosDe(c.id).length;
     const extra = [];
     if (c.id === "circuito") {
-      const npr = (p.practicas || []).length, narc = (p.arcade || {}).partidas || 0;
-      if (npr) extra.push(`${npr} ${npr === 1 ? "práctica" : "prácticas"}`);
+      const narc = (p.arcade || {}).partidas || 0;
       if (narc) extra.push(`${narc} ${narc === 1 ? "partida" : "partidas"}`);
-    } else if (p.test) extra.push(`test ${p.test.aciertos} de ${p.test.total}`);
+    }
+    if (p.test) extra.push(`test ${p.test.aciertos} de ${p.test.total}`);
     const base = p.completado ? "Completada el " + fechaES(p.completado) : (v ? `${v} de ${n} pasos vistos` : "Sin empezar");
     return [base].concat(extra).join(" · ");
   };
@@ -240,7 +286,6 @@ function pintarFormaciones() {
 function pintarCurso() {
   if (S.chuleta) return pintarChuleta();
   if (S.vista === "test") return pintarTest();
-  if (S.curso === "circuito" && S.vista === "practicar") return pintarPractica();
   if (S.curso === "circuito" && S.vista === "arcade") return pintarArcade();
   const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso), vis = vistos();
   if (!curso || !PASOS.length) { S.curso = null; return pintarFormaciones(); }
@@ -250,8 +295,8 @@ function pintarCurso() {
   $("vista").innerHTML = `<div class="page curso">
     <div class="page-h"><div><button class="btn small ghost" data-action="volverCursos">← Formaciones</button>
       <h1>${esc(curso.t)}</h1></div>
-      <div class="curso-acc">${esCircuito ? `<button class="btn small" data-action="arcade">Jugar el turno</button>
-        <button class="btn small" data-action="practicar">Practicar con IA</button>` : (test ? `<button class="btn small" data-action="irTest">Hacer el test</button>` : "")}
+      <div class="curso-acc">${esCircuito ? `<button class="btn small" data-action="arcade">Jugar el turno</button>` : ""}
+        ${test ? `<button class="btn small" data-action="irTest">Hacer el test</button>` : ""}
         <button class="btn small" data-action="chuleta">Ver la chuleta</button>
         <button class="btn small ghost" data-action="imprimirCurso">Imprimir</button></div></div>
 
@@ -278,10 +323,6 @@ function pintarCurso() {
       ${p.extra === "necesidades" ? extraNecesidades() : ""}
       ${p.extra === "argumentos" ? extraArgumentos() : ""}
 
-      ${ult && esCircuito ? `<div class="cta-rp"><div><b>Ya has visto el circuito entero.</b>
-        <p class="hint">Ahora pruébalo: habla con un cliente simulado y recibe una valoración con esta misma rúbrica.</p></div>
-        <span><button class="btn" data-action="arcade">Jugar el turno</button>
-        <button class="btn primary" data-action="practicar">Practicar con IA</button></span></div>` : ""}
       ${ult && test ? `<div class="cta-rp"><div><b>Has llegado al final del curso.</b>
         <p class="hint">Cinco preguntas para comprobar que te lo llevas. Se pueden repetir las veces que quieras; queda la última.</p></div>
         <span><button class="btn primary" data-action="irTest">Hacer el test</button></span></div>` : ""}
@@ -345,22 +386,6 @@ function extraArgumentos() {
     : `<p class="empty">Ningún producto coincide con esa búsqueda.</p>`}</div>`;
 }
 
-function pintarPractica() {
-  const p = progreso().circuito || {}, pr = p.practicas || [];
-  const media = pr.length ? pr.reduce((s, x) => s + x.nota, 0) / pr.length : null;
-  $("vista").innerHTML = `<div class="page curso">
-    <div class="page-h"><div><button class="btn small ghost" data-action="volverRecorrido">← Recorrido</button>
-      <h1>Practicar el Circuito de Venta</h1></div>
-      ${pr.length ? `<span class="muted num">${pr.length} ${pr.length === 1 ? "práctica" : "prácticas"} · media ${SC.fmt(media, 1)}/10</span>` : ""}</div>
-    ${vistaRolePlay()}</div>`;
-  const t = $("rpTxt");
-  if (t) {
-    t.oninput = () => { t.style.height = "auto"; t.style.height = Math.min(140, t.scrollHeight) + "px"; };
-    t.onkeydown = ev => { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); ACCIONES_RP.rpEnviar(); } };
-    t.focus();
-  }
-  rpPintarHilo();
-}
 function pintarArcade() {
   const a = (progreso().circuito || {}).arcade || {};
   $("vista").innerHTML = `<div class="page curso">
@@ -407,7 +432,6 @@ const ACCIONES_FORMACION = {
     else toast("Formación completada");
   },
   chuleta() { S.chuleta = true; S.vista = "recorrido"; window.scrollTo(0, 0); },
-  practicar() { S.vista = "practicar"; S.chuleta = false; window.scrollTo(0, 0); },
   arcade() { S.vista = "arcade"; S.chuleta = false; window.scrollTo(0, 0); },
   volverRecorrido() { S.vista = "recorrido"; },
   chuletaNo() { S.chuleta = false; },
@@ -497,7 +521,7 @@ const ACCIONES_INV_CURSO = {
   C.tiposPrueba.formacion = { t: { es: "Formación a tienda", en: "Store training", fr: "Formation magasin" } };
   CURSOS.forEach(curso => {
     const test = testDe(curso.id), pasos = pasosDe(curso.id);
-    if (!test || !test.length) return;   // el Circuito de Venta no lleva test
+    if (!test || !test.length) return;
     C.plantillas.push({
       id: "form-" + curso.id, tipo: "formacion", anonima: false, curso: curso.id,
       nombre: { es: "Formación: " + curso.t, en: "Training: " + curso.t, fr: "Formation : " + curso.t },
@@ -522,6 +546,9 @@ if (typeof ACCIONES_INVITADO !== "undefined") Object.assign(ACCIONES_INVITADO, A
    que es quién de la red ha hecho qué y quién no.
    ====================================================================== */
 function campanasForm() { return (S.campanas || []).filter(c => c.tipo === "formacion"); }
+/* Una formación de retail vale un año: lo que se hizo en una campaña de un
+   año anterior cuenta como caducado y vuelve a aparecer como pendiente. */
+function caducada(c) { return c.anio < SC.CONFIG.anio; }
 function cursoDeCampana(c) { const pl = SC.plantilla(c.plantilla); return pl && pl.curso ? pl.curso : null; }
 function filtroSeg() { return (S.fseg = S.fseg || { tienda: "", curso: "", estado: "" }); }
 
@@ -534,19 +561,20 @@ function registrosForm() {
     (S.invitaciones || []).filter(i => i.campana_id === c.id).forEach(i => {
       const t = S.tiendas.find(x => x.id === i.tienda_id);
       if (!esAdmin() && !(t && t.rm_id === S.me.id)) return;
-      const hecho = i.estado === "respondida";
+      const hecho = i.estado === "respondida", cad = hecho && caducada(c);
       const p = hecho ? SC.puntuar(pl, i.respuestas) : null;
       out.push({
         inv: i, campana: c, curso, cursoT: nom, tienda: t, plantilla: pl,
         persona: i.destinatario || "–", puesto: i.puesto || "", email: i.email || "",
-        hecho, apto: p ? p.pct >= 0.6 : null, nota: p, fecha: i.respondido || null, enviado: i.enviado || null,
-        estado: hecho ? (p && p.pct >= 0.6 ? "apto" : "noapto") : i.enviado ? "enviado" : "sinenviar"
+        hecho, caducada: cad, anio: c.anio,
+        apto: p ? p.pct >= 0.6 : null, nota: p, fecha: i.respondido || null, enviado: i.enviado || null,
+        estado: cad ? "caducada" : hecho ? (p && p.pct >= 0.6 ? "apto" : "noapto") : i.enviado ? "enviado" : "sinenviar"
       });
     });
   });
   return out.sort((a, b) => (a.tienda ? a.tienda.nombre : "").localeCompare(b.tienda ? b.tienda.nombre : "") || a.persona.localeCompare(b.persona));
 }
-const ETIQ_SEG = { apto: "Superada", noapto: "No superada", enviado: "Enviado, sin hacer", sinenviar: "Sin enviar" };
+const ETIQ_SEG = { apto: "Superada", noapto: "No superada", caducada: "Caducada", enviado: "Enviado, sin hacer", sinenviar: "Sin enviar" };
 
 function pintarSegForm() {
   const R = registrosForm(), f = filtroSeg();
@@ -563,9 +591,10 @@ function pintarSegForm() {
   const vis = R.filter(x => (!f.tienda || (x.tienda && x.tienda.id === f.tienda))
     && (!f.curso || x.curso === f.curso) && (!f.estado || x.estado === f.estado));
 
-  const hechos = R.filter(x => x.hecho), aptos = R.filter(x => x.estado === "apto");
+  const hechos = R.filter(x => x.hecho && !x.caducada), aptos = R.filter(x => x.estado === "apto");
   const media = hechos.length ? hechos.reduce((s, x) => s + x.nota.pct, 0) / hechos.length : null;
   const pendientes = R.filter(x => !x.hecho);
+  const caducadas = R.filter(x => x.caducada);
 
   let h = `<div class="page"><div class="page-h"><h1>Seguimiento</h1>
     <div class="page-h-b">${pendientes.filter(x => x.email).length ? `<button class="btn" data-action="recordarForm">Recordar a los ${pendientes.filter(x => x.email).length} pendientes</button>` : ""}
@@ -574,7 +603,7 @@ function pintarSegForm() {
     <div class="kpis"><div><small>Formaciones hechas</small><b>${hechos.length} de ${R.length}</b><small>${SC.pct(hechos.length / R.length, 0)} de lo enviado</small></div>
       <div><small>Superadas</small><b>${aptos.length}</b><small>${hechos.length ? SC.pct(aptos.length / hechos.length, 0) + " de las hechas" : "–"}</small></div>
       <div><small>Nota media</small><b>${media == null ? "–" : SC.pct(media, 0)}</b><small>se aprueba con el 60 %</small></div>
-      <div><small>Pendientes</small><b>${pendientes.length}</b><small>${pendientes.filter(x => !x.enviado).length} sin enviar todavía</small></div></div>`;
+      <div><small>${caducadas.length ? "Caducadas" : "Pendientes"}</small><b>${caducadas.length || pendientes.length}</b><small>${caducadas.length ? "hechas en " + (SC.CONFIG.anio - 1) + ": toca repetirlas" : pendientes.filter(x => !x.enviado).length + " sin enviar todavía"}</small></div></div>`;
 
   // Matriz tiendas x cursos: la foto que se mira en una reunión
   h += `<section class="card"><div class="card-h"><h2>Por tienda y curso</h2><span class="muted">hechas de enviadas</span></div>
@@ -584,9 +613,9 @@ function pintarSegForm() {
       return `<tr><td>${esc(t.nombre)}</td>${cursos.map(c => {
         const xs = suyos.filter(x => x.curso === c);
         if (!xs.length) return `<td class="n muted">–</td>`;
-        const n = xs.filter(x => x.hecho).length;
+        const n = xs.filter(x => x.hecho && !x.caducada).length;
         return `<td class="n"><span class="celda ${n === xs.length ? "ok" : n ? "medio" : "no"}">${n}/${xs.length}</span></td>`;
-      }).join("")}<td class="n"><b>${suyos.filter(x => x.hecho).length}/${suyos.length}</b></td></tr>`;
+      }).join("")}<td class="n"><b>${suyos.filter(x => x.hecho && !x.caducada).length}/${suyos.length}</b></td></tr>`;
     }).join("")}</tbody></table></div></section>`;
 
   // Tabla de personas
@@ -599,7 +628,8 @@ function pintarSegForm() {
       ${vis.map(x => `<tr><td><b>${esc(x.persona)}</b>${x.puesto ? `<br><small>${esc(x.puesto)}</small>` : ""}${x.email ? `<br><small class="mail">${esc(x.email)}</small>` : ""}</td>
         <td>${esc(x.tienda ? x.tienda.nombre : "–")}</td>
         <td>${esc(x.cursoT)}<br><small class="muted">${esc(x.campana.titulo)}</small></td>
-        <td><span class="st ${x.estado === "apto" ? "cerrado" : x.estado === "noapto" ? "encurso" : "pendiente"}">${ETIQ_SEG[x.estado]}</span>
+        <td><span class="st ${x.estado === "apto" ? "cerrado" : x.estado === "noapto" || x.estado === "caducada" ? "encurso" : "pendiente"}">${ETIQ_SEG[x.estado]}</span>
+          ${x.caducada ? `<br><small class="muted">de ${x.anio}</small>` : ""}
           ${x.fecha ? `<br><small class="muted">${new Date(x.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</small>`
             : x.enviado ? `<br><small class="muted">enviado ${new Date(x.enviado).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</small>` : ""}</td>
         <td class="n">${x.nota ? `<b>${x.nota.obt} de ${x.nota.puntuables}</b>` : "–"}</td>
@@ -612,8 +642,8 @@ function pintarSegForm() {
 const ACCIONES_SEG = {
   segCsv() {
     const R = registrosForm();
-    const filas = [["Tienda", "Persona", "Puesto", "Correo", "Formación", "Campaña", "Estado", "Aciertos", "Total", "Fecha"]]
-      .concat(R.map(x => [x.tienda ? x.tienda.nombre : "", x.persona, x.puesto, x.email, x.cursoT, x.campana.titulo,
+    const filas = [["Tienda", "Persona", "Puesto", "Correo", "Formación", "Campaña", "Año", "Estado", "Aciertos", "Total", "Fecha"]]
+      .concat(R.map(x => [x.tienda ? x.tienda.nombre : "", x.persona, x.puesto, x.email, x.cursoT, x.campana.titulo, x.anio,
         ETIQ_SEG[x.estado], x.nota ? x.nota.obt : "", x.nota ? x.nota.puntuables : "",
         x.fecha ? new Date(x.fecha).toLocaleDateString("es-ES") : ""]));
     const csv = "﻿" + filas.map(f => f.map(v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
@@ -624,7 +654,7 @@ const ACCIONES_SEG = {
     return false;
   },
   async recordarForm() {
-    const pend = registrosForm().filter(x => !x.hecho && x.email);
+    const pend = registrosForm().filter(x => !x.hecho && !x.caducada && x.email);
     if (!pend.length) { toast("No hay nadie pendiente con correo"); return false; }
     const directo = typeof envioDirecto === "function" && envioDirecto();
     const ok = await confirmar({ titulo: `Recordar a ${pend.length} ${pend.length === 1 ? "persona" : "personas"}`,
