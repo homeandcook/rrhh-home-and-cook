@@ -1,0 +1,49 @@
+# Publica la plataforma en GitHub Pages en cada subida a main.
+# La primera ejecución activa Pages sola (enablement: true), así que no
+# hace falta tocar nada en los ajustes del repositorio.
+name: Publicar en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar solo los ficheros del sitio
+        run: |
+          mkdir -p _sitio
+          cp index.html manifest.json _sitio/
+          cp *.js _sitio/
+          cp *.png _sitio/
+          # Nada de SQL, documentación, flujos ni la función del correo:
+          # ya están en el repositorio y no pintan nada en el servidor web.
+          touch _sitio/.nojekyll
+          ls -1 _sitio | head -40
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _sitio
+
+      - id: despliegue
+        uses: actions/deploy-pages@v4
