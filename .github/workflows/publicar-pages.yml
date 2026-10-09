@@ -32,6 +32,7 @@ jobs:
           cp index.html manifest.json _sitio/
           cp *.js _sitio/
           cp *.png _sitio/
+          mkdir -p _sitio/img && cp img/*.jpg _sitio/img/
           # Nada de SQL, documentación, flujos ni la función del correo:
           # ya están en el repositorio y no pintan nada en el servidor web.
           touch _sitio/.nojekyll

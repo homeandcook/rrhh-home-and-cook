@@ -15,7 +15,7 @@ async function abrirInvitacion(codigo) {
   const { data, error } = await sb.rpc("invitacion_abrir", { p_codigo: INV.codigo });
   if (error) { INV.error = traducirError(error); INV.datos = null; }
   else if (!data) { INV.error = "Ese código no existe o ya ha caducado. Revisa que lo has copiado entero."; INV.datos = null; }
-  else { INV.datos = data; INV.respuestas = data.respuestas || {}; INV.fase = "curso"; INV.paso = 0; }
+  else { INV.datos = data; INV.respuestas = data.respuestas || {}; INV.fase = "curso"; INV.paso = 0; INV.esc = null; }
   pintarInvitado();
 }
 function pintarInvitado() {
@@ -50,6 +50,8 @@ function pintarInvitado() {
       <p class="hint" style="text-align:center">${t("cerrarVentana")}</p>`;
   } else if (d.campana_estado === "cerrada") {
     h += `<h1>${t("campanaCerrada")}</h1><p class="sub">${t("campanaCerradaTxt")}</p>`;
+  } else if (pl.juego && typeof pintarEscapeInvitado === "function") {
+    pintarEscapeInvitado(); return;
   } else if (pl.curso && INV.fase !== "test" && typeof pasoInvitado === "function") {
     $("app").innerHTML = pasoInvitado(pl); return;
   } else {

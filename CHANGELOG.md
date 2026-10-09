@@ -233,6 +233,16 @@ Formación nueva: **Un turno seguro**, un escape room de PRL.
 - Las salas van dibujadas en SVG, no en imágenes: pesan unos kilobytes en lugar de megabytes, se ven nítidas en cualquier pantalla y no dependen de ningún banco de imágenes. Los puntos van en porcentajes, así que el día que haya fotos de una tienda real solo se cambia el fondo.
 - **Todavía no se puede enviar a externos.** El progreso vive en el navegador, no en la invitación. Hacerlo enviable es otra pieza.
 
+## 0.25.0 · 09/10/2026 · **SQL: no**
+Un turno seguro, rehecho: ahora hay que decidir, usa fotos de tiendas reales y se puede enviar con código.
+- **Hay que decidir en cada objeto.** Antes de ver la explicación, la persona elige «Es un riesgo» o «Está bien», y el objeto solo muestra un nombre neutro («Las cajas de la esquina») para no regalar la respuesta. La primera decisión es la que cuenta y los fallos restan. Antes se ganaba pulsando todos los círculos.
+- **La nota sale de todo el recorrido**: cada objeto es un punto, más las tres preguntas de la taquilla. Al terminar, la lista de lo que se escapó.
+- **Fotos de tiendas Home & Cook** en las tres zonas de sala: café, cuidado personal y clima, y mesa de campaña. Comprimidas a unos 200 KB cada una. En la del Día sin IVA están difuminadas las dos personas que se podían reconocer; la foto de la entrada no se usa porque se ven caras.
+- La trastienda y el almacén siguen dibujados hasta que haya fotos. Sale la zona de caja dibujada.
+- Un hilo mínimo: el Store Manager está de vacaciones y antes de abrir das una vuelta.
+- **Se envía con código** desde Enviar a tienda, como cualquier formación: por dentro es una plantilla de preguntas, así que puntúa, vuelve al seguimiento y se ve en Ver respuestas sin nada aparte.
+- Las fotos van en `img/` y el flujo de GitHub Pages las publica.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

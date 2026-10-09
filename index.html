@@ -507,42 +507,58 @@ h2.grupo:first-of-type{margin-top:0}
 .pap code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:19px;font-weight:700;letter-spacing:.06em}
 .pap small{font-size:10.5px;color:#666}
 /* ---- Un turno seguro: escape room de PRL ---- */
-.esc .page-h p{max-width:70ch;margin:8px 0 0}
-.esc-cuenta{flex:none;font-weight:650;font-size:14px;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 15px;white-space:nowrap}
+.esc .page-h p{max-width:72ch;margin:8px 0 0}
+.esc-quien{margin:6px 0 0;font-weight:600;color:var(--muted)}
+.esc-cuenta-l{display:flex;justify-content:flex-end;margin:-6px 0 10px}
+.esc-cuenta{flex:none;font-weight:650;font-size:13.5px;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 14px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .esc-cuenta.ok{color:var(--l2);border-color:#A8D8B9;background:var(--okbg)}
-.esc-mapa{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:22px}
-.esc-puerta{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;background:var(--paper);border:1px solid var(--line);border-radius:14px;cursor:pointer;text-align:left;transition:.15s;font:inherit;color:inherit}
+.esc-mapa{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:18px 0 20px}
+.esc-puerta{display:flex;flex-direction:column;padding:0;overflow:hidden;background:var(--paper);border:1px solid var(--line);border-radius:14px;cursor:pointer;text-align:left;transition:.15s;font:inherit;color:inherit}
 .esc-puerta:hover{border-color:var(--ton);transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.12)}
 .esc-puerta.ok{border-color:#A8D8B9}
-.esc-mini{display:block;line-height:0;height:124px;overflow:hidden;border-bottom:1px solid var(--line)}
+.esc-mini{display:block;line-height:0;height:130px;overflow:hidden;border-bottom:1px solid var(--line);background:#11161D}
 .esc-mini .esc-svg{width:100%;height:auto;display:block}
-.esc-puerta-t{display:block;padding:14px 16px 0;font-size:16.5px;font-weight:650}
-.esc-puerta-t small{display:block;color:var(--muted);font-size:13px;font-weight:400;margin-top:3px}
-.esc-estado{display:block;padding:10px 16px 15px;font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.esc-mini .esc-foto{width:100%;height:100%;object-fit:cover;display:block}
+.esc-puerta-t{display:block;padding:13px 15px 0;font-size:16px;font-weight:650}
+.esc-puerta-t small{display:block;color:var(--muted);font-size:12.5px;font-weight:400;margin-top:3px}
+.esc-estado{display:block;padding:9px 15px 14px;font-size:12.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .esc-puerta.ok .esc-estado{color:var(--l2)}
 .esc-llavero{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
-.esc-llave{display:inline-flex;flex-direction:column;align-items:center;gap:3px;font-size:21px;filter:grayscale(1);opacity:.45}
+.esc-llave{display:inline-flex;flex-direction:column;align-items:center;gap:3px;font-size:20px;filter:grayscale(1);opacity:.45}
 .esc-llave.on{filter:none;opacity:1}
-.esc-llave small{font-size:10.5px;color:var(--muted);letter-spacing:.03em}
+.esc-llave small{font-size:10.5px;color:var(--muted)}
 .esc-llavero .btn{margin-left:auto}
-.esc-escena{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);margin-bottom:16px;line-height:0}
-.esc-escena .esc-svg{width:100%;height:auto;display:block}
-.esc-pt{position:absolute;transform:translate(-50%,-50%);width:46px;height:46px;border:0;background:transparent;padding:0;cursor:pointer;line-height:0}
-.esc-pt i{display:block;width:22px;height:22px;margin:12px;border-radius:50%;background:rgba(255,255,255,.26);border:2px solid rgba(255,255,255,.85);box-shadow:0 0 0 0 rgba(255,255,255,.45);animation:escLat 2.4s ease-out infinite}
-.esc-pt:hover i{background:rgba(255,255,255,.5)}
-.esc-pt.mal i{background:#E52143;border-color:#fff;animation:none}
-.esc-pt.bien i{background:#1B7A2F;border-color:#fff;animation:none;opacity:.75}
-@keyframes escLat{0%{box-shadow:0 0 0 0 rgba(255,255,255,.45)}70%{box-shadow:0 0 0 14px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+.esc-escena{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);margin:0 auto 16px;line-height:0;background:#11161D;width:100%}
+.esc-escena .esc-svg,.esc-escena .esc-foto{width:100%;height:auto;display:block}
+.esc-escena.foto .esc-foto{height:100%;object-fit:cover}
+.esc-pt{position:absolute;transform:translate(-50%,-50%);width:48px;height:48px;border:0;background:transparent;padding:0;cursor:pointer;line-height:0}
+.esc-pt i{display:block;width:24px;height:24px;margin:12px;border-radius:50%;background:rgba(255,255,255,.30);border:2.5px solid #fff;box-shadow:0 0 0 0 rgba(255,255,255,.55),0 1px 6px rgba(0,0,0,.45);animation:escLat 2.4s ease-out infinite}
+.esc-pt:hover i,.esc-pt.sel i{background:rgba(255,255,255,.65)}
+.esc-pt.sel i{transform:scale(1.18)}
+.esc-pt.acierto i{background:#1B7A2F;animation:none}
+.esc-pt.fallo i{background:#E52143;animation:none}
+@keyframes escLat{0%{box-shadow:0 0 0 0 rgba(255,255,255,.55),0 1px 6px rgba(0,0,0,.45)}70%{box-shadow:0 0 0 14px rgba(255,255,255,0),0 1px 6px rgba(0,0,0,.45)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0),0 1px 6px rgba(0,0,0,.45)}}
 @media (prefers-reduced-motion:reduce){.esc-pt i{animation:none}}
 .esc-pista{text-align:center}
-.esc-ficha{border-left:3px solid var(--line)}
-.esc-ficha.riesgo{border-left-color:var(--l0)}
-.esc-ficha.correcto{border-left-color:var(--l2)}
+.esc-ficha{border-left:4px solid var(--line)}
+.esc-ficha h2{margin:0 0 6px}
+.esc-ficha.pregunta{border-left-color:var(--ink);text-align:center}
+.esc-ficha.pregunta p{margin-left:auto;margin-right:auto}
+.esc-ficha.bien{border-left-color:var(--l2)}
+.esc-ficha.mal{border-left-color:var(--l0)}
 .esc-ficha p{margin:0 0 10px;line-height:1.6;max-width:72ch}
-.esc-q{background:var(--mist);border-radius:8px;padding:11px 14px;margin:0!important}
+.esc-veredicto{font-weight:700;font-size:13px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px}
+.esc-ficha.bien .esc-veredicto{color:var(--l2)} .esc-ficha.mal .esc-veredicto{color:var(--l0)}
+.esc-veredicto span{color:var(--muted);font-weight:600}
+.esc-decide{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.esc-decide .btn{min-width:170px;padding:11px 18px;font-size:15px}
+.esc-b-mal{border-color:#F0B8C0;color:var(--l0)} .esc-b-mal:hover{background:var(--errbg);border-color:var(--l0)}
+.esc-b-bien{border-color:#A8D8B9;color:var(--l2)} .esc-b-bien:hover{background:var(--okbg);border-color:var(--l2)}
+.esc-q{background:var(--mist);border-radius:8px;padding:11px 14px;margin:0 0 10px!important}
 .esc-ok{border-color:#A8D8B9;background:var(--okbg)}
-.esc-h3{font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:18px 0 6px}
-@media (max-width:640px){.esc-pt{width:40px;height:40px}.esc-pt i{width:18px;height:18px;margin:11px}.esc-llavero .btn{margin-left:0;width:100%}}
+.esc-h3{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:18px 0 6px}
+.esc-inv .page-h{margin-top:4px}
+@media (max-width:640px){.esc-pt{width:42px;height:42px}.esc-pt i{width:20px;height:20px;margin:11px}.esc-llavero .btn{margin-left:0;width:100%}.esc-decide .btn{flex:1;min-width:0}}
 .celda{display:inline-block;min-width:44px;padding:2px 8px;border-radius:10px;font-weight:600;font-variant-numeric:tabular-nums}
 .celda.ok{background:var(--okbg);color:var(--l2)}
 .celda.medio{background:var(--warnbg);color:var(--warn)}

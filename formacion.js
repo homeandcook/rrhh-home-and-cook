@@ -18,7 +18,7 @@ const CURSOS = [
   { id: "equipos", t: "Gestión de equipos", estado: "activo", min: 25,
     d: "Horarios, feedback, reconocimiento, conversaciones difíciles y la acogida de quien entra.", quien: "SM y ASM" },
   { id: "seguridad", t: "Un turno seguro", estado: "activo", min: 20, juego: true,
-    d: "Recorre cuatro dependencias de la tienda y encuentra los riesgos escondidos entre las cosas que están bien puestas.",
+    d: "Hoy la tienda es tuya: recorre cinco zonas antes de abrir y decide, objeto a objeto, qué es un riesgo y qué está bien.",
     quien: "Todo el equipo" }
 ];
 /* Las paradas de cada curso. El Circuito tiene las suyas aquí abajo; el
@@ -270,10 +270,9 @@ function pintarFormaciones() {
     }
     if (p.test) extra.push(`test ${p.test.aciertos} de ${p.test.total}`);
     if (c.juego) {
-      const e = typeof esc_est === "function" ? esc_est() : null;
-      const ll = typeof esc_llaves === "function" ? esc_llaves() : 0;
-      return p.completado ? `Completada el ${fechaES(p.completado)}${p.test ? ` · test ${p.test.aciertos} de ${p.test.total}` : ""}`
-        : ll ? `${ll} de 4 llaves` : "Sin empezar";
+      const ll = typeof esc_llaves === "function" ? (escModo = "int", esc_llaves()) : 0;
+      return p.completado ? `Completada el ${fechaES(p.completado)}${p.test ? ` · ${p.test.aciertos} de ${p.test.total} aciertos` : ""}`
+        : ll ? `${ll} de ${ESC_SALAS.length} zonas revisadas` : "Sin empezar";
     }
     const base = p.completado ? "Completada el " + fechaES(p.completado) : (v ? `${v} de ${n} pasos vistos` : "Sin empezar");
     return [base].concat(extra).join(" · ");
