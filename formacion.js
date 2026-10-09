@@ -16,7 +16,10 @@ const CURSOS = [
   { id: "pyl", t: "P&L", estado: "activo", min: 25,
     d: "La cuenta de resultados de una tienda: qué líneas dependen de ti, cuáles no, y cómo leerla cada mes.", quien: "SM" },
   { id: "equipos", t: "Gestión de equipos", estado: "activo", min: 25,
-    d: "Horarios, feedback, reconocimiento, conversaciones difíciles y la acogida de quien entra.", quien: "SM y ASM" }
+    d: "Horarios, feedback, reconocimiento, conversaciones difíciles y la acogida de quien entra.", quien: "SM y ASM" },
+  { id: "seguridad", t: "Un turno seguro", estado: "activo", min: 20, juego: true,
+    d: "Recorre cuatro dependencias de la tienda y encuentra los riesgos escondidos entre las cosas que están bien puestas.",
+    quien: "Todo el equipo" }
 ];
 /* Las paradas de cada curso. El Circuito tiene las suyas aquí abajo; el
    resto viven en cursos.js con el mismo formato. */
@@ -266,6 +269,12 @@ function pintarFormaciones() {
       if (narc) extra.push(`${narc} ${narc === 1 ? "partida" : "partidas"}`);
     }
     if (p.test) extra.push(`test ${p.test.aciertos} de ${p.test.total}`);
+    if (c.juego) {
+      const e = typeof esc_est === "function" ? esc_est() : null;
+      const ll = typeof esc_llaves === "function" ? esc_llaves() : 0;
+      return p.completado ? `Completada el ${fechaES(p.completado)}${p.test ? ` · test ${p.test.aciertos} de ${p.test.total}` : ""}`
+        : ll ? `${ll} de 4 llaves` : "Sin empezar";
+    }
     const base = p.completado ? "Completada el " + fechaES(p.completado) : (v ? `${v} de ${n} pasos vistos` : "Sin empezar");
     return [base].concat(extra).join(" · ");
   };
@@ -286,6 +295,7 @@ function pintarFormaciones() {
 function pintarCurso() {
   if (S.chuleta) return pintarChuleta();
   if (S.vista === "test") return pintarTest();
+  if (S.curso === "seguridad") return pintarEscape();
   if (S.curso === "circuito" && S.vista === "arcade") return pintarArcade();
   const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso), vis = vistos();
   if (!curso || !PASOS.length) { S.curso = null; return pintarFormaciones(); }

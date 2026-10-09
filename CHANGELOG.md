@@ -225,6 +225,14 @@ Formación: un solo formato, el Circuito medible y caducidad anual.
 - **Repartir en la tienda, también en las formaciones**: el mensaje para el responsable lleva cada código con el nombre de su persona, y las papeletas imprimibles salen con el nombre encima. Es la vía para quien no tiene correo, que en tienda son la mayoría.
 - El cliente de demostración aprende `gte`, `lte` e `in`, que le faltaban.
 
+## 0.24.0 · 09/10/2026 · **SQL: no**
+Formación nueva: **Un turno seguro**, un escape room de PRL.
+- Cuatro dependencias de la tienda — trastienda, sala de venta, zona de caja y almacén alto — con 17 riesgos escondidos entre objetos que están bien puestos. Acertar es distinguirlos, no pulsar todo.
+- Cada sala completa da una llave; con las cuatro se abre la taquilla, que son tres preguntas con corrección explicada. El resultado queda en el progreso del curso.
+- Al final, el listado de los 17 riesgos por sala con qué se hace en cada caso, imprimible para colgar en la trastienda.
+- Las salas van dibujadas en SVG, no en imágenes: pesan unos kilobytes en lugar de megabytes, se ven nítidas en cualquier pantalla y no dependen de ningún banco de imágenes. Los puntos van en porcentajes, así que el día que haya fotos de una tienda real solo se cambia el fondo.
+- **Todavía no se puede enviar a externos.** El progreso vive en el navegador, no en la invitación. Hacerlo enviable es otra pieza.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).
