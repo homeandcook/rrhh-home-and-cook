@@ -1,0 +1,34 @@
+# Mantiene despierto el proyecto de Supabase.
+# El plan gratuito pausa el proyecto tras ~7 días sin actividad. Esta tarea
+# hace una consulta mínima cada 3 días (no lee ni cambia datos: sin sesión,
+# las reglas de la base de datos devuelven una lista vacía).
+# Si falla, GitHub te avisa por correo: suele significar que ya está pausado
+# y hay que pulsar "Restore project" en Supabase.
+name: Mantener Supabase activo
+
+on:
+  schedule:
+    - cron: "17 6 */3 * *"   # cada 3 días, 06:17 UTC
+  workflow_dispatch: {}      # botón "Run workflow" para lanzarla a mano
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: config.js
+          sparse-checkout-cone-mode: false
+      - name: Consulta mínima a Supabase
+        run: |
+          URL=$(grep -o 'supabaseUrl: *"[^"]*"' config.js | sed 's/.*"\(.*\)"/\1/')
+          KEY=$(grep -o 'supabaseAnonKey: *"[^"]*"' config.js | sed 's/.*"\(.*\)"/\1/')
+          test -n "$URL" && test -n "$KEY" || { echo "No encuentro la URL o la clave en config.js"; exit 1; }
+          CODE=$(curl -sS -m 60 -o /tmp/r.txt -w "%{http_code}" \
+            "$URL/rest/v1/tiendas?select=id&limit=1" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
+          echo "Respuesta: $CODE"; head -c 300 /tmp/r.txt; echo
+          test "$CODE" = "200" || { echo "Supabase no responde bien. Revisa si el proyecto está pausado."; exit 1; }
