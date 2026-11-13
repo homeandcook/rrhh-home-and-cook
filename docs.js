@@ -111,7 +111,7 @@ function pintarDocFicha(tipo, L) {
 
 function informeDoc(tipo) {
   const L = libro(tipo), x = L.items.find(y => y.id === docsEstado().sel);
-  return `<div class="pr-head">${logo(56)}<div><h1>${esc(x.t)}</h1><p class="meta">${esc(L.titulo)} · RRHH x Home&Cook, Groupe SEB</p>
+  return `<div class="pr-head">${logo(56)}<div><h1>${esc(x.t)}</h1><p class="meta">${esc(L.titulo)} · Pippole</p>
     <p class="meta">${esc(x.quien || "")}${x.cuando ? " · " + esc(x.cuando) : ""}</p></div></div>
     <p><b>${esc(x.resumen)}</b></p>
     ${(x.pasos || []).length ? `<h2>Paso a paso</h2><ol>${x.pasos.map(p => `<li>☐ ${esc(p)}</li>`).join("")}</ol>` : ""}

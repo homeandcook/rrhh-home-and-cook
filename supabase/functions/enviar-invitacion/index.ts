@@ -1,5 +1,5 @@
 // ===================================================================
-// enviar-invitacion · RR.HH. x Home & Cook
+// enviar-invitacion · Pippole
 //
 // Envía por correo el código de una invitación, desde la dirección de
 // la empresa. Vive en Supabase (Edge Function) porque la plataforma es
@@ -15,7 +15,7 @@
 //
 // Variables que hay que configurar en el proyecto (Secrets):
 //   RESEND_API_KEY   clave del proveedor de correo
-//   CORREO_DE        remitente, p. ej. "RR.HH. Home & Cook <rrhh@tudominio.com>"
+//   CORREO_DE        remitente, p. ej. "Pippole <rrhh@pippole.es>"
 //   CORREO_RESPONDER opcional, dirección a la que responde la gente
 //   URL_PLATAFORMA   p. ej. "https://www.pippole.es/"
 // ===================================================================
@@ -108,7 +108,7 @@ ${quien.nombre}`;
        la mayoría de los clientes las bloquean por defecto, y la plataforma
        está en privado, así que un logotipo alojado ahí no cargaría. La
        marca se construye con tipografía y color. */
-    const R = "#E52143", TINTA = "#1C2733", GRIS = "#5E6B78", LINEA = "#D9DEE5", FONDO = "#F2F4F7";
+    const R = "#5B3FD9", TINTA = "#231A3D", GRIS = "#5A5170", LINEA = "#E7DFF3", FONDO = "#FBF7FF";
     const SANS = "'Segoe UI',system-ui,-apple-system,Helvetica,Arial,sans-serif";
     const MONO = "'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace";
     const html =
@@ -133,8 +133,8 @@ ${quien.nombre}`;
   <tr><td style="height:5px;background:${R};font-size:0;line-height:0;border-radius:13px 13px 0 0">&nbsp;</td></tr>
 
   <tr><td class="pad" style="padding:30px 36px 0">
-    <div style="font:700 21px/1.2 ${SANS};color:${TINTA};letter-spacing:-.01em">RRHH <span style="color:${R}">&#10005;</span> Home&amp;Cook</div>
-    <div style="font:600 10.5px/1.4 ${SANS};color:${GRIS};letter-spacing:.11em;text-transform:uppercase;padding-top:7px">Una plataforma de Groupe SEB Ibérica</div>
+    <div style="font:700 21px/1.2 ${SANS};color:${TINTA};letter-spacing:-.01em"><span style="color:${R}">&#9679;</span> pippole</div>
+    <div style="font:600 10.5px/1.4 ${SANS};color:${GRIS};letter-spacing:.11em;text-transform:uppercase;padding-top:7px">Plataforma de Recursos Humanos</div>
   </td></tr>
 
   <tr><td class="pad" style="padding:26px 36px 0">
@@ -163,17 +163,17 @@ ${quien.nombre}`;
   <tr><td class="pad" style="padding:26px 36px 30px">
     <p style="margin:0 0 18px;font:400 14px/1.6 ${SANS};color:${GRIS}">El código sirve una sola vez y es solo tuyo: no lo reenvíes.</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid ${LINEA};padding-top:18px">
-      <p style="margin:0;font:400 15px/1.6 ${SANS};color:${TINTA}">Gracias,<br><strong style="font-weight:600">${esc(quien.nombre)}</strong><br><span style="color:${GRIS};font-size:13.5px">Recursos Humanos &middot; Home &amp; Cook</span></p>
+      <p style="margin:0;font:400 15px/1.6 ${SANS};color:${TINTA}">Gracias,<br><strong style="font-weight:600">${esc(quien.nombre)}</strong><br><span style="color:${GRIS};font-size:13.5px">Recursos Humanos</span></p>
     </td></tr></table>
   </td></tr>
 
   <tr><td class="pad" style="background:${FONDO};border-top:1px solid ${LINEA};border-radius:0 0 13px 13px;padding:16px 36px">
-    <p style="margin:0;font:400 12px/1.6 ${SANS};color:${GRIS}">Has recibido este correo porque trabajas en la red de tiendas Home &amp; Cook. Si crees que no es para ti, responde a este mensaje y lo revisamos.</p>
+    <p style="margin:0;font:400 12px/1.6 ${SANS};color:${GRIS}">Has recibido este correo porque tu empresa usa Pippole para sus procesos de personas. Si crees que no es para ti, responde a este mensaje y lo revisamos.</p>
   </td></tr>
 
 </table>
 
-<div style="font:400 11.5px/1.6 ${SANS};color:${GRIS};padding:16px 0 0">Groupe SEB Ibérica &middot; Tefal &middot; Rowenta &middot; Moulinex &middot; Krups &middot; WMF</div>
+<div style="font:400 11.5px/1.6 ${SANS};color:${GRIS};padding:16px 0 0">Pippole &middot; pippole.es</div>
 
 </td></tr></table></body></html>`;
 

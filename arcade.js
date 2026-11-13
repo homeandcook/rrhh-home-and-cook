@@ -213,7 +213,7 @@ function arcJuego() {
       <div><small>Tarjetas</small><b id="arcTa">0</b></div>
     </div>
     <div class="tienda" id="arcTienda">
-      <span class="rotulo">HOME&amp;COOK</span>
+      <span class="rotulo">TIENDA</span>
       <div class="mueble lineal"></div><div class="mueble lineal2"></div>
       <div class="mueble mesa"></div><div class="mueble caja"></div>
       <div class="clientes" id="arcClientes"></div>

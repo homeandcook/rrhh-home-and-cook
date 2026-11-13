@@ -243,6 +243,16 @@ Un turno seguro, rehecho: ahora hay que decidir, usa fotos de tiendas reales y s
 - **Se envía con código** desde Enviar a tienda, como cualquier formación: por dentro es una plantilla de preguntas, así que puntúa, vuelve al seguimiento y se ve en Ver respuestas sin nada aparte.
 - Las fotos van en `img/` y el flujo de GitHub Pages las publica.
 
+## 0.26.0 · 13/11/2026 · **SQL: no**
+La plataforma pasa a llamarse **Pippole** y se sirve en www.pippole.es. Identidad «Cercana».
+- **Sin referencias a Home & Cook ni a Groupe SEB en la interfaz**: fuera el logo de Groupe SEB, el de Home & Cook, la cinta de marcas, «Una plataforma de Groupe SEB Ibérica» y «RRHH x Home&Cook» en cabecera, acceso, pantallas de invitado, informes imprimibles, icono de la app y correo de invitación.
+- **Logotipo nuevo**: «pippole» en minúsculas y un bocadillo con dos puntos.
+- **Colores**: violeta #5B3FD9 como color principal, tinta #231A3D y fondo #FBF7FF, con su versión oscura.
+- **Tipografía**: Plus Jakarta Sans, alojada en la propia web (`fonts/`), sin llamadas a Google.
+- Botones y campos más redondeados.
+- **Sigue igual (contenido del cliente)**: nombres de las tiendas, guiones del Circuito de Venta, pregunta eNPS y fotos de la formación PRL.
+- El correo de invitación cambia de diseño: hay que volver a desplegar la función `enviar-invitacion`.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

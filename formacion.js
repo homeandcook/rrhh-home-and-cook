@@ -418,7 +418,7 @@ function pintarChuleta() {
 function informeCurso() {
   const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso), esCircuito = S.curso === "circuito";
   return `<div class="pr-head">${logo(56)}<div><h1>${esc(curso.t)}</h1>
-    <p class="meta">RRHH x Home&Cook, Groupe SEB${S.me ? " · " + esc(S.me.nombre) : ""}</p></div></div>
+    <p class="meta">Pippole${S.me ? " · " + esc(S.me.nombre) : ""}</p></div></div>
     ${PASOS.map((p, k) => `<h2>${k + 1}. ${esc(p.t)} — ${esc(p.sub)}</h2>
       <p><b>${esc(p.idea)}</b></p>
       <p><b>Qué haces:</b></p><ul>${p.haces.map(x => `<li>${esc(x)}</li>`).join("")}</ul>

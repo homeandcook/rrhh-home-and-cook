@@ -33,6 +33,7 @@ jobs:
           cp *.js _sitio/
           cp *.png _sitio/
           mkdir -p _sitio/img && cp img/*.jpg _sitio/img/
+          mkdir -p _sitio/fonts && cp fonts/*.woff2 _sitio/fonts/
           # Nada de SQL, documentación, flujos ni la función del correo:
           # ya están en el repositorio y no pintan nada en el servidor web.
           touch _sitio/.nojekyll

@@ -4,25 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>RR.HH. x Home &amp; Cook</title>
-<meta name="description" content="Plataforma de Recursos Humanos de la red de tiendas Home &amp; Cook, Groupe SEB.">
+<title>Pippole</title>
+<meta name="description" content="Pippole, plataforma de Recursos Humanos.">
 <link rel="icon" href="logo.png">
+<link rel="preload" href="fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#F2F4F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#12181E" media="(prefers-color-scheme: dark)">
-<meta name="apple-mobile-web-app-title" content="RRHH H&amp;C">
+<meta name="theme-color" content="#FBF7FF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15121F" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-title" content="Pippole">
 <meta name="mobile-web-app-capable" content="yes">
 <style>
+@font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-display:swap;font-weight:200 800;src:url(fonts/plus-jakarta-sans-latin-wght-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-display:swap;font-weight:200 800;src:url(fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 :root{
-  --ink:#1C2733; --muted:#5E6B78; --line:#D9DEE5; --mist:#F2F4F7; --paper:#FFFFFF;
-  --red:#E52143; --red-d:#B8142F;
+  /* Pippole · dirección «Cercana». --red se mantiene como nombre del color principal */
+  --ink:#231A3D; --muted:#5A5170; --line:#E7DFF3; --mist:#FBF7FF; --paper:#FFFFFF;
+  --red:#5B3FD9; --red-d:#4630B8;
   --l0:#B42318; --l05:#C4640A; --l1:#3E5C76; --l15:#0F7B6C; --l2:#1B7A2F;
   --warn:#8A5300; --warnbg:#FFF4E0; --errbg:#FDECEA; --okbg:#E7F4EA;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{font:15px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--mist)}
+body{font:15px/1.5 "Plus Jakarta Sans","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--mist)}
 .num,.n,td.n,input.numin{font-variant-numeric:tabular-nums}
 h1,h2,h3{margin:0;line-height:1.25;letter-spacing:-.01em}
 h1{font-size:26px;font-weight:700}
@@ -41,16 +45,16 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:
 .saved{font-size:13px;color:var(--muted)}
 .saved.warn{color:var(--warn)} .saved.bad{color:var(--l0)}
 
-input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 9px;width:100%}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:6px 9px;width:100%}
 textarea{resize:vertical;min-height:34px;line-height:1.4}
-input:focus,select:focus,textarea:focus{border-color:var(--ink);outline:none;box-shadow:0 0 0 2px rgba(28,39,51,.12)}
+input:focus,select:focus,textarea:focus{border-color:var(--red);outline:none;box-shadow:0 0 0 3px rgba(91,63,217,.18)}
 input.numin{text-align:right;max-width:130px}
 input.short{max-width:80px}
 fieldset{border:0;margin:0;padding:0;min-width:0}
 fieldset:disabled input,fieldset:disabled textarea,fieldset:disabled select{background:var(--mist);color:var(--muted)}
 label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
 
-.btn{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:14px}
+.btn{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:14px}
 .btn:hover{border-color:var(--ink)}
 .btn.primary{background:var(--red);border-color:var(--red);color:#fff}
 .btn.primary:hover{background:var(--red-d)}
@@ -277,13 +281,13 @@ aside#side{top:53px;height:calc(100vh - 53px)}
 .loading{display:grid;place-items:center;height:100vh;color:var(--muted)}
 
 .login{min-height:100vh;display:grid;place-items:center;padding:24px;background:
-  radial-gradient(circle at 12% 0%, rgba(229,33,67,.13), transparent 55%),
+  radial-gradient(circle at 12% 0%, rgba(91,63,217,.13), transparent 55%),
   radial-gradient(circle at 92% 100%, rgba(62,92,118,.12), transparent 55%), var(--mist)}
 .login-wrap{width:100%;max-width:960px;display:grid;grid-template-columns:1.06fr 1fr;background:var(--paper);
   border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 26px 60px rgba(28,39,51,.14)}
 
 /* Panel de marca */
-.login-marca{background:linear-gradient(160deg,#E52143 0%,#C4152F 55%,#9C0F26 100%);color:#fff;
+.login-marca{background:linear-gradient(160deg,#6E55EC 0%,#5B3FD9 55%,#4126B0 100%);color:#fff;
   display:flex;flex-direction:column;position:relative;min-height:520px;min-width:0;overflow:hidden}
 .login-marca .lm-seb{display:flex;align-items:center;gap:10px;padding:22px 26px 0;font-size:12.5px;color:rgba(255,255,255,.88);font-weight:600}
 .login-marca .chipseb{box-shadow:none;border-color:transparent;padding:6px 10px}
@@ -366,8 +370,8 @@ code{font-size:13px;background:var(--mist);padding:1px 6px;border-radius:4px}
 :root{--solid:#1C2733;--infobg:#E6EEF6;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 header.top{top:env(safe-area-inset-top,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#E4E9EE;--muted:#9AA6B2;--line:#34404C;--mist:#12181E;--paper:#1B232B;--solid:#0B1015;--okbg:#173522;--warnbg:#3A2A10;--errbg:#3B1818;--warn:#F0B35A;--l1:#6B8FB3;--l2:#3FA35A;--infobg:#1D2C3C;color-scheme:dark}}
-:root[data-theme="dark"]{--ink:#E4E9EE;--muted:#9AA6B2;--line:#34404C;--mist:#12181E;--paper:#1B232B;--solid:#0B1015;--okbg:#173522;--warnbg:#3A2A10;--errbg:#3B1818;--warn:#F0B35A;--l1:#6B8FB3;--l2:#3FA35A;--infobg:#1D2C3C;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#ECE8F7;--muted:#ABA3C2;--line:#3A3350;--mist:#15121F;--paper:#1E1A2C;--solid:#0E0B16;--red:#7A63F0;--red-d:#9483F5;--okbg:#173522;--warnbg:#3A2A10;--errbg:#3B1818;--warn:#F0B35A;--l1:#6B8FB3;--l2:#3FA35A;--infobg:#1D2C3C;color-scheme:dark}}
+:root[data-theme="dark"]{--ink:#ECE8F7;--muted:#ABA3C2;--line:#3A3350;--mist:#15121F;--paper:#1E1A2C;--solid:#0E0B16;--red:#7A63F0;--red-d:#9483F5;--okbg:#173522;--warnbg:#3A2A10;--errbg:#3B1818;--warn:#F0B35A;--l1:#6B8FB3;--l2:#3FA35A;--infobg:#1D2C3C;color-scheme:dark}
 .ticket,.kpis div:first-child{border:1px solid var(--line)}
 .logo{background:#fff;border-radius:50%}
 
@@ -450,7 +454,7 @@ h2.grupo:first-of-type{margin-top:0}
 .lista li{margin:4px 0}
 
 /* Acceso de invitado y cuestionarios */
-.guest{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% -20%,rgba(229,33,67,.10),transparent 60%),var(--mist)}
+.guest{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% -20%,rgba(91,63,217,.10),transparent 60%),var(--mist)}
 .guest.wide{place-items:start center;padding:24px 16px 60px}
 .guest-card{width:100%;max-width:380px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:32px 30px 28px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(28,39,51,.08)}
 .guest-card.wide{max-width:720px}
@@ -536,7 +540,7 @@ h2.grupo:first-of-type{margin-top:0}
 .esc-pt:hover i,.esc-pt.sel i{background:rgba(255,255,255,.65)}
 .esc-pt.sel i{transform:scale(1.18)}
 .esc-pt.acierto i{background:#1B7A2F;animation:none}
-.esc-pt.fallo i{background:#E52143;animation:none}
+.esc-pt.fallo i{background:var(--l0);animation:none}
 @keyframes escLat{0%{box-shadow:0 0 0 0 rgba(255,255,255,.55),0 1px 6px rgba(0,0,0,.45)}70%{box-shadow:0 0 0 14px rgba(255,255,255,0),0 1px 6px rgba(0,0,0,.45)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0),0 1px 6px rgba(0,0,0,.45)}}
 @media (prefers-reduced-motion:reduce){.esc-pt i{animation:none}}
 .esc-pista{text-align:center}
@@ -617,15 +621,16 @@ small.mail{color:var(--muted);word-break:break-all}
 .pdc .grupo{margin-top:26px}
 @media (max-width:640px){.nps{grid-template-columns:repeat(6,1fr)}.likert.l5{grid-template-columns:1fr 1fr}}
 
-/* Logotipo dibujado, Groupe SEB y cinta de marcas */
-.marca{display:inline-flex;align-items:center;gap:.10em;font-weight:800;letter-spacing:-.02em;line-height:1;white-space:nowrap;color:inherit}
+/* Logotipo de Pippole y bandas */
+.pp-logo{display:inline-grid;place-items:center;background:#EFEAFE;border-radius:28%;flex:none}
+.marca{display:inline-flex;align-items:center;gap:.10em;font-weight:800;letter-spacing:-.025em;line-height:1;white-space:nowrap;color:inherit}
 .marca .equis{display:block;margin:0 .06em;flex:none}
 .marca.grande{letter-spacing:-.025em}
 .marcacaja{display:flex;justify-content:center;margin:6px 0 4px}
 .brand{gap:12px}
 .brand .marca{color:var(--ink)}
 .brand{gap:10px}
-.esquina{position:absolute;top:18px;left:20px;z-index:2}
+.esquina{display:none}
 .seb{display:block}
 .atras{display:inline-flex;align-items:center;gap:6px;flex:none;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 13px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;color:var(--muted)}
 .atras:hover{border-color:var(--ink);color:var(--ink)}
@@ -864,7 +869,7 @@ svg.chart .lbl{fill:var(--ink);font-size:11.5px;font-weight:700}
 .arc .zona-g.caja{justify-content:flex-end}
 .arc .cli{width:104px;background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:8px 8px 6px;cursor:pointer;text-align:center;animation:entra .35s ease-out;box-shadow:0 6px 18px rgba(0,0,0,.10);position:relative}
 .arc .cli:hover{border-color:var(--red);transform:translateY(-3px)}
-.arc .cli.sel{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,33,67,.18)}
+.arc .cli.sel{border-color:var(--red);box-shadow:0 0 0 3px rgba(91,63,217,.18)}
 .arc .cli .cara{width:42px;height:42px;margin:0 auto 4px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;font-size:15px}
 .arc .cli .que{font-size:11.5px;line-height:1.25;color:var(--muted);min-height:29px}
 .arc .cli .pac{height:6px;border-radius:4px;background:var(--mist);margin-top:6px;overflow:hidden}

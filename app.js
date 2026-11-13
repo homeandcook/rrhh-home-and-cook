@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.25.0";
+const APP_VERSION = "0.26.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -93,7 +93,7 @@ function pantallaSinLibreria() {
         <button class="btn primary block" onclick="location.reload()">Volver a cargar</button>
         <p class="hint acc-pie"><a href="#" data-action="irDemo">Entrar con datos de ejemplo</a></p>
       </div>
-      <p class="login-pie">${esc(t("unaPlataformaDe"))} · v${APP_VERSION}</p>
+      <p class="login-pie">Pippole · v${APP_VERSION}</p>
     </div>
   </div></div>`;
 }
@@ -114,10 +114,9 @@ function pantallaSinConfig() {
 function selectorIdioma() {
   return `<div class="langsel">${IDIOMAS.map(i => `<button class="${LANG === i.id ? "on" : ""}" data-action="idioma" data-l="${i.id}">${i.id.toUpperCase()}</button>`).join("")}</div>`;
 }
-function logo(px) { return `<img class="logo" src="${window.LOGO_SRC || "logo.png"}" width="${px}" height="${px}" alt="Home &amp; Cook Official Store">`; }
+function logo(px) { return `<span class="logo pp-logo" style="width:${px}px;height:${px}px">${simboloPippole(Math.round(px * 0.62))}</span>`; }
 function panelMarca() {
   return `<div class="login-marca">
-    <div class="lm-seb"><span class="chipseb">${logoSEB(30)}</span><span>${t("unaPlataformaDe")}</span></div>
     <div class="lm-centro">
       ${logo(132)}
       <div class="marcacaja">${marcaSVG("grande", 34)}</div>
@@ -701,7 +700,7 @@ function informe(t, p) {
     ${e.comentEvaluador ? `<p><b>Evaluador:</b> ${esc(e.comentEvaluador)}</p>` : ""}${e.comentEvaluado ? `<p><b>Evaluado:</b> ${esc(e.comentEvaluado)}</p>` : ""}${e.planMejora ? `<p><b>Plan de mejora:</b> ${esc(e.planMejora)}</p>` : ""}`;
   };
   const d = p.pdi || {}, vg = C.valoracionGlobal.find(v => v.id === d.valoracion);
-  return `<div class="pr-head">${logo(56)}<div><h1>Scorecard Retail ${C.anio}</h1><p class="meta">RR.HH. x Home &amp; Cook, Groupe SEB</p>
+  return `<div class="pr-head">${logo(56)}<div><h1>Scorecard Retail ${C.anio}</h1><p class="meta">Pippole</p>
   <p class="meta">${esc(p.nombre)}, ${esc((C.bonus[p.puesto] || {}).nombre || p.puesto)}. Tienda ${esc(t.nombre)}. Regional Manager: ${esc(rmNombre(t))}.</p></div></div>
   ${bloque("s1")}${bloque("fy")}
   <h2>Desarrollo</h2><p><b>Evolución profesional:</b> ${esc(d.evolucion || "–")}</p>
