@@ -86,7 +86,7 @@ Supabase → **Project Settings → Edge Functions → Secrets** (o
 | `RESEND_API_KEY` | la clave del paso 1 |
 | `CORREO_DE` | `RR.HH. Home & Cook <rrhh@vuestrodominio.com>` |
 | `CORREO_RESPONDER` | tu correo, para que las respuestas te lleguen (opcional) |
-| `URL_PLATAFORMA` | `https://people-retail.netlify.app/` |
+| `URL_PLATAFORMA` | `https://www.pippole.es/` |
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` ya están
 puestas por Supabase: no las toques ni las copies a ningún sitio.

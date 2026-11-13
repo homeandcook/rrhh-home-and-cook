@@ -17,7 +17,7 @@
 //   RESEND_API_KEY   clave del proveedor de correo
 //   CORREO_DE        remitente, p. ej. "RR.HH. Home & Cook <rrhh@tudominio.com>"
 //   CORREO_RESPONDER opcional, dirección a la que responde la gente
-//   URL_PLATAFORMA   p. ej. "https://people-retail.netlify.app/"
+//   URL_PLATAFORMA   p. ej. "https://www.pippole.es/"
 // ===================================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
