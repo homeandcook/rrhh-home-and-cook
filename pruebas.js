@@ -34,12 +34,12 @@ function pintarInvitado() {
   } else if (INV.enviado && pl && pl.curso) {
     /* En una formación la persona tiene derecho a ver su nota y a saber qué
        falló: de eso va la formación. En una encuesta no hay nota que dar. */
-    const n = SC.puntuar(pl, INV.respuestas), apto = n.pct >= 0.6;
+    const n = SC.puntuar(pl, INV.respuestas), apto = n.pct >= (pl.umbral || 0.6);
     $("app").innerHTML = `<div class="guest wide"><div class="esquina"><span class="chipseb">${logoSEB(32)}</span></div>
       <div class="guest-card wide">${selectorIdioma()}<div class="guest-h">${logo(56)}<div>
         <h1>${esc(SC.txt(pl.nombre))}</h1><p class="sub">${esc(d.destinatario || "")}${d.tienda ? " · " + esc(d.tienda) : ""}</p></div></div>
       <div class="nota-inv ${apto ? "ok" : "ko"}"><b>${n.obt} de ${n.puntuables}</b>
-        <span>${apto ? "Formación superada" : "No llega al 60 %. Habla con tu responsable para repetirla."}</span></div>
+        <span>${apto ? "Formación superada" : `No llega al ${Math.round((pl.umbral || 0.6) * 100)} %. Habla con tu responsable para repetirla.`}</span>${pl.ia && apto ? `<button class="btn primary" data-action="iaCertInv">Descargar el certificado</button>` : ""}</div>
       <ul class="repaso">${pl.preguntas.map(q => {
         const r = INV.respuestas[q.id], mia = q.o[r], ok = !!(mia && mia.v === 1), buena = q.o.find(o => o.v === 1) || {};
         return `<li class="${ok ? "ok" : "ko"}"><b>${esc(SC.txt(q.t))}</b>
@@ -54,6 +54,8 @@ function pintarInvitado() {
       <p class="hint" style="text-align:center">${t("cerrarVentana")}</p>`;
   } else if (d.campana_estado === "cerrada") {
     h += `<h1>${t("campanaCerrada")}</h1><p class="sub">${t("campanaCerradaTxt")}</p>`;
+  } else if (pl.ia && typeof pintarIAInvitado === "function") {
+    pintarIAInvitado(); return;
   } else if (pl.juego && typeof pintarEscapeInvitado === "function") {
     pintarEscapeInvitado(); return;
   } else if (pl.curso && INV.fase !== "test" && typeof pasoInvitado === "function") {
@@ -96,6 +98,8 @@ const ACCIONES_INVITADO = {
 };
 
 /* ---------- Panel de RR.HH. y RM ---------- */
+/* Las plantillas de cursos ocultos no se ofrecen para campañas nuevas */
+function plantillaVisible(p) { const c = p.curso && typeof cursoDe === "function" ? cursoDe(p.curso) : null; return !c || !c.oculto; }
 function campanasDe(tipo) { return (S.campanas || []).filter(c => c.tipo === tipo && c.anio === SC.CONFIG.anio); }
 function invitacionesDe(id) { return (S.invitaciones || []).filter(i => i.campana_id === id); }
 function tiendaDe(id) { return S.tiendas.find(t => t.id === id); }
@@ -105,7 +109,7 @@ function pintarPruebas(tipo) {
   const nombreTipo = SC.txt(T.t);
   const sel = cs.find(c => c.id === S.campana) || cs[cs.length - 1];
   if (sel) S.campana = sel.id;
-  const plantillas = SC.CONFIG.plantillas.filter(p => p.tipo === tipo);
+  const plantillas = SC.CONFIG.plantillas.filter(p => p.tipo === tipo && plantillaVisible(p));
   let h = `<div class="page"><div class="page-h"><h1>${esc(nombreTipo)}</h1>
     <div class="page-h-b"><button class="btn" data-action="actualizarPruebas" title="Traer las últimas respuestas">Actualizar</button>
     ${esAdmin() && cs.length ? `<button class="btn peligro-g" data-action="borrarCampana">Borrar campaña</button>` : ""}
@@ -344,7 +348,7 @@ function asuntoInvitacion(inv) {
 const ACCIONES_PRUEBAS = {
   selCampana(b) { S.campana = b.dataset.id; },
   async nuevaCampana(b) {
-    const tipo = b.dataset.tipo, pls = SC.CONFIG.plantillas.filter(p => p.tipo === tipo);
+    const tipo = b.dataset.tipo, pls = SC.CONFIG.plantillas.filter(p => p.tipo === tipo && plantillaVisible(p));
     let plantilla = pls[0].id;
     if (pls.length > 1) {
       const op = prompt(`¿Qué plantilla?\n${pls.map((p2, i) => `${i + 1}. ${SC.txt(p2.nombre)}`).join("\n")}\n\nEscribe el número:`, "1");

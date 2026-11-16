@@ -57,10 +57,6 @@ function avisosHoy() {
     if (dias > 75) add("info", `Los datos del People Data Centre llegan hasta ${nombreMes(ult)}: falta cargar ${Math.floor(dias / 30) - 1} ${Math.floor(dias / 30) - 1 === 1 ? "mes" : "meses"}`, "pdc", { carga: true });
   } else add("info", "El People Data Centre todavía no tiene datos mensuales", "pdc", { carga: true });
   // Formación propia
-  if (typeof cursosCompletados === "function") {
-    const pend = CURSOS.length - cursosCompletados();
-    if (pend) add("info", `Tienes ${pend} ${pend === 1 ? "formación pendiente" : "formaciones pendientes"} en el catálogo`, "formacion", { tab: "cursos" });
-  }
   const orden = { alerta: 0, aviso: 1, info: 2 };
   return A.filter(a => puedeVer(a.modulo)).sort((a, b) => orden[a.nivel] - orden[b.nivel]);
 }
@@ -79,7 +75,7 @@ function buscarGlobal(q) {
   const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const nq = norm(q), out = [];
   MODULOS.filter(m => puedeVer(m.id) && m.grupo !== "externo").forEach(m => { if (norm(modTxt(m.id, 0)).includes(nq) || norm(m.id).includes(nq)) out.push({ tipo: "Apartado", t: modTxt(m.id, 0), m: m.id }); });
-  if (typeof CURSOS !== "undefined") CURSOS.forEach(c => { if (norm(c.t).includes(nq)) out.push({ tipo: "Formación", t: c.t, m: "formacion", tab: "cursos", curso: c.id }); });
+  if (typeof CURSOS !== "undefined") cursosVisibles().forEach(c => { if (norm(c.t).includes(nq)) out.push({ tipo: "Formación", t: c.t, m: "formacion", tab: "cursos", curso: c.id }); });
   S.tiendas.forEach(t => { if (norm(t.nombre).includes(nq) || norm(t.codigo).includes(nq)) out.push({ tipo: "Tienda", t: t.nombre, sub: t.codigo, m: esMarketing() ? "pdc" : "evaluacion", tab: "eval", tienda: t.id }); });
   if (!esMarketing()) S.tiendas.forEach(t => t.personas.forEach(p => { if (norm(p.nombre).includes(nq)) out.push({ tipo: "Persona", t: p.nombre, sub: `${(C.bonus[p.puesto] || {}).nombre || p.puesto} · ${t.nombre}`, m: "evaluacion", tab: "eval", tienda: t.id, p: p.id }); }));
   DOCS_TIPOS.forEach(tipo => { libro(tipo).items.forEach(x => { if (norm(x.t).includes(nq)) out.push({ tipo: libro(tipo).titulo, t: x.t, m: "docs", tab: tipo, doc: x.id }); }); });

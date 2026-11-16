@@ -287,6 +287,17 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.29.0 · 16/11/2026 · **SQL: no**
+- **Formación de IA con el curso de Vigente**: «Inteligencia artificial en el trabajo».
+  - 9 módulos del Reglamento europeo de IA, obligatorios, y 4 opcionales de IA en el trabajo (comité, derecho individual, igualdad, Portugal). Cada módulo tiene tres preguntas que hay que acertar; si falla, ve las explicaciones y corrige.
+  - Examen final de 12 preguntas, que se aprueba con 9. Al aprobar, la persona descarga su certificado, con el código de su invitación como referencia.
+  - Se envía con el **mismo sistema de códigos** que las encuestas: Formación de IA → Enviar. La nota llega a Seguimiento con su nota de corte (75 %).
+  - El avance de los módulos se guarda en el dispositivo de la persona, para que pueda dejarlo a medias.
+  - RR.HH. puede abrir el curso desde «Cursos» como vista previa, sin enviar nada.
+- Contenido en `ia_datos.js`, generado desde `lib/content.mjs` de Vigente (versión 2026.10.1, verificado a 3 de octubre de 2026). El reproductor está en `ia.js`.
+- Los cursos de tienda (Circuito, KPIs, Visual, P&L, Equipos y Un turno seguro) quedan **ocultos**: no aparecen en el catálogo ni al crear campañas, pero las campañas antiguas siguen funcionando.
+- «Para hoy» ya no avisa de formaciones pendientes del propio administrador.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

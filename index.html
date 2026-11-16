@@ -1184,35 +1184,77 @@ textarea.big{min-height:118px}
 .tr-pp h2{margin:0}.tr-pp h4{color:#7A5A12;text-transform:uppercase;letter-spacing:.08em;font-size:9pt;margin:12px 0 4px}
 .tr-pp table{width:100%;border-collapse:collapse}.tr-pp th{text-align:left;width:145px;vertical-align:top;padding:3px 6px 3px 0;color:#444}.tr-pp td{padding:3px 0}
 @media print{body.tr-imprimiendo>*:not(#trPrint){display:none!important}body.tr-imprimiendo #trPrint{display:block}body.tr-imprimiendo{background:#fff}}
+
+/* ============ Formación de IA (curso de Vigente) ============ */
+.ia{max-width:860px;margin:0 auto}
+.guest-card.ia{max-width:900px;text-align:left}
+.guest-card.ia h1,.guest-card.ia h2,.guest-card.ia p{text-align:left}
+.ia-h{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:6px}
+.ia-eyebrow{display:block;font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--red)}
+.ia h1{font-size:clamp(24px,4vw,32px);letter-spacing:-.025em;margin:6px 0 8px;text-wrap:balance}
+.ia h2{font-size:17px;margin:26px 0 10px}.ia h2 small{font-size:12.5px;font-weight:500;color:var(--muted);margin-left:6px}
+.ia-lead{font-size:16px;line-height:1.6;color:var(--muted);max-width:66ch}
+.ia-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0 10px}
+.ia-kpis div{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px}.ia-kpis b{display:block;font-size:24px;font-variant-numeric:tabular-nums}.ia-kpis span{font-size:12px;color:var(--muted)}
+@media (max-width:560px){.ia-kpis{grid-template-columns:minmax(0,1fr)}}
+.ia-bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden}.ia-bar i{display:block;height:100%;background:var(--red)}
+.ia-siguiente{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#EFEAFE;color:#2E2163;border-radius:12px;padding:14px 16px;margin:16px 0}
+.ia-siguiente span{display:block;font-size:13px}
+.ia-mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.ia-mod{font:inherit;text-align:left;display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;min-height:118px}
+.ia-mod:hover{border-color:var(--red)}.ia-mod b{font-size:15px}.ia-mod small{font-size:12.5px;color:var(--muted)}
+.ia-ord{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ia-pie{margin-top:auto;font-size:12px;font-weight:600;color:var(--muted)}.ia-mod.ok{border-color:var(--l3,#2C6A4A)}.ia-mod.ok .ia-pie{color:var(--l3,#2C6A4A)}
+.ia-pie-v{font-size:12px;color:var(--muted);margin-top:24px}
+.ia-leccion{max-width:70ch}
+.ia-vig{display:inline-block;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;background:#EFEAFE;color:#2E2163}
+.ia-cuerpo{font-size:16px;line-height:1.7;margin-top:14px}.ia-cuerpo h4{font-size:15px;margin:22px 0 6px}.ia-cuerpo ul{padding-left:20px}.ia-cuerpo li{margin:6px 0}
+.ia h3{font-size:18px;margin:30px 0 12px;padding-top:16px;border-top:1px solid var(--line)}
+.ia-preg{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 12px;min-width:0}
+.ia-preg legend{font-weight:600;font-size:15px;padding:0 4px;line-height:1.45}
+.ia-n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--mist);font-size:11.5px;margin-right:6px}
+.ia-op{display:flex!important;flex-direction:row!important;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:9px;margin:4px 0;cursor:pointer;font-size:14.5px;font-weight:400;text-align:left}
+.ia-op input{width:auto!important;margin-top:3px}.ia-op:hover{background:var(--mist)}
+.ia-op.bien{background:#DCEBE1;color:#1F5238}.ia-op.mal{background:#F3DCDF;color:#7A2A36}
+.ia-expl{font-size:13.5px;background:var(--mist);border-radius:9px;padding:9px 12px;margin:8px 0 0}.ia-expl b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.ia-ok,.ia-ko{border-radius:12px;padding:13px 15px;margin:14px 0;font-size:14px}.ia-ok{background:#DCEBE1;color:#1F5238}.ia-ko{background:#F3DCDF;color:#7A2A36}
+.ia-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin-top:12px}.ia-ok .ia-btns,.ia-ko .ia-btns{justify-content:flex-start}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ia-vig,:root:not([data-theme="light"]) .ia-siguiente{background:#2A2342;color:#E4DCFF}:root:not([data-theme="light"]) .ia-op.bien,:root:not([data-theme="light"]) .ia-ok{background:#1F3A2D;color:#8FD1AC}:root:not([data-theme="light"]) .ia-op.mal,:root:not([data-theme="light"]) .ia-ko{background:#3E2328;color:#F0A3AE}}
+:root[data-theme="dark"] .ia-vig,:root[data-theme="dark"] .ia-siguiente{background:#2A2342;color:#E4DCFF}:root[data-theme="dark"] .ia-op.bien,:root[data-theme="dark"] .ia-ok{background:#1F3A2D;color:#8FD1AC}:root[data-theme="dark"] .ia-op.mal,:root[data-theme="dark"] .ia-ko{background:#3E2328;color:#F0A3AE}
+.ia-cert{page-break-after:always;color:#231A3D}
+.ia-cert-in{border:3px double #5B3FD9;padding:48px 56px;text-align:center;min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-family:"Plus Jakarta Sans",system-ui,sans-serif}
+.ia-cert-in h1{font-size:34px;margin:14px 0 0}.ia-cert-in h2{font-size:22px;margin:0 0 10px;color:#5B3FD9}.ia-cert-in p{max-width:60ch}.ia-cert-pie{font-size:12px;color:#5A5170;margin-top:24px}
 </style>
 </head>
 <body>
 <div id="app"><div class="loading">Cargando…</div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=0.28.1"></script>
-<script src="i18n.js?v=0.28.1"></script>
-<script src="marca.js?v=0.28.1"></script>
-<script src="marcas.js?v=0.28.1"></script>
-<script src="engine.js?v=0.28.1"></script>
-<script src="talent.js?v=0.28.1"></script>
-<script src="pruebas.js?v=0.28.1"></script>
-<script src="pdc.js?v=0.28.1"></script>
-<script src="pdc_carga.js?v=0.28.1"></script>
-<script src="bajas.js?v=0.28.1"></script>
-<script src="prl.js?v=0.28.1"></script>
-<script src="curso_datos.js?v=0.28.1"></script>
-<script src="cursos.js?v=0.28.1"></script>
-<script src="formacion.js?v=0.28.1"></script>
-<script src="docs_base.js?v=0.28.1"></script>
-<script src="docs.js?v=0.28.1"></script>
-<script src="arcade.js?v=0.28.1"></script>
-<script src="escape.js?v=0.28.1"></script>
-<script src="desarrollo_cat.js?v=0.28.1"></script>
-<script src="desarrollo_eval.js?v=0.28.1"></script>
-<script src="desarrollo.js?v=0.28.1"></script>
-<script src="hoy.js?v=0.28.1"></script>
-<script src="demo.js?v=0.28.1"></script>
-<script src="app.js?v=0.28.1"></script>
+<script src="config.js?v=0.29.0"></script>
+<script src="i18n.js?v=0.29.0"></script>
+<script src="marca.js?v=0.29.0"></script>
+<script src="marcas.js?v=0.29.0"></script>
+<script src="engine.js?v=0.29.0"></script>
+<script src="talent.js?v=0.29.0"></script>
+<script src="pruebas.js?v=0.29.0"></script>
+<script src="pdc.js?v=0.29.0"></script>
+<script src="pdc_carga.js?v=0.29.0"></script>
+<script src="bajas.js?v=0.29.0"></script>
+<script src="prl.js?v=0.29.0"></script>
+<script src="curso_datos.js?v=0.29.0"></script>
+<script src="cursos.js?v=0.29.0"></script>
+<script src="formacion.js?v=0.29.0"></script>
+<script src="docs_base.js?v=0.29.0"></script>
+<script src="docs.js?v=0.29.0"></script>
+<script src="arcade.js?v=0.29.0"></script>
+<script src="escape.js?v=0.29.0"></script>
+<script src="ia_datos.js?v=0.29.0"></script>
+<script src="ia.js?v=0.29.0"></script>
+<script src="desarrollo_cat.js?v=0.29.0"></script>
+<script src="desarrollo_eval.js?v=0.29.0"></script>
+<script src="desarrollo.js?v=0.29.0"></script>
+<script src="hoy.js?v=0.29.0"></script>
+<script src="demo.js?v=0.29.0"></script>
+<script src="app.js?v=0.29.0"></script>
 </body>
 </html>

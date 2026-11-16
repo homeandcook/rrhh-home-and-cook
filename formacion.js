@@ -5,19 +5,25 @@
    sistemática comercial de Home & Cook.
    ======================================================= */
 
+/* Desde la 0.28 el bloque es «Formación de IA»: los cursos de tienda siguen
+   en el código (las campañas antiguas los necesitan), marcados como
+   ocultos. Para volver a enseñarlos basta con quitar «oculto». */
 const CURSOS = [
-  { id: "circuito", t: "Circuito de Venta", estado: "activo", min: 15,
+  { id: "ia", t: "Inteligencia artificial en el trabajo", estado: "activo", min: 60, ia: true,
+    d: "El Reglamento europeo de IA para el día a día: qué está prohibido, qué hay que avisar y qué cambia en el empleo. Nueve módulos y examen final.",
+    quien: "Toda la plantilla" },
+  { id: "circuito", oculto: true, t: "Circuito de Venta", estado: "activo", min: 15,
     d: "Desde que el cliente entra hasta que sale: los siete pasos, con las frases que funcionan en sala.",
     quien: "Todo el equipo de tienda" },
-  { id: "kpis", t: "KPIs Retail", estado: "activo", min: 20,
+  { id: "kpis", oculto: true, t: "KPIs Retail", estado: "activo", min: 20,
     d: "Conversión, ticket medio, unidades por ticket, margen y productividad: qué mide cada uno y qué hacer cuando bajan.", quien: "SM y ASM" },
-  { id: "visual", t: "Visual Merchandising", estado: "activo", min: 20,
+  { id: "visual", oculto: true, t: "Visual Merchandising", estado: "activo", min: 20,
     d: "Recorrido del cliente, escaparate según el plan comercial, lineal, precio y la rutina diaria de diez minutos.", quien: "Todo el equipo" },
-  { id: "pyl", t: "P&L", estado: "activo", min: 25,
+  { id: "pyl", oculto: true, t: "P&L", estado: "activo", min: 25,
     d: "La cuenta de resultados de una tienda: qué líneas dependen de ti, cuáles no, y cómo leerla cada mes.", quien: "SM" },
-  { id: "equipos", t: "Gestión de equipos", estado: "activo", min: 25,
+  { id: "equipos", oculto: true, t: "Gestión de equipos", estado: "activo", min: 25,
     d: "Horarios, feedback, reconocimiento, conversaciones difíciles y la acogida de quien entra.", quien: "SM y ASM" },
-  { id: "seguridad", t: "Un turno seguro", estado: "activo", min: 20, juego: true,
+  { id: "seguridad", oculto: true, t: "Un turno seguro", estado: "activo", min: 20, juego: true,
     d: "Hoy la tienda es tuya: recorre cinco zonas antes de abrir y decide, objeto a objeto, qué es un riesgo y qué está bien.",
     quien: "Todo el equipo" }
 ];
@@ -70,6 +76,7 @@ const TEST_CIRCUITO = [
     r: 1, por: "En caja todavía se vende, y es el último recuerdo que se lleva. La tarjeta y una frase sobre la garantía dan un motivo real para volver; la prisa se nota y se recuerda." }
 ];
 function cursoDe(id) { return CURSOS.find(c => c.id === id); }
+const cursosVisibles = () => CURSOS.filter(c => !c.oculto);
 function pasosDe(id) { return id === "circuito" ? CIRCUITO : ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).pasos || []; }
 function testDe(id) { return id === "circuito" ? TEST_CIRCUITO : ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).test || null; }
 
@@ -256,7 +263,7 @@ function marcarVisto(paso) {
   }
   guardarProgreso(p);
 }
-function cursosCompletados() { return CURSOS.filter(c => progresoCurso(c.id).completado).length; }
+function cursosCompletados() { return cursosVisibles().filter(c => progresoCurso(c.id).completado).length; }
 
 /* ---------------- Catálogo ---------------- */
 function pintarFormaciones() {
@@ -279,9 +286,12 @@ function pintarFormaciones() {
   };
   const hechos = cursosCompletados();
   $("vista").innerHTML = `<div class="page">
-    <div class="page-h"><h1>Formaciones</h1><span class="muted num">${hechos} de ${CURSOS.length} completadas</span></div>
-    <p class="lead">Formación breve, pensada para hacerla en el móvil antes de abrir o entre horas. Cada curso termina con un test corto y deja registro de quién lo ha completado.</p>
-    <div class="cards">${CURSOS.map(c => { const p = progresoCurso(c.id), n = pasosDe(c.id).length, v = (p.vistos || []).length;
+    <div class="page-h"><h1>Formación de IA</h1><span class="muted num">${hechos} de ${cursosVisibles().length} completadas</span></div>
+    <p class="lead">Ábrelo para verlo como lo verá la plantilla. Para que lo haga alguien, envíale un código desde «Enviar»: entra sin usuario y su nota llega a Seguimiento.</p>
+    <div class="cards">${cursosVisibles().map(c => { if (c.ia) { const p = typeof iaProg === "function" ? (iaModo = "int", iaProg()) : { hechos: [] };
+      return `<button class="mod curso-card" data-action="abrirCurso" data-c="${c.id}"><span class="mod-t">${esc(c.t)}</span><span class="mod-d">${esc(c.d)}</span>
+        <span class="curso-meta">${esc(c.quien)} · unos ${c.min} min · 9 módulos + 4 opcionales + examen</span><span class="mod-f">${p.hechos.length ? `${p.hechos.length} módulos vistos en tu vista previa` : "Sin empezar"}</span></button>`; }
+      const p = progresoCurso(c.id), n = pasosDe(c.id).length, v = (p.vistos || []).length;
       return `<button class="mod curso-card ${p.completado ? "hecho" : ""}" data-action="abrirCurso" data-c="${c.id}">
       <span class="mod-t">${esc(c.t)}${p.completado ? `<span class="badge ok">Completada</span>` : ""}</span>
       <span class="mod-d">${esc(c.d)}</span>
@@ -295,6 +305,7 @@ function pintarCurso() {
   if (S.chuleta) return pintarChuleta();
   if (S.vista === "test") return pintarTest();
   if (S.curso === "seguridad") return pintarEscape();
+  if (S.curso === "ia" && typeof pintarIA === "function") return pintarIA();
   if (S.curso === "circuito" && S.vista === "arcade") return pintarArcade();
   const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso), vis = vistos();
   if (!curso || !PASOS.length) { S.curso = null; return pintarFormaciones(); }
@@ -570,14 +581,14 @@ function registrosForm() {
     (S.invitaciones || []).filter(i => i.campana_id === c.id).forEach(i => {
       const t = S.tiendas.find(x => x.id === i.tienda_id);
       if (!esAdmin() && !(t && t.rm_id === S.me.id)) return;
-      const hecho = i.estado === "respondida", cad = hecho && caducada(c);
+      const hecho = i.estado === "respondida", cad = hecho && caducada(c), umbral = pl.umbral || 0.6;
       const p = hecho ? SC.puntuar(pl, i.respuestas) : null;
       out.push({
         inv: i, campana: c, curso, cursoT: nom, tienda: t, plantilla: pl,
         persona: i.destinatario || "–", puesto: i.puesto || "", email: i.email || "",
         hecho, caducada: cad, anio: c.anio,
-        apto: p ? p.pct >= 0.6 : null, nota: p, fecha: i.respondido || null, enviado: i.enviado || null,
-        estado: cad ? "caducada" : hecho ? (p && p.pct >= 0.6 ? "apto" : "noapto") : i.enviado ? "enviado" : "sinenviar"
+        apto: p ? p.pct >= umbral : null, nota: p, fecha: i.respondido || null, enviado: i.enviado || null,
+        estado: cad ? "caducada" : hecho ? (p && p.pct >= umbral ? "apto" : "noapto") : i.enviado ? "enviado" : "sinenviar"
       });
     });
   });
@@ -611,7 +622,7 @@ function pintarSegForm() {
 
     <div class="kpis"><div><small>Formaciones hechas</small><b>${hechos.length} de ${R.length}</b><small>${SC.pct(hechos.length / R.length, 0)} de lo enviado</small></div>
       <div><small>Superadas</small><b>${aptos.length}</b><small>${hechos.length ? SC.pct(aptos.length / hechos.length, 0) + " de las hechas" : "–"}</small></div>
-      <div><small>Nota media</small><b>${media == null ? "–" : SC.pct(media, 0)}</b><small>se aprueba con el 60 %</small></div>
+      <div><small>Nota media</small><b>${media == null ? "–" : SC.pct(media, 0)}</b><small>${(() => { const us = [...new Set(R.map(x => Math.round((x.plantilla.umbral || 0.6) * 100)))]; return us.length === 1 ? `se aprueba con el ${us[0]} %` : "cada curso tiene su nota de corte"; })()}</small></div>
       <div><small>${caducadas.length ? "Caducadas" : "Pendientes"}</small><b>${caducadas.length || pendientes.length}</b><small>${caducadas.length ? "hechas en " + (SC.CONFIG.anio - 1) + ": toca repetirlas" : pendientes.filter(x => !x.enviado).length + " sin enviar todavía"}</small></div></div>`;
 
   // Matriz tiendas x cursos: la foto que se mira en una reunión

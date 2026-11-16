@@ -23,7 +23,11 @@ Decidido el 16/11/2026: de momento solo se ven **Encuestas de clima**, **Desarro
   - Oficina: manager → su equipo. Retail: Regional Manager → Store Managers; Store Manager → Assistant.
   - **Regla (16/11/2026): todo lo que rellenan terceros usa el mismo sistema de códigos que la encuesta de clima**: misma puerta («Entrar con un código de invitación»), mismo formato `XXXX-XXXX` (`SC.codigoInvitacion()`), envío por correo con la función `enviar-invitacion`. `abrirInvitacion()` prueba primero `invitacion_abrir` y, si no existe, `dr_abrir`.
   - La especificación detallada de la v1.0 (campos, textos, reglas) se usó para construirlo; los HTML originales no están en el repositorio.
-- **Formación de IA**: hay que llevar aquí el prototipo «Vigente» (repo privado `cmerhi87/vigenteIA-web`, sin acceso todavía).
+- **Formación de IA** (0.29.0): curso «Inteligencia artificial en el trabajo», traído de Vigente (repo privado `cmerhi87/vigenteIA-web`; el usuario lo pasó en ZIP).
+  - `ia_datos.js` es **generado** desde `lib/content.mjs` de Vigente: no se edita a mano. Se regenera con un script de node que importa `lib/content.mjs` y escribe `IA_DATOS` (módulos y las 12 preguntas del examen, elegidas como `armarExamen()` de Vigente).
+  - `ia.js`: reproductor (`pintarIA` vista previa, `pintarIAInvitado` con código), plantilla `form-ia` con `umbral` 0.75, certificado imprimible. Avance en `localStorage` por código.
+  - Los cursos de tienda tienen `oculto: true` en `CURSOS`; `cursosVisibles()` y `plantillaVisible()` los filtran.
+  - El revisor jurídico de Vigente sigue como marcador («[Nombre Apellido]…»): el contenido no está revisado por un abogado.
 
 ## Siguiente trabajo acordado: Pippole genérica + configuración por cliente
 Decidido el 16/11/2026, **aún sin diseñar ni empezar**. Pippole pasa a ser genérica y lo propio de Home & Cook se convierte en la **configuración de un cliente**, que es el primero. Hoy ese contenido sigue escrito directamente en el código:
@@ -85,7 +89,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: **falla** porque faltan `SUPABASE_ACCESS_TOKEN` (secreto) y `SUPABASE_PROJECT_REF` (variable) en GitHub. Mientras falten, la función de correo se despliega pegando el código en el panel de Supabase.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.28.1**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.29.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.

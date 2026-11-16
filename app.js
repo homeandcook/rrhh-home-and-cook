@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.28.1";
+const APP_VERSION = "0.29.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -444,7 +444,7 @@ function resumenTab(id) {
     if (id === "onboarding" || id === "offboarding" || id === "clima" || id === "psico") return campana(id);
     if (id === "bajas") { const a = SC.absentismo(S.tiendas, mesesDisponibles()); return a.tasa == null ? (a.procesos ? `${a.dias} días perdidos` : "Sin bajas registradas") : `${SC.fmt(a.tasa, 1)} % de absentismo`; }
     if (id === "prevencion") { const R = S.tiendas.map(resumenPrl), per = R.reduce((a, x) => a + x.personas, 0), ok = R.reduce((a, x) => a + x.alDia, 0); return per ? `${SC.pct(ok / per, 0)} con la formación al día` : "Sin personas dadas de alta"; }
-    if (id === "cursos") { const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0; return `${CURSOS.length} formaciones · ${n} ${n === 1 ? "completada" : "completadas"}`; }
+    if (id === "cursos") { const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0; return `${cursosVisibles().length} ${cursosVisibles().length === 1 ? "formación" : "formaciones"} · ${n} ${n === 1 ? "completada" : "completadas"}`; }
     if (id === "process") return `${libro("process").items.length} procesos`;
     if (id === "politica") return `${libro("politica").items.length} fichas`;
   } catch (e) {}
@@ -545,7 +545,7 @@ function pintarInicio() {
       const cs = (S.campanas || []).filter(c => c.tipo === "psico");
       const inv = (S.invitaciones || []).filter(i => cs.some(c => c.id === i.campana_id));
       const pruebas = inv.length ? ` · ${inv.filter(i => i.estado === "respondida").length} de ${inv.length} pruebas` : "";
-      return `${CURSOS.length} formaciones · ${n} ${n === 1 ? "completada" : "completadas"}${pruebas}`;
+      return `${cursosVisibles().length} ${cursosVisibles().length === 1 ? "formación" : "formaciones"} · ${n} ${n === 1 ? "completada" : "completadas"}${pruebas}`;
     }
     if (m.id === "docs") return `${libro("process").items.length} procesos · ${libro("politica").items.length} fichas de política`;
     if (m.id === "prl") {
@@ -1164,7 +1164,7 @@ document.addEventListener("click", async e => {
       if (error) { alert(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
-  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO);
+  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO);
   if (!acciones[a]) return;
   const res = await acciones[a](b, t);
   if (res !== false) pintar();
