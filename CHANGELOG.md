@@ -267,6 +267,20 @@ La plataforma pasa a llamarse **Pippole** y se sirve en www.pippole.es. Identida
 - **Logotipo nuevo: la π de pippole.** Dos personas que sostienen juntas una barra y forman una π, el «pi» con el que empieza el nombre. Sustituye al bocadillo en la cabecera, la pantalla de acceso, los informes, el icono de pestaña y de app, y el correo (donde aparece como «π pippole»).
 - El icono de pestaña cambia de nombre (`favicon.svg?v=28`), así el navegador no muestra uno antiguo guardado.
 
+## 0.28.0 · 16/11/2026 · **SQL: sí** (`supabase/migracion_0.28.sql`)
+Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Formación de IA**.
+- **Apartados ocultos, no borrados**: Scorecard, PRL, People Data Centre, Process Book y HomeTime (lista `MODULOS_OCULTOS` en `app.js`). «Para hoy» solo avisa de lo visible.
+- **Encuestas de clima** pasa a ser un bloque propio (antes era una pestaña de PRL).
+- **Formación de IA**: de momento renombra el bloque de formaciones (sin pruebas situacionales). El contenido del prototipo Vigente está pendiente de acceso.
+- **Desarrollo (nuevo)**: el Talent Review v1.0 llevado a la web, en dos ámbitos.
+  - **Oficina**: cada manager valora a su equipo. **Retail**: el Regional Manager valora a sus Store Managers y cada Store Manager a su Assistant.
+  - **Ficha del responsable** (`desarrollo_eval.js`), igual que la v1.0: portada con calendario y aviso de datos, equipo con progreso, ficha en cuatro pasos (desempeño y potencial por banda y nota, evidencias con mínimo y avisos de datos sensibles y de cifra, justificación a partir de 8, 13 competencias, riesgo × impacto con acción de retención, trayectoria, criticidad y sucesión, plan A y B con autoplan, conversación), no evaluable, alta manual, salida, mapa del equipo al final, avisos de distribución, pendientes, encuesta y envío, impresión y CSV.
+  - Entra con un código `TR-…` desde «Entrar con un código de invitación». Se guarda solo en el servidor; RR.HH. solo cuenta lo enviado.
+  - **Panel de RR.HH.** (`desarrollo.js`): crear ciclo, cargar plantilla pegada desde Excel o generarla desde las tiendas, códigos y enlaces, estado de entregas, acuse y recordatorio, voz de los responsables; KPIs, cola de decisiones con estado guardado, filtros, mapa 9-Box, retención A0–C2, competencias, planes y sucesión, ficha ejecutiva, panel de datos con guardarraíles 20/70/10 y calibración por responsable; CSV maestro y resumen ejecutivo.
+  - Cambios respecto a la v1.0: un solo catálogo de 9-Box, guardarraíl con texto corregido («banquillo corto»), cola de decisiones visible y con estados, sin códigos de vuelta ni Power Automate.
+- **Base de datos**: tablas `dr_ciclos`, `dr_evaluadores`, `dr_personas`, `dr_decisiones` (solo RR.HH.) y funciones `dr_abrir`, `dr_guardar`, `dr_alta`, `dr_entregar` para el responsable con código.
+- En modo demostración, el botón de acceso con código conserva el modo demostración.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

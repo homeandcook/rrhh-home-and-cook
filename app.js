@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.27.1";
+const APP_VERSION = "0.28.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -25,7 +25,11 @@ const esAdmin = () => S.me && S.me.rol === "admin";
    la tabla de tiendas); esto solo evita enseñarle puertas cerradas. */
 const esMarketing = () => S.me && S.me.rol === "marketing";
 const MODULOS_MARKETING = ["pdc"];
-const puedeVer = id => !esMarketing() || MODULOS_MARKETING.includes(id);
+/* Pippole se centra de momento en tres bloques: Encuestas de clima, Formación
+   de IA y Desarrollo. El resto de apartados sigue en el código, oculto: para
+   recuperar uno basta con quitarlo de esta lista. */
+const MODULOS_OCULTOS = ["evaluacion", "prl", "pdc", "docs", "hometime"];
+const puedeVer = id => !MODULOS_OCULTOS.includes(id) && (!esMarketing() || MODULOS_MARKETING.includes(id));
 const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
 /* «Ver como»: RR.HH. puede ver la plataforma tal como la ve otro usuario.
    S.me pasa a ser ese usuario (así toda la interfaz se recorta sola) y
@@ -178,7 +182,7 @@ function pantallaLogin(msg) {
           <details class="olvido"><summary>${t("olvidePass")}</summary><p>${t("olvidePassTxt")}</p></details>
         </form>
         <div class="login-o"><span>${t("tengoCodigo")}</span></div>
-        <a class="btn block" href="?codigo=">${t("botonCodigo")}</a>
+        <a class="btn block" href="${sb && sb.demo ? "?demo&codigo=" : "?codigo="}">${t("botonCodigo")}</a>
         ${enClaude() && !sb.demo ? `<p class="hint acc-pie"><a href="#" data-action="irDemo">Entrar con datos de ejemplo</a></p>` : ""}
         <p class="hint acc-pie">${t("botonCodigoPie")}</p>
         <p class="login-pie">${esc(t("unaPlataformaDe"))} · v${APP_VERSION}</p>
@@ -316,6 +320,11 @@ function autoGrow(el) { el.style.height = "auto"; el.style.height = el.scrollHei
 
 /* =================== Estructura =================== */
 const MODULOS = [
+  { id: "clima", t: "Encuestas de clima", grupo: "activo",
+    d: "Encuestas de clima anónimas o nominales: envío con código, seguimiento de respuestas y resultados por dimensión." },
+  { id: "desarrollo", t: "Desarrollo", grupo: "activo",
+    d: "Talent Review y plan de desarrollo: cada responsable valora a su equipo y RR.HH. calibra.",
+    tabs: [["oficina", "Oficina"], ["retail", "Retail"]] },
   { id: "evaluacion", t: "Evaluación y Desarrollo", grupo: "activo",
     d: "Objetivos y bonus del Store Manager, mapa de talento de la red, y las encuestas de incorporación y de salida.",
     tabs: [["eval", "Scorecard"], ["consolidado", "Consolidado", true], ["talent", "Talent Matrix"],
@@ -325,9 +334,9 @@ const MODULOS = [
     tabs: [["bajas", "Bajas y absentismo"], ["prevencion", "Prevención"], ["clima", "Clima"]] },
   { id: "pdc", t: "People Data Centre", grupo: "activo",
     d: "El cuadro de mando de personas de la red: productividad, dotación por hora de apertura y ajuste de la plantilla al tráfico." },
-  { id: "formacion", t: "Formaciones", grupo: "activo",
-    d: "Cinco formaciones breves para el equipo de tienda, con test, y las pruebas situacionales de selección.",
-    tabs: [["cursos", "Formaciones"], ["envios", "Enviar a tienda"], ["seguimiento", "Seguimiento"], ["psico", "Pruebas situacionales"]] },
+  { id: "formacion", t: "Formación de IA", grupo: "activo",
+    d: "Formación en inteligencia artificial: cursos, envío con código y seguimiento de quién la ha hecho.",
+    tabs: [["cursos", "Cursos"], ["envios", "Enviar"], ["seguimiento", "Seguimiento"]] },
   { id: "docs", t: "Process Book y Políticas", grupo: "activo",
     d: "Los procesos de tienda paso a paso y las normas que el equipo consulta a diario, en un solo sitio.",
     tabs: [["process", "Process Book"], ["politica", "Políticas"]] },
@@ -338,7 +347,7 @@ const TAB_TXT = { envios: "envios", seguimiento: "seguimiento", eval: "scorecard
   onboarding: "onboarding", offboarding: "offboarding", bajas: "bajas", prevencion: "prevencion",
   clima: "clima", cursos: "cursos", psico: "psico", process: "process", politica: "politica" };
 const TAB_PRUEBA = { onboarding: ["evaluacion", "onboarding"], offboarding: ["evaluacion", "offboarding"],
-                     clima: ["prl", "clima"], psico: ["formacion", "psico"], formacion: ["formacion", "envios"] };
+                     clima: ["clima", null], psico: ["formacion", "psico"], formacion: ["formacion", "envios"] };
 /* Pestaña por defecto al entrar en un apartado */
 function tabPorDefecto(id) {
   const m = MODULOS.find(x => x.id === id);
@@ -376,6 +385,8 @@ function pintar() {
   pintarEstado();
   if (S.modulo === "gestion" && esAdmin()) return pintarGestion();
   if (S.modulo === "tienda") return pintarTiendaFoco();
+  if (S.modulo === "clima") return pintarPruebas("clima");
+  if (S.modulo === "desarrollo" && !(S.indice && tabs.length > 1)) return pintarDesarrollo(tabActual());
   if (S.indice && tabs.length > 1) return pintarIndice(m, tabs);
   const tab = tabActual();
   if (S.modulo === "evaluacion") {
@@ -487,9 +498,11 @@ function bloqueMisTiendas() {
 }
 const APARTADOS_TIENDA = [
   ["Evaluación y Desarrollo", [["evaluacion", "eval", "Scorecard", "Objetivos, seguimiento a 6 meses y cierre anual con bonus"], ["evaluacion", "talent", "Talent Matrix", "Desempeño, potencial, riesgo y sucesión del equipo"], ["evaluacion", "onboarding", "Onboarding", "Encuesta de incorporación"], ["evaluacion", "offboarding", "Offboarding", "Encuesta de salida"]]],
-  ["PRL", [["prl", "bajas", "Bajas y absentismo", "Procesos abiertos y cerrados"], ["prl", "prevencion", "Prevención", "Formación PRL y revisiones del local"], ["prl", "clima", "Clima", "Encuestas de clima del equipo"]]],
+  ["PRL", [["prl", "bajas", "Bajas y absentismo", "Procesos abiertos y cerrados"], ["prl", "prevencion", "Prevención", "Formación PRL y revisiones del local"]]],
+  ["Encuestas de clima", [["clima", "", "Encuestas de clima", "Encuestas de clima del equipo de la tienda"]]],
+  ["Desarrollo", [["desarrollo", "retail", "Talent Review de la tienda", "Valoración del Store Manager y de su equipo"]]],
   ["People Data Centre", [["pdc", "", "Cuadro de mando", "KPIs de negocio y de personas de la tienda"]]],
-  ["Formaciones", [["formacion", "envios", "Enviar a tienda", "Códigos para que el equipo haga las formaciones"], ["formacion", "seguimiento", "Seguimiento", "Quién ha hecho cada formación y con qué nota"], ["formacion", "psico", "Pruebas situacionales", "Pruebas de selección con código"]]]
+  ["Formación de IA", [["formacion", "envios", "Enviar formaciones", "Códigos para que el equipo haga las formaciones"], ["formacion", "seguimiento", "Seguimiento", "Quién ha hecho cada formación y con qué nota"]]]
 ];
 function resumenEnTienda(x, m, tab) {
   const codigos = tipo => {
@@ -500,7 +513,8 @@ function resumenEnTienda(x, m, tab) {
   try {
     if (tab === "eval") { const e = estadoTienda(x); return `Objetivos ${e.obj ? "validados" : "sin validar"} · ${x.personas.filter(p => ((p.evals || {}).fy || {}).cerrado).length} de ${x.personas.length} cierres`; }
     if (tab === "talent") { const f = x.personas.map(p => SC.talent(x, p)); return `${f.filter(r => r.cerrado).length} de ${f.length} fichas cerradas`; }
-    if (tab === "onboarding" || tab === "offboarding" || tab === "clima" || tab === "psico") return codigos(tab);
+    if (m === "clima") return codigos("clima");
+    if (tab === "onboarding" || tab === "offboarding" || tab === "psico") return codigos(tab);
     if (tab === "envios" || tab === "seguimiento") return codigos("formacion");
     if (tab === "bajas") { const a = (x.bajas || []).filter(b => !b.fin).length; return a ? `${a} ${a === 1 ? "baja abierta" : "bajas abiertas"}` : "Sin bajas abiertas"; }
     if (tab === "prevencion") { const r = resumenPrl(x); return r.personas ? `${r.alDia} de ${r.personas} con la formación al día` : "Sin personas dadas de alta"; }
@@ -513,13 +527,19 @@ function pintarTiendaFoco() {
   if (!x) { S.modulo = "inicio"; S.tiendaFoco = null; return pintarInicio(); }
   $("vista").innerHTML = `<div class="home idx">
     <div class="idx-h"><h1>${esc(x.nombre || "Tienda sin nombre")}</h1><p>${esc(x.codigo || "")}${x.codigo ? " · " : ""}Regional Manager: ${esc(rmNombre(x))}. Todos los apartados, filtrados por esta tienda.</p></div>
-    ${APARTADOS_TIENDA.filter(([, items]) => puedeVer(items[0][0])).map(([tit, items]) => `<h2 class="grupo">${esc(tit)}</h2><div class="cards">${items.map(([m, tab, et, des]) => `<button class="mod" data-action="apartadoTienda" data-m="${m}" data-tab="${tab}">
+    ${APARTADOS_TIENDA.filter(([, items]) => puedeVer(items[0][0]) && items[0][0] !== "desarrollo").map(([tit, items]) => `<h2 class="grupo">${esc(tit)}</h2><div class="cards">${items.map(([m, tab, et, des]) => `<button class="mod" data-action="apartadoTienda" data-m="${m}" data-tab="${tab}">
       <span class="mod-t">${esc(et)}</span><span class="mod-d">${esc(des)}</span><span class="mod-f">${esc(resumenEnTienda(x, m, tab))}</span></button>`).join("")}</div>`).join("")}
   </div>`;
 }
 function pintarInicio() {
   const resumen = m => {
     if (m.grupo === "pendiente") return t("enPreparacion");
+    if (m.id === "clima") {
+      const cs = (S.campanas || []).filter(c => c.tipo === "clima"), ab = cs.filter(c => c.estado === "abierta");
+      const inv = (S.invitaciones || []).filter(i => cs.some(c => c.id === i.campana_id));
+      return cs.length ? `${ab.length} ${ab.length === 1 ? "encuesta abierta" : "encuestas abiertas"} · ${inv.filter(i => i.estado === "respondida").length} de ${inv.length} respuestas` : "Sin encuestas todavía";
+    }
+    if (m.id === "desarrollo") return typeof resumenDesarrollo === "function" ? resumenDesarrollo() : "";
     if (m.id === "formacion") {
       const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0;
       const cs = (S.campanas || []).filter(c => c.tipo === "psico");

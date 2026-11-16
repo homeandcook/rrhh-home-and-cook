@@ -62,7 +62,7 @@ function avisosHoy() {
     if (pend) add("info", `Tienes ${pend} ${pend === 1 ? "formación pendiente" : "formaciones pendientes"} en el catálogo`, "formacion", { tab: "cursos" });
   }
   const orden = { alerta: 0, aviso: 1, info: 2 };
-  return A.sort((a, b) => orden[a.nivel] - orden[b.nivel]);
+  return A.filter(a => puedeVer(a.modulo)).sort((a, b) => orden[a.nivel] - orden[b.nivel]);
 }
 function bloqueHoy(A) {
   A = A || avisosHoy();

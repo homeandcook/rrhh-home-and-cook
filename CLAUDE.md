@@ -17,6 +17,13 @@ Este repositorio es **público**: aquí no van datos de personas, claves secreta
   - Logotipo «pippole» en minúsculas (`marca.js`) y símbolo de la **π**: dos personas que sostienen juntas una barra (`simboloPippole()` en `marcas.js`, `favicon.svg`; desde 0.27.1). `logoSEB()` y `bandaMarcas()` son nombres heredados: el primero devuelve el símbolo y el segundo nada.
 - El lienzo con las cuatro direcciones de marca estudiadas está en claude.ai (artefacto «Pippole · Direcciones de marca»). La elegida es la 2, «Cercana».
 
+## Foco actual (desde 0.28.0): tres bloques
+Decidido el 16/11/2026: de momento solo se ven **Encuestas de clima**, **Desarrollo** y **Formación de IA**. El resto de apartados está oculto con `MODULOS_OCULTOS` en `app.js` (no borrado).
+- **Desarrollo** = Talent Review v1.0 en web. Archivos: `desarrollo_cat.js` (escalas, 13 competencias, 9-Box, textos; objeto `TRC` y reglas `TR`), `desarrollo_eval.js` (ficha del responsable que entra con código `TR-…`; estado `TRE`, acciones `data-tr`), `desarrollo.js` (panel de RR.HH.; estado `S.dr`, acciones `data-tra`). Tablas `dr_*` y RPC `dr_abrir/dr_guardar/dr_alta/dr_entregar` (migración 0.28).
+  - Oficina: manager → su equipo. Retail: Regional Manager → Store Managers; Store Manager → Assistant.
+  - La especificación detallada de la v1.0 (campos, textos, reglas) se usó para construirlo; los HTML originales no están en el repositorio.
+- **Formación de IA**: hay que llevar aquí el prototipo «Vigente» (repo privado `cmerhi87/vigenteIA-web`, sin acceso todavía).
+
 ## Siguiente trabajo acordado: Pippole genérica + configuración por cliente
 Decidido el 16/11/2026, **aún sin diseñar ni empezar**. Pippole pasa a ser genérica y lo propio de Home & Cook se convierte en la **configuración de un cliente**, que es el primero. Hoy ese contenido sigue escrito directamente en el código:
 - `engine.js`: lista `CONFIG.red` con las 21 tiendas («HOME & COOK …») y sus RM; pregunta eNPS `ENPS` y la del clima `x5` («recomendarías trabajar en Home & Cook»); puestos Store Manager / Assistant Store Manager y bonus (1000 € y 500 €).
@@ -77,7 +84,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: **falla** porque faltan `SUPABASE_ACCESS_TOKEN` (secreto) y `SUPABASE_PROJECT_REF` (variable) en GitHub. Mientras falten, la función de correo se despliega pegando el código en el panel de Supabase.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.27.1**.
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.28.0**.
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.

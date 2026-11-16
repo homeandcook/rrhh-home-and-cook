@@ -20,6 +20,7 @@ window.crearClienteDemo = function () {
     db = { perfiles: u, auth, tiendas, actividad: [], campanas: [], invitaciones: [], documentos: [], sesion: null, seq: 1 };
   }
   db.documentos = db.documentos || [];
+  ["dr_ciclos", "dr_evaluadores", "dr_personas", "dr_decisiones"].forEach(k => { db[k] = db[k] || []; });
   const save = () => sessionStorage.setItem(KEY, JSON.stringify(db));
   save();
   const yo = () => db.perfiles.find(p => db.sesion && p.id === db.sesion.user.id && p.activo);
@@ -32,6 +33,7 @@ window.crearClienteDemo = function () {
     actividad: r => rol() === "admin" || (db.sesion && r.usuario_id === db.sesion.user.id),
     campanas: r => (rol() === "admin" || rol() === "rm") || (rol() === "marketing" && r.tipo === "mystery"),
     documentos: () => !!rol(),
+    dr_ciclos: () => rol() === "admin", dr_evaluadores: () => rol() === "admin", dr_personas: () => rol() === "admin", dr_decisiones: () => rol() === "admin",
     invitaciones: r => {
       if (rol() === "admin") return true;
       if (rol() === "marketing") { const c = db.campanas.find(x => x.id === r.campana_id); return !!(c && c.tipo === "mystery"); }
@@ -78,6 +80,13 @@ window.crearClienteDemo = function () {
           if (this.t === "tiendas") Object.assign(r, { id: r.id || uid(), version: 1, actualizado: new Date().toISOString(), datos: r.datos || {} });
           if (this.t === "actividad") Object.assign(r, { id: db.seq++, fecha: new Date().toISOString(), usuario_id: db.sesion.user.id });
           if (this.t === "campanas" || this.t === "invitaciones") Object.assign(r, { id: r.id || uid(), creado: new Date().toISOString() });
+          if (this.t.startsWith("dr_")) {
+            const base = { datos: {}, encuesta: {}, config: {}, manual: false,
+              estado: this.t === "dr_ciclos" ? "abierto" : this.t === "dr_decisiones" ? "pendiente" : "borrador" };
+            const ahora = new Date().toISOString();
+            Object.keys(base).forEach(k => { if (r[k] === undefined) r[k] = base[k]; });
+            Object.assign(r, { id: r.id || uid(), creado: r.creado || ahora, actualizado: ahora });
+          }
           if (this.t === "documentos") Object.assign(r, { actualizado: new Date().toISOString(), actualizado_por: db.sesion.user.id });
           if (this.t === "perfiles") { if (db.perfiles.some(p => p.usuario === r.usuario)) throw new Error("dup"); Object.assign(r, { activo: r.activo !== false, creado: new Date().toISOString() }); }
           return r;
@@ -126,6 +135,43 @@ window.crearClienteDemo = function () {
           if (i.estado === "respondida") return r(err("Este código ya se ha utilizado"));
           i.respuestas = a.p_respuestas || {}; i.estado = "respondida"; i.respondido = new Date().toISOString(); save();
           return r({ data: { ok: true }, error: null });
+        }
+        if (fn.startsWith("dr_")) {
+          const e = db.dr_evaluadores.find(x => x.codigo === String(a.p_codigo || "").trim().toUpperCase());
+          if (fn === "dr_abrir") {
+            if (!e) return r({ data: null, error: null });
+            const c = db.dr_ciclos.find(x => x.id === e.ciclo_id);
+            if (!e.abierto) { e.abierto = new Date().toISOString(); save(); }
+            return r({ data: clone({ ciclo: { id: c.id, nombre: c.nombre, anio: c.anio, ambito: c.ambito, estado: c.estado, fecha_limite: c.fecha_limite, config: c.config || {} },
+              evaluador: { id: e.id, nombre: e.nombre, unidad: e.unidad, entregado: e.entregado || null, encuesta: e.encuesta || {} },
+              personas: db.dr_personas.filter(p => p.evaluador_id === e.id).sort((x, y) => x.nombre.localeCompare(y.nombre))
+                .map(p => ({ id: p.id, nombre: p.nombre, puesto: p.puesto, departamento: p.departamento, categoria: p.categoria,
+                  ant_compania: p.ant_compania, ant_puesto: p.ant_puesto, manual: p.manual, datos: p.datos || {}, estado: p.estado })) }), error: null });
+          }
+          if (!e) return r(err("Código no encontrado"));
+          const c = db.dr_ciclos.find(x => x.id === e.ciclo_id);
+          if (c.estado !== "abierto") return r(err("El ciclo está cerrado"));
+          if (fn === "dr_guardar") {
+            const p = db.dr_personas.find(x => x.id === a.p_persona && x.evaluador_id === e.id);
+            if (!p) return r(err("Esa persona no está en tu equipo"));
+            p.datos = clone(a.p_datos || {}); p.actualizado = new Date().toISOString(); save();
+            return r({ data: { ok: true }, error: null });
+          }
+          if (fn === "dr_alta") {
+            const nom = String(a.p_nombre || "").trim(), pos = String(a.p_puesto || "").trim();
+            if (!nom || !pos) return r(err("Nombre y posición son obligatorios."));
+            if (db.dr_personas.some(x => x.evaluador_id === e.id && x.nombre.toLowerCase() === nom.toLowerCase())) return r(err("Esa persona ya está en tu equipo."));
+            const p = { id: uid(), ciclo_id: e.ciclo_id, evaluador_id: e.id, nombre: nom, puesto: pos, departamento: a.p_departamento || null,
+              categoria: a.p_categoria || null, ant_compania: null, ant_puesto: a.p_nuevo ? 0.5 : null, id_empleado: null, manual: true,
+              datos: {}, estado: "borrador", actualizado: new Date().toISOString(), creado: new Date().toISOString() };
+            db.dr_personas.push(p); save(); return r({ data: p.id, error: null });
+          }
+          if (fn === "dr_entregar") {
+            e.entregado = new Date().toISOString();
+            if (a.p_encuesta && Object.keys(a.p_encuesta).length) e.encuesta = clone(a.p_encuesta);
+            db.dr_personas.filter(p => p.evaluador_id === e.id).forEach(p => { p.estado = "enviada"; }); save();
+            return r({ data: { ok: true }, error: null });
+          }
         }
         if (fn === "red_kpis") {
           if (!rol()) return r(err("Sin permiso"));
