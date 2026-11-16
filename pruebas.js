@@ -14,6 +14,9 @@ async function abrirInvitacion(codigo) {
   if (/^TR-/.test(INV.codigo) && typeof abrirTalent === "function") return abrirTalent(INV.codigo);
   if (!INV.codigo) { INV.datos = null; return pintarInvitado(); }
   const { data, error } = await sb.rpc("invitacion_abrir", { p_codigo: INV.codigo });
+  /* Misma puerta para todo lo que rellenan terceros: si el código no es de
+     una encuesta o formación, puede ser el de un responsable del Talent Review. */
+  if (!error && !data && typeof abrirTalent === "function" && await abrirTalent(INV.codigo, true)) return;
   if (error) { INV.error = traducirError(error); INV.datos = null; }
   else if (!data) { INV.error = "Ese código no existe o ya ha caducado. Revisa que lo has copiado entero."; INV.datos = null; }
   else { INV.datos = data; INV.respuestas = data.respuestas || {}; INV.fase = "curso"; INV.paso = 0; INV.esc = null; }
@@ -309,8 +312,8 @@ async function recargarPruebas() {
    config.js lo declara. Mientras no lo esté, el botón abre tu correo, que
    funciona desde el primer día y no depende de nadie. */
 const envioDirecto = () => !!(K.correoDirecto && sb && sb.functions && !sb.demo);
-async function enviarPorLaPlataforma(ids) {
-  const { data, error } = await sb.functions.invoke("enviar-invitacion", { body: { ids } });
+async function enviarPorLaPlataforma(ids, tipo) {
+  const { data, error } = await sb.functions.invoke("enviar-invitacion", { body: tipo ? { ids, tipo } : { ids } });
   if (error) {
     let det = "";
     try { det = (await error.context.json()).error || ""; } catch (e) {}

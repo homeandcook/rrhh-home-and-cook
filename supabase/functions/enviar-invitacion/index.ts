@@ -13,6 +13,10 @@
 //   2. Si alguna de las que pide no le sale, no envía ninguna.
 //   3. Solo después, con permisos de servicio, marca la fecha de envío.
 //
+// Sirve para dos tipos de código, con la misma puerta de entrada:
+//   - invitaciones (encuestas de clima, formaciones…): { ids: [...] }
+//   - responsables del Talent Review (Desarrollo):     { tipo: "desarrollo", ids: [...] }
+//
 // Variables que hay que configurar en el proyecto (Secrets):
 //   RESEND_API_KEY   clave del proveedor de correo
 //   CORREO_DE        remitente, p. ej. "Pippole <rrhh@pippole.es>"
@@ -46,9 +50,11 @@ Deno.serve(async (req) => {
   if (!auth.startsWith("Bearer ")) return json({ error: "Sin sesión" }, 401);
 
   let ids: string[] = [];
+  let tipo = "invitacion";
   try {
     const body = await req.json();
     ids = Array.isArray(body?.ids) ? body.ids.filter((x: unknown) => typeof x === "string") : [];
+    if (body?.tipo === "desarrollo") tipo = "desarrollo";
   } catch { return json({ error: "Petición no válida" }, 400); }
   if (!ids.length) return json({ error: "No se ha indicado ninguna invitación" }, 400);
   if (ids.length > 50) return json({ error: "Máximo 50 envíos por llamada" }, 400);
@@ -65,40 +71,65 @@ Deno.serve(async (req) => {
   const { data: quien } = await suyo.from("perfiles").select("nombre, rol").eq("id", usuario.user.id).maybeSingle();
   if (!quien) return json({ error: "Tu usuario no tiene perfil en la plataforma" }, 403);
 
-  const { data: invs, error: e1 } = await suyo
-    .from("invitaciones")
-    .select("id, codigo, destinatario, email, estado, campana_id, tienda_id")
-    .in("id", ids);
-  if (e1) return json({ error: e1.message }, 400);
-  if (!invs || invs.length !== ids.length)
-    return json({ error: "Alguna de las invitaciones no existe o no es tuya" }, 403);
-
-  const campIds = [...new Set(invs.map((i) => i.campana_id))];
-  const { data: camps } = await suyo.from("campanas").select("id, titulo, estado").in("id", campIds);
-  const campDe = (id: string) => (camps || []).find((c) => c.id === id);
+  /* Cada envío se reduce a lo mismo: a quién, qué código y de qué va. */
+  type Item = { id: string; codigo: string; nombre: string; email: string; titulo: string; motivo?: string; desarrollo: boolean };
+  const items: Item[] = [];
+  if (tipo === "desarrollo") {
+    const { data: evs, error: e1 } = await suyo.from("dr_evaluadores")
+      .select("id, codigo, nombre, email, entregado, ciclo_id").in("id", ids);
+    if (e1) return json({ error: e1.message }, 400);
+    if (!evs || evs.length !== ids.length) return json({ error: "Algún responsable no existe o no tienes permiso" }, 403);
+    const { data: ciclos } = await suyo.from("dr_ciclos").select("id, nombre, estado").in("id", [...new Set(evs.map((e) => e.ciclo_id))]);
+    for (const e of evs) {
+      const c = (ciclos || []).find((x) => x.id === e.ciclo_id);
+      items.push({ id: e.id, codigo: e.codigo, nombre: e.nombre || "", email: e.email || "", titulo: c ? c.nombre : "Talent Review", desarrollo: true,
+        motivo: !c ? "Ciclo no encontrado" : c.estado !== "abierto" ? "El ciclo está cerrado" : e.entregado ? "Ya ha enviado sus valoraciones" : undefined });
+    }
+  } else {
+    const { data: invs, error: e1 } = await suyo
+      .from("invitaciones")
+      .select("id, codigo, destinatario, email, estado, campana_id, tienda_id")
+      .in("id", ids);
+    if (e1) return json({ error: e1.message }, 400);
+    if (!invs || invs.length !== ids.length)
+      return json({ error: "Alguna de las invitaciones no existe o no es tuya" }, 403);
+    const campIds = [...new Set(invs.map((i) => i.campana_id))];
+    const { data: camps } = await suyo.from("campanas").select("id, titulo, estado").in("id", campIds);
+    for (const inv of invs) {
+      const c = (camps || []).find((x) => x.id === inv.campana_id);
+      items.push({ id: inv.id, codigo: inv.codigo, nombre: inv.destinatario || "", email: inv.email || "", titulo: c ? c.titulo : "", desarrollo: false,
+        motivo: !c ? "Campaña no encontrada" : c.estado !== "abierta" ? "La campaña está cerrada" : inv.estado === "respondida" ? "Ya ha respondido" : undefined });
+    }
+  }
 
   const resultados: { id: string; ok: boolean; motivo?: string }[] = [];
   const enviados: string[] = [];
 
-  for (const inv of invs) {
-    const c = campDe(inv.campana_id);
-    if (!c) { resultados.push({ id: inv.id, ok: false, motivo: "Campaña no encontrada" }); continue; }
-    if (c.estado !== "abierta") { resultados.push({ id: inv.id, ok: false, motivo: "La campaña está cerrada" }); continue; }
-    if (inv.estado === "respondida") { resultados.push({ id: inv.id, ok: false, motivo: "Ya ha respondido" }); continue; }
+  for (const inv of items) {
+    const c = { titulo: inv.titulo };
+    if (inv.motivo) { resultados.push({ id: inv.id, ok: false, motivo: inv.motivo }); continue; }
     const correo = (inv.email || "").trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) { resultados.push({ id: inv.id, ok: false, motivo: "Sin correo válido" }); continue; }
 
-    const nombre = (inv.destinatario || "").trim();
-    const saludo = nombre ? `Hola ${esc(nombre.split(" ")[0])},` : "Hola,";
+    const nombre = (inv.nombre || "").trim();
+    // Nombres en formato «APELLIDOS, NOMBRE»: se saluda por el nombre
+    const pila = nombre.includes(",") ? nombre.split(",")[1].trim().split(" ")[0] : nombre.split(" ")[0];
+    const intro = inv.desarrollo
+      ? `Te toca valorar a tu equipo en "${c.titulo}". No necesitas usuario ni contraseña: abre el enlace y escribe este código. Se guarda solo y puedes dejarlo a medias.`
+      : `Te envío el acceso a "${c.titulo}". No necesitas usuario ni contraseña: abre el enlace y escribe este código.`;
+    const nota = inv.desarrollo
+      ? "El código es solo tuyo: no lo reenvíes. Sirve hasta que envíes tus valoraciones a RR.HH."
+      : "El código sirve una sola vez y es solo tuyo, no lo reenvíes.";
+    const saludo = pila ? `Hola ${esc(pila.charAt(0) + pila.slice(1).toLowerCase())},` : "Hola,";
     const texto =
-`${nombre ? "Hola " + nombre.split(" ")[0] : "Hola"},
+`${pila ? "Hola " + pila.charAt(0) + pila.slice(1).toLowerCase() : "Hola"},
 
-Te envío el acceso a "${c.titulo}". No necesitas usuario ni contraseña: abre el enlace y escribe este código.
+${intro}
 
 Enlace: ${URL_APP}?codigo=
 Código: ${inv.codigo}
 
-El código sirve una sola vez y es solo tuyo, no lo reenvíes.
+${nota}
 
 Gracias,
 ${quien.nombre}`;
@@ -124,7 +155,7 @@ ${quien.nombre}`;
 }
 </style></head>
 <body style="margin:0;padding:0;background:${FONDO};-webkit-font-smoothing:antialiased">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0">Tu código de acceso es ${esc(inv.codigo)}. Se tarda unos minutos y el código sirve una sola vez.</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Tu código de acceso es ${esc(inv.codigo)}.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${FONDO}">
 <tr><td align="center" style="padding:32px 12px">
 
@@ -139,7 +170,7 @@ ${quien.nombre}`;
 
   <tr><td class="pad" style="padding:26px 36px 0">
     <p style="margin:0 0 14px;font:400 16px/1.6 ${SANS};color:${TINTA}">${saludo}</p>
-    <p style="margin:0;font:400 16px/1.6 ${SANS};color:${TINTA}">Te envío el acceso a <strong style="font-weight:600">${esc(c.titulo)}</strong>. No necesitas usuario ni contraseña: abre el enlace y escribe el código.</p>
+    <p style="margin:0;font:400 16px/1.6 ${SANS};color:${TINTA}">${inv.desarrollo ? `Te toca valorar a tu equipo en <strong style="font-weight:600">${esc(c.titulo)}</strong>. No necesitas usuario ni contraseña: abre el enlace y escribe el código. Se guarda solo y puedes dejarlo a medias.` : `Te envío el acceso a <strong style="font-weight:600">${esc(c.titulo)}</strong>. No necesitas usuario ni contraseña: abre el enlace y escribe el código.`}</p>
   </td></tr>
 
   <tr><td class="pad" style="padding:26px 36px 0">
@@ -161,7 +192,7 @@ ${quien.nombre}`;
   </td></tr>
 
   <tr><td class="pad" style="padding:26px 36px 30px">
-    <p style="margin:0 0 18px;font:400 14px/1.6 ${SANS};color:${GRIS}">El código sirve una sola vez y es solo tuyo: no lo reenvíes.</p>
+    <p style="margin:0 0 18px;font:400 14px/1.6 ${SANS};color:${GRIS}">${esc(nota)}</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid ${LINEA};padding-top:18px">
       <p style="margin:0;font:400 15px/1.6 ${SANS};color:${TINTA}">Gracias,<br><strong style="font-weight:600">${esc(quien.nombre)}</strong><br><span style="color:${GRIS};font-size:13.5px">Recursos Humanos</span></p>
     </td></tr></table>
@@ -202,8 +233,8 @@ ${quien.nombre}`;
   // tiene política de UPDATE sobre invitaciones, y así sigue sin tenerla.
   if (enviados.length) {
     const servicio = createClient(URL_SB, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    await servicio.from("invitaciones").update({ enviado: new Date().toISOString() }).in("id", enviados);
+    await servicio.from(tipo === "desarrollo" ? "dr_evaluadores" : "invitaciones").update({ enviado: new Date().toISOString() }).in("id", enviados);
   }
 
-  return json({ enviados: enviados.length, total: invs.length, resultados });
+  return json({ enviados: enviados.length, total: items.length, resultados });
 });

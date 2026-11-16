@@ -281,6 +281,12 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - **Base de datos**: tablas `dr_ciclos`, `dr_evaluadores`, `dr_personas`, `dr_decisiones` (solo RR.HH.) y funciones `dr_abrir`, `dr_guardar`, `dr_alta`, `dr_entregar` para el responsable con código.
 - En modo demostración, el botón de acceso con código conserva el modo demostración.
 
+## 0.28.1 · 16/11/2026 · **SQL: no** · **Función de correo: sí** (volver a desplegar `enviar-invitacion`)
+- **Un solo sistema de códigos para todo lo que rellenan terceros**: encuestas de clima, formaciones y Talent Review entran por la misma puerta («Entrar con un código de invitación») y con el mismo formato de código (`XXXX-XXXX`). Los códigos `TR-…` ya creados siguen valiendo.
+- **Desarrollo envía el código por correo desde la plataforma**, como las encuestas: botón «Enviar correo» por responsable y «Enviar a todos los pendientes». La función `enviar-invitacion` acepta ahora `{ tipo: "desarrollo", ids }`, con un texto propio («Te toca valorar a tu equipo…»).
+- La tabla de entregas muestra si se ha enviado el correo y cuándo.
+- Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

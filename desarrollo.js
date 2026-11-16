@@ -158,7 +158,7 @@ function drRecepcion(amb) {
     const ps = D.per.filter(p => p.evaluador_id === e.id), act = ps.filter(p => !TR.d(p).baja), ok = act.filter(p => TR.completa(TR.d(p))).length;
     if (e.entregado) return `<span class="tr-tag ok">Enviado · ${esc(new Date(e.entregado).toLocaleDateString("es-ES"))}</span>`;
     if (ps.some(p => TR.tocada(TR.d(p)))) return `<span class="tr-tag mid">En curso · ${ok} de ${act.length} listas</span>`;
-    return e.abierto ? `<span class="tr-tag">Abierto, sin empezar</span>` : `<span class="tr-tag">Sin abrir</span>`;
+    return e.abierto ? `<span class="tr-tag">Abierto, sin empezar</span>` : e.enviado ? `<span class="tr-tag">Correo enviado · ${esc(new Date(e.enviado).toLocaleDateString("es-ES"))}</span>` : `<span class="tr-tag">Sin enviar</span>`;
   };
   const pend = D.ev.filter(e => !e.entregado);
   let h = `<section class="tr-card tr-pad"><div class="tr-ch"><div><span class="tr-eyebrow">Responsables</span><h2>Entregas</h2></div><span class="hint">${D.ev.length - pend.length} recibidas · ${pend.length} pendientes</span></div>`;
@@ -167,9 +167,12 @@ function drRecepcion(amb) {
     ${D.ev.map(e => { const n = D.per.filter(p => p.evaluador_id === e.id && !TR.d(p).baja).length, sen = D.per.filter(p => p.evaluador_id === e.id);
       const senales = [sen.filter(p => p.manual).length && `${sen.filter(p => p.manual).length} alta manual`, sen.filter(p => TR.d(p).baja).length && `${sen.filter(p => TR.d(p).baja).length} salida`].filter(Boolean).join(" · ");
       return `<tr><td><b>${esc(e.nombre)}</b>${e.email ? `<small>${esc(e.email)}</small>` : ""}${senales ? `<small class="tr-oro">${esc(senales)}</small>` : ""}</td><td>${esc(e.unidad || "—")}</td><td class="n">${n}</td><td>${estado(e)}</td><td><code>${esc(e.codigo)}</code></td>
-        <td class="n tr-acc2"><button class="btn small ghost" data-tra="copiarEnlace" data-id="${e.id}">Copiar enlace</button>${e.email ? `<a class="btn small ghost" href="${esc(drMailto(e))}">Correo</a>` : ""}
+        <td class="n tr-acc2">${e.email && !e.entregado && c.estado === "abierto" ? (envioDirecto() ? `<button class="btn small" data-tra="enviarCorreo" data-id="${e.id}">${e.enviado ? "Reenviar" : "Enviar"} correo</button>` : `<a class="btn small ghost" href="${esc(drMailto(e))}">Correo</a>`) : ""}<button class="btn small ghost" data-tra="copiarEnlace" data-id="${e.id}">Copiar código</button>
           ${e.entregado ? `<button class="btn small ghost" data-tra="acuse" data-id="${e.id}">Copiar acuse</button>` : ""}<button class="btn small ghost danger" data-tra="quitarEv" data-id="${e.id}" title="Quitar a este responsable y a su equipo">Quitar</button></td></tr>`; }).join("")}</tbody></table></div>
-    ${pend.length ? `<div class="tr-pend"><span class="hint">Pendientes:</span> ${pend.map(e => `<span class="tr-chip">${esc(TR.apellidos(e.nombre))}</span>`).join("")}<button class="btn small" data-tra="recordatorio">Copiar recordatorio para pendientes</button></div>` : ""}`;
+    ${pend.length ? `<div class="tr-pend"><span class="hint">Pendientes:</span> ${pend.map(e => `<span class="tr-chip">${esc(TR.apellidos(e.nombre))}</span>`).join("")}
+      ${envioDirecto() && c.estado === "abierto" ? `<button class="btn small primary" data-tra="enviarTodos">Enviar el código por correo a los ${pend.filter(e => e.email).length} pendientes con correo</button>` : ""}
+      <button class="btn small" data-tra="recordatorio">Copiar recordatorio</button></div>` : ""}
+    <p class="hint">Es el mismo sistema de códigos que las encuestas de clima y las formaciones: cada responsable entra en www.pippole.es por «Entrar con un código de invitación» y escribe su código. ${envioDirecto() ? "El correo sale desde la plataforma." : "Sin envío desde la plataforma configurado, «Correo» abre tu programa de correo con el texto preparado."}</p>`;
   h += `</section>`;
   if (c.estado === "abierto") {
     h += `<section class="tr-card tr-pad"><span class="tr-eyebrow">Preparar el ciclo</span><h2>Cargar la plantilla</h2>
@@ -369,6 +372,15 @@ function drResumen() {
 · Desarrollo: ${pl.length} planes; ${pl.filter(x => x.bud === "Requiere presupuesto").length} requieren presupuesto; ${pl.filter(x => x.pri === "Alta").length} de prioridad alta.
 · Sucesión: ${crit.length} puestos críticos; ${crit.filter(p => TR.d(p).sucExiste !== "Sí").length} sin sucesor identificado.`;
 }
+async function drEnviar(ids) {
+  if (!ids.length) return toast("Nadie con correo pendiente");
+  const D = drS();
+  try {
+    const r = await enviarPorLaPlataforma(ids, "desarrollo"), mal = (r.resultados || []).filter(x => !x.ok);
+    (r.resultados || []).filter(x => x.ok).forEach(x => { const e = D.ev.find(y => y.id === x.id); if (e) e.enviado = new Date().toISOString(); });
+    D.msg = `${r.enviados} de ${r.total} correos enviados.` + (mal.length ? ` Sin enviar: ${mal.map(x => `${TR.apellidos((D.ev.find(y => y.id === x.id) || {}).nombre)} (${x.motivo})`).join("; ")}.` : "");
+  } catch (err) { D.msg = "No se ha podido enviar: " + err.message; }
+}
 async function drCopiar(txt, ok) {
   try { await navigator.clipboard.writeText(txt); toast(ok || "Copiado"); }
   catch (e) { await confirmar({ titulo: "Copia este texto", texto: txt, ok: "Cerrar", no: null }); }
@@ -383,7 +395,7 @@ async function drCrearEquipos(lista) {
   for (const g of lista) {
     let ev = D.ev.find(e => norm(e.nombre) === norm(g.resp));
     if (!ev) {
-      const r = await sb.from("dr_evaluadores").insert({ ciclo_id: D.ciclo, nombre: g.resp, email: g.email || null, unidad: g.unidad || null, puesto: g.puesto || null, codigo: "TR-" + SC.codigoInvitacion() }).select().single();
+      const r = await sb.from("dr_evaluadores").insert({ ciclo_id: D.ciclo, nombre: g.resp, email: g.email || null, unidad: g.unidad || null, puesto: g.puesto || null, codigo: SC.codigoInvitacion() }).select().single();
       if (r.error) { toast("No se ha podido crear a " + g.resp + ": " + r.error.message); continue; }
       ev = r.data; D.ev.push(ev); nE++;
     } else if (g.email && !ev.email) { await sb.from("dr_evaluadores").update({ email: g.email }).eq("id", ev.id); ev.email = g.email; }
@@ -436,6 +448,8 @@ const ACCIONES_DR = {
     const fus = {}; g.forEach(x => { const k = norm(x.resp); if (fus[k]) fus[k].personas.push(...x.personas); else fus[k] = x; });
     await drCrearEquipos(Object.values(fus));
   },
+  async enviarCorreo(b) { await drEnviar([b.dataset.id]); },
+  async enviarTodos() { await drEnviar(drS().ev.filter(e => !e.entregado && e.email).map(e => e.id)); },
   async copiarEnlace(b) { const e = drS().ev.find(x => x.id === b.dataset.id); await drCopiar(`${drEnlace(e)}\nCódigo: ${e.codigo}`, "Enlace y código copiados"); return false; },
   async acuse(b) {
     const e = drS().ev.find(x => x.id === b.dataset.id), ps = drS().per.filter(p => p.evaluador_id === e.id), c = drCiclo();

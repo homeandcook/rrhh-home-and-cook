@@ -10,9 +10,10 @@ const TRE = { codigo: "", ciclo: null, ev: null, personas: [], sel: null, paso: 
   banda: {}, mapa: false, guardado: "", err: "", enviando: false, encuesta: { t: "", sobra: "", falta: "" }, motivo: "", aviso: "" };
 const PASOS_TR = [["perf", "Desempeño y potencial"], ["comp", "Competencias"], ["fut", "Futuro y riesgo"], ["plan", "Plan de desarrollo"]];
 
-async function abrirTalent(codigo) {
+async function abrirTalent(codigo, probar) {
   TRE.codigo = codigo.trim().toUpperCase();
   const { data, error } = await sb.rpc("dr_abrir", { p_codigo: TRE.codigo });
+  if (probar && (error || !data)) return false;
   if (error || !data) {
     INV.codigo = TRE.codigo;
     INV.error = error ? traducirError(error) : "Ese código no existe. Revisa que lo has copiado entero.";
@@ -22,6 +23,7 @@ async function abrirTalent(codigo) {
   TRE.personas = (data.personas || []).map(p => Object.assign(p, { datos: Object.assign(TR.vacio(), p.datos || {}) }));
   TRE.sel = null; TRE.dlg = "portada"; TRE.paso = "perf"; TRE.q = 0; TRE.banda = {}; TRE.mapa = false;
   trePintar();
+  return true;
 }
 
 /* ---------- utilidades ---------- */
