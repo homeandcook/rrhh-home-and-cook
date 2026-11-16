@@ -69,6 +69,7 @@ function trePintar() {
     <div class="tr-para"><span class="k">Equipo de</span><span class="v">${esc(TRE.ev.nombre)}</span><span id="trGuardado" class="tr-guardado">${esc(TRE.guardado)}</span></div></header>
   <div class="tr-notice"><span><b>Confidencial.</b> Solo contiene a tu equipo. Se guarda solo y RR.HH. no lo recibe hasta que pulses «Enviar a RR.HH.».</span>
     <div class="tr-notice-b"><button class="tr-mini" data-tr="dlg" data-v="guia">Cómo funciona</button>
+    <button class="tr-mini${todo ? "" : " pend"}" data-tr="informe" title="${todo ? "Resumen de tu equipo e informe de cada persona" : "Se abre cuando todas las fichas estén completas"}">Informes</button>
     ${ro ? "" : `<button class="tr-mini dark${todo ? "" : " pend"}" data-tr="enviar" id="trBtnEnviar">${TRE.ev.entregado ? "Volver a enviar" : "Enviar a RR.HH."} ${todo ? "✓" : `(${hechas.length}/${n})`}</button>`}
     <details class="tr-mas"><summary class="tr-mini">Más ▾</summary><div class="tr-menu">
       <button data-tr="dlg" data-v="portada">Portada, calendario y datos</button>
@@ -78,7 +79,7 @@ function trePintar() {
   ${TRE.ev.entregado ? `<div class="tr-banda ok">Enviado a RR.HH. el ${esc(trFecha(TRE.ev.entregado))}. ${ro ? "" : "Puedes seguir corrigiendo mientras el ciclo esté abierto: los cambios llegan solos."}</div>` : ""}
   ${ro ? `<div class="tr-banda">El ciclo está cerrado. Puedes consultar tus fichas, pero ya no se pueden cambiar.</div>` : ""}
   <main class="tr-wrap">
-    ${treMapa(todo)}
+    ${TRE.inf ? treInforme() : `${treMapa(todo)}
     ${treFlags()}
     <div class="tr-cols">
       <aside class="tr-card tr-roster"><span class="tr-eyebrow">Mi equipo</span>
@@ -93,13 +94,32 @@ function trePintar() {
             <span><b>${esc(p.nombre)}</b><small>${e.baja ? `Salida · ${esc(e.bajaFecha || "")}` : esc(p.puesto || "") + (p.manual ? " · alta manual" : "")}</small></span></button></li>`;
         }).join("")}</ul></aside>
       <section class="tr-card tr-detail" id="trDetail">${treFicha()}</section>
-    </div>
+    </div>`}
   </main>
   <footer class="tr-foot">pippole · Talent Review ${esc(TRE.ciclo.anio)} · ${esc(amb.nombre)}</footer>
   ${treDialogo()}
   </div>`;
 }
 
+/* Informes: el del equipo se abre con todas las fichas completas (igual que
+   el mapa); el de cada persona, en cuanto su ficha está completa. */
+function treInforme() {
+  const act = treActivas(), todo = act.length && act.every(p => TR.completa(p.datos));
+  const cx = { ciclo: TRE.ciclo, amb: TRE.ciclo.ambito, ev: TRE.ev, personas: TRE.personas, mgr: () => TRE.ev.nombre,
+    ver: p => (TR.completa(p.datos) ? `data-tr="infPersona" data-id="${p.id}"` : "disabled") };
+  const listas = TRE.personas.filter(p => TR.completa(p.datos) || p.datos.baja);
+  const barra = `<div class="tr-infbar"><button class="tr-btn ghost sm" data-tr="cerrarInf">← Volver a las fichas</button>
+    <nav class="tr-tabs"><button class="${TRE.inf === "equipo" ? "on" : ""}" data-tr="informe">Informe del equipo</button>
+      <select data-trinf="1" aria-label="Informe de una persona"><option value="">Informe de una persona…</option>${listas.map(p => `<option value="${p.id}" ${TRE.inf === p.id ? "selected" : ""}>${esc(p.nombre)}</option>`).join("")}</select></nav>
+    <span class="tr-sp"></span><button class="tr-btn sm" data-tr="imprimirInf">Imprimir</button>${TRE.inf === "equipo" && todo ? `<button class="tr-btn ghost sm" data-tr="imprimirInfTodo">Imprimir con todas las fichas</button>` : ""}</div>`;
+  if (TRE.inf === "equipo") {
+    if (!todo) return barra + `<div class="tr-card tr-locked tr-pad"><span class="tr-eyebrow">Aún no disponible</span><p>El informe del equipo se abre cuando las ${act.length} fichas están completas, igual que el mapa. Llevas ${treHechas().length} de ${act.length}.</p>
+      <p class="tr-hint">Mientras tanto puedes ver el informe de cada persona que ya tengas completa.</p></div>`;
+    return barra + TRI.equipo(cx);
+  }
+  const p = TRE.personas.find(x => x.id === TRE.inf);
+  return barra + (p ? TRI.persona(cx, p) : "");
+}
 function treMapa(todo) {
   const act = treActivas(), n = act.length;
   if (!todo) return `<details class="tr-card tr-boards"><summary><span><span class="tr-eyebrow">Al completar las fichas</span><h2>Mapa del equipo</h2></span><span class="tr-cnt">${treHechas().length} / ${n} fichas listas</span></summary>
@@ -157,6 +177,7 @@ function treFicha() {
       ${!e.noEval && TRE.paso !== "perf" ? `<button class="tr-btn ghost" data-tr="ant">← Anterior</button>` : ""}
       ${!e.noEval && TRE.paso !== "plan" ? `<button class="tr-btn" data-tr="sig">Siguiente →</button>` : ""}
       <span class="tr-sp"></span>
+      ${TR.completa(e) ? `<button class="tr-btn ghost sm" data-tr="infPersona" data-id="${p.id}">Ver su informe</button>` : ""}
       <button class="tr-btn ghost sm" data-tr="imprimir">Imprimir esta ficha</button>
       ${treCerrado() ? "" : `<button class="tr-btn ghost sm" data-tr="dlg" data-v="vaciar">Vaciar esta ficha</button><button class="tr-btn ghost sm" data-tr="dlg" data-v="salida">Marcar salida…</button>`}</div>
     <div id="trFalta">${treFalta(p)}</div>`;
@@ -349,7 +370,8 @@ function treFichaImpresa(p) {
 function trImprimir(html) {
   let a = $("trPrint"); if (!a) { a = document.createElement("div"); a.id = "trPrint"; document.body.appendChild(a); }
   a.innerHTML = html; document.body.classList.add("tr-imprimiendo");
-  setTimeout(() => { window.print(); document.body.classList.remove("tr-imprimiendo"); }, 50);
+  const r = document.documentElement, tema = r.getAttribute("data-theme"); r.setAttribute("data-theme", "light");
+  setTimeout(() => { window.print(); document.body.classList.remove("tr-imprimiendo"); if (tema == null) r.removeAttribute("data-theme"); else r.setAttribute("data-theme", tema); }, 50);
 }
 const TR_CSV_COLS = [["Nombre", p => p.nombre], ["Posicion", p => p.puesto], ["Unidad", p => p.departamento], ["Categoria", p => p.categoria], ["AltaManual", p => (p.manual ? "Sí" : "No")],
   ["Salida", (p, e) => (e.baja ? `Sí (${e.bajaFecha})` : "No")], ["MotivoSalida", (p, e) => e.bajaMotivo], ["NoEvaluable", (p, e) => (e.noEval ? "Sí" : "No")], ["MotivoNoEval", (p, e) => e.noEvalWhy],
@@ -405,6 +427,18 @@ const TRE_ACC = {
   },
   reactivar() { const p = treP(); Object.assign(p.datos, { baja: false, bajaMotivo: "", bajaFecha: "" }); treGuardar(p, true); },
   vaciar() { const p = treP(); p.datos = TR.vacio(); TRE.banda = {}; TRE.paso = "perf"; TRE.q = 0; TRE.dlg = null; treGuardar(p, true); },
+  informe() { TRE.inf = "equipo"; window.scrollTo(0, 0); },
+  infPersona(b) { TRE.inf = b.dataset.id; window.scrollTo(0, 0); },
+  cerrarInf() { TRE.inf = null; },
+  imprimirInf() {
+    const cx = { ciclo: TRE.ciclo, amb: TRE.ciclo.ambito, ev: TRE.ev, personas: TRE.personas, mgr: () => TRE.ev.nombre, ver: null };
+    const p = TRE.personas.find(x => x.id === TRE.inf);
+    TRI.imprimir(TRE.inf === "equipo" ? TRI.equipo(cx) : p ? TRI.persona(cx, p) : ""); return false;
+  },
+  imprimirInfTodo() {
+    const cx = { ciclo: TRE.ciclo, amb: TRE.ciclo.ambito, ev: TRE.ev, personas: TRE.personas, mgr: () => TRE.ev.nombre, ver: null };
+    TRI.imprimir(TRI.equipo(cx) + TRE.personas.map(p => TRI.persona(cx, p)).join("")); return false;
+  },
   imprimir() { trImprimir(treFichaImpresa(treP())); return false; },
   imprimirTodo(b) { b.closest("details").open = false; trImprimir(TRE.personas.map(treFichaImpresa).join("")); return false; },
   csv(b) { b.closest("details").open = false; trCsv(TRE.personas, `Talent_Review_${TRE.ciclo.anio}_${TR.apellidos(TRE.ev.nombre).replace(/\W+/g, "_")}.csv`); return false; },
@@ -445,6 +479,7 @@ document.addEventListener("input", ev => {
 document.addEventListener("change", ev => {
   if (!TRE.ciclo || !ev.target.closest(".tr-ev")) return;
   const t = ev.target, p = treP();
+  if (t.dataset.trinf) { TRE.inf = t.value || "equipo"; trePintar(); window.scrollTo(0, 0); return; }
   if (t.dataset.tre === "t") { TRE.encuesta.t = t.value; return; }
   if (!p) return;
   const e = p.datos;

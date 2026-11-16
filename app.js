@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.29.0";
+const APP_VERSION = "0.30.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -240,10 +240,11 @@ async function recargar() {
   S.todas = (t.data || []).map(desdeFila);
   aplicarVista();
   S.perfiles = p.data || [S.me];
-  await Promise.all([recargarPruebas(), cargarDocumentos()]);
+  await Promise.all([recargarPruebas(), cargarDocumentos(), typeof cargarAvisosDr === "function" ? cargarAvisosDr() : null]);
   if (realEsAdmin()) { const a = await sb.from("actividad").select("*").order("fecha", { ascending: false }).limit(150); S.actividad = a.data || []; }
   if (!S.tiendas.some(x => x.id === S.ui.t)) S.ui.t = null;
   pintar();
+  if (typeof avArrancar === "function") avArrancar();
 }
 /* Retail Marketing no puede leer la tabla de tiendas: pide solo los KPIs.
    Lo que llega no trae equipo ni evaluaciones, así que se rellenan vacíos
@@ -375,6 +376,7 @@ function pintar() {
       <div class="spacer"></div>
       <div class="busca-g"><input id="buscaGlobal" type="search" placeholder="Buscar tienda, persona o apartado" autocomplete="off" aria-label="Búsqueda rápida"><div id="buscaRes" hidden></div></div>
       <span id="estadoGuardado" class="saved"></span>
+      ${typeof campanaAvisos === "function" ? campanaAvisos() : ""}
       ${selectorIdioma()}
       <details class="user${S.real ? " como" : ""}"><summary>${S.real ? `<span class="como-ojo" aria-hidden="true">${ICO_OJO}</span>` : ""}${esc(S.me.nombre)} <small>${nombreRol()}</small></summary>
         <div class="menu"><button data-action="inicio">${t("inicio")}</button>${esAdmin() ? `<button data-action="modulo" data-m="gestion">${t("gestionUsuarios")}</button>` : ""}${S.real ? "" : `<button data-action="miPassword">${t("cambiarPass")}</button>`}${menuVerComo()}<button data-action="salir">${t("salir")}</button></div></details>
@@ -1164,7 +1166,7 @@ document.addEventListener("click", async e => {
       if (error) { alert(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
-  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO);
+  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO);
   if (!acciones[a]) return;
   const res = await acciones[a](b, t);
   if (res !== false) pintar();

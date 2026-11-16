@@ -1180,10 +1180,34 @@ textarea.big{min-height:118px}
 .tr-form{margin-top:8px}
 /* impresión de fichas y vistas */
 #trPrint{display:none}
+.tr-infbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px}.tr-infbar .tr-tabs{margin:0;align-items:center}.tr-infbar select{font:inherit;font-size:13px;padding:7px 9px;border-radius:9px;border:1px solid var(--line);background:var(--paper);color:var(--ink);max-width:100%}
+.tr-inf-h h2{margin:6px 0 2px;font-size:22px;letter-spacing:-.02em}.tr-inf h3{margin:0;font-size:15px}
+.tr-inf .tr-cifra b small{font-size:15px;color:var(--muted)}
+.tr-inf .tr-cell,.tr-inf .tr-rcell{min-height:76px;cursor:default}.tr-inf .tr-cell button.tr-chip{cursor:pointer}
+.tr-inf-alerta{border-left:4px solid var(--tr-bad)}
+.tr-inf-p{margin:0 auto 16px}
+.tr-impr .tr-card{break-inside:avoid;box-shadow:none}.tr-impr .tr-inf-p{break-before:page;max-width:none;border:0;padding:0}.tr-impr .tr-inf-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tr-impr *{-webkit-print-color-adjust:exact;print-color-adjust:exact}.tr-impr .tr-link,.tr-impr button.tr-link{display:none}
 .tr-pp{page-break-after:always;font-size:11pt;color:#000}.tr-pp header{display:flex;justify-content:space-between;border-bottom:2px solid #000;margin-bottom:8px}
 .tr-pp h2{margin:0}.tr-pp h4{color:#7A5A12;text-transform:uppercase;letter-spacing:.08em;font-size:9pt;margin:12px 0 4px}
 .tr-pp table{width:100%;border-collapse:collapse}.tr-pp th{text-align:left;width:145px;vertical-align:top;padding:3px 6px 3px 0;color:#444}.tr-pp td{padding:3px 0}
 @media print{body.tr-imprimiendo>*:not(#trPrint){display:none!important}body.tr-imprimiendo #trPrint{display:block}body.tr-imprimiendo{background:#fff}}
+
+/* ============ Avisos: lo que se ha completado ============ */
+.avisos{position:relative}
+.avisos>summary{list-style:none;cursor:pointer;display:grid;place-items:center;width:36px;height:36px;border-radius:8px;color:var(--ink);position:relative}
+.avisos>summary::-webkit-details-marker{display:none}.avisos>summary:hover,.avisos[open]>summary{background:var(--mist)}
+.avisos>summary b{position:absolute;top:2px;right:0;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:var(--red);color:#fff;font-size:10.5px;line-height:17px;text-align:center;font-variant-numeric:tabular-nums;border:2px solid var(--paper)}
+.av-menu{position:absolute;right:0;top:calc(100% + 6px);width:min(380px,calc(100vw - 24px));max-height:min(480px,70vh);overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(35,26,61,.16);z-index:20}
+.av-h{display:flex;align-items:baseline;gap:8px;padding:12px 14px 8px;border-bottom:1px solid var(--line)}.av-h .hint{font-size:12px;margin:0}
+.av-menu ul{list-style:none;margin:0;padding:4px}
+.av-menu li button{font:inherit;text-align:left;width:100%;background:none;border:0;border-radius:8px;padding:9px 10px 9px 20px;cursor:pointer;color:var(--ink);font-size:13px;line-height:1.4;position:relative}
+.av-menu li button:hover{background:var(--mist)}
+.av-menu li.nuevo button::before{content:"";position:absolute;left:8px;top:15px;width:7px;height:7px;border-radius:50%;background:var(--red)}
+.av-menu li span{color:var(--muted)}.av-menu li em{font-style:normal;font-weight:600;color:var(--red)}
+.av-menu li small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.av-vacio{padding:12px 14px}
+@media (max-width:640px){.avisos{position:static}.av-menu{right:12px;left:12px;width:auto;top:56px;position:fixed}}
 
 /* ============ Formación de IA (curso de Vigente) ============ */
 .ia{max-width:860px;margin:0 auto}
@@ -1230,31 +1254,33 @@ textarea.big{min-height:118px}
 <div id="app"><div class="loading">Cargando…</div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=0.29.0"></script>
-<script src="i18n.js?v=0.29.0"></script>
-<script src="marca.js?v=0.29.0"></script>
-<script src="marcas.js?v=0.29.0"></script>
-<script src="engine.js?v=0.29.0"></script>
-<script src="talent.js?v=0.29.0"></script>
-<script src="pruebas.js?v=0.29.0"></script>
-<script src="pdc.js?v=0.29.0"></script>
-<script src="pdc_carga.js?v=0.29.0"></script>
-<script src="bajas.js?v=0.29.0"></script>
-<script src="prl.js?v=0.29.0"></script>
-<script src="curso_datos.js?v=0.29.0"></script>
-<script src="cursos.js?v=0.29.0"></script>
-<script src="formacion.js?v=0.29.0"></script>
-<script src="docs_base.js?v=0.29.0"></script>
-<script src="docs.js?v=0.29.0"></script>
-<script src="arcade.js?v=0.29.0"></script>
-<script src="escape.js?v=0.29.0"></script>
-<script src="ia_datos.js?v=0.29.0"></script>
-<script src="ia.js?v=0.29.0"></script>
-<script src="desarrollo_cat.js?v=0.29.0"></script>
-<script src="desarrollo_eval.js?v=0.29.0"></script>
-<script src="desarrollo.js?v=0.29.0"></script>
-<script src="hoy.js?v=0.29.0"></script>
-<script src="demo.js?v=0.29.0"></script>
-<script src="app.js?v=0.29.0"></script>
+<script src="config.js?v=0.30.0"></script>
+<script src="i18n.js?v=0.30.0"></script>
+<script src="marca.js?v=0.30.0"></script>
+<script src="marcas.js?v=0.30.0"></script>
+<script src="engine.js?v=0.30.0"></script>
+<script src="talent.js?v=0.30.0"></script>
+<script src="pruebas.js?v=0.30.0"></script>
+<script src="pdc.js?v=0.30.0"></script>
+<script src="pdc_carga.js?v=0.30.0"></script>
+<script src="bajas.js?v=0.30.0"></script>
+<script src="prl.js?v=0.30.0"></script>
+<script src="curso_datos.js?v=0.30.0"></script>
+<script src="cursos.js?v=0.30.0"></script>
+<script src="formacion.js?v=0.30.0"></script>
+<script src="docs_base.js?v=0.30.0"></script>
+<script src="docs.js?v=0.30.0"></script>
+<script src="arcade.js?v=0.30.0"></script>
+<script src="escape.js?v=0.30.0"></script>
+<script src="ia_datos.js?v=0.30.0"></script>
+<script src="ia.js?v=0.30.0"></script>
+<script src="desarrollo_cat.js?v=0.30.0"></script>
+<script src="desarrollo_inf.js?v=0.30.0"></script>
+<script src="desarrollo_eval.js?v=0.30.0"></script>
+<script src="desarrollo.js?v=0.30.0"></script>
+<script src="hoy.js?v=0.30.0"></script>
+<script src="avisos.js?v=0.30.0"></script>
+<script src="demo.js?v=0.30.0"></script>
+<script src="app.js?v=0.30.0"></script>
 </body>
 </html>

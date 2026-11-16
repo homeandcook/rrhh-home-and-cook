@@ -287,6 +287,19 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.30.0 · 16/11/2026 · **SQL: no**
+- **Avisos de lo que se completa**: campana arriba a la derecha con lo último que se ha terminado (encuestas de clima, formaciones con su nota y entregas del Talent Review). Marca lo que no has visto, lleva al sitio al pulsar y, con la sesión abierta, mira cada minuto y avisa abajo si llega algo nuevo.
+  - RR.HH. ve todo; el Regional Manager, lo de sus tiendas.
+  - Las encuestas anónimas salen agrupadas por campaña, sin hora ni tienda, para no poder deducir quién ha respondido.
+  - «Visto» se guarda en el navegador de cada usuario.
+- **Informes del Talent Review**, para RR.HH. y para quien evalúa con su código:
+  - **Informe por equipo**: cifras, 9-Box y riesgo × impacto con nombres, fortalezas y áreas de mejora, resumen por persona, prioridad de retención, planes y sucesión.
+  - **Informe por persona**: la ficha ejecutiva completa.
+  - Quien evalúa los abre con el botón «Informes»: el del equipo cuando todas sus fichas están completas (igual que el mapa) y el de cada persona en cuanto su ficha está completa.
+  - En el panel de RR.HH.: pestañas «Informe por equipo» e «Informe por persona», botón «Informe» en Recepción e impresión del equipo con todas sus fichas.
+- **★ Datos y plan de acción** añade «Todos los Talent Review» (un resumen por responsable) y la tabla completa de todas las personas valoradas.
+- La impresión de fichas e informes sale siempre en tema claro.
+
 ## 0.29.0 · 16/11/2026 · **SQL: no**
 - **Formación de IA con el curso de Vigente**: «Inteligencia artificial en el trabajo».
   - 9 módulos del Reglamento europeo de IA, obligatorios, y 4 opcionales de IA en el trabajo (comité, derecho individual, igualdad, Portugal). Cada módulo tiene tres preguntas que hay que acertar; si falla, ve las explicaciones y corrige.

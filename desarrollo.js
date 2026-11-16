@@ -11,10 +11,10 @@
    Solo cuenta lo que cada responsable ha enviado.
    ======================================================================== */
 const DRV = [["recepcion", "Recepción"], ["mapa", "Mapa de talento"], ["retencion", "Retención"], ["competencias", "Competencias"],
-  ["planes", "Planes y sucesión"], ["ficha", "Ficha ejecutiva"], ["panel", "★ Datos y plan de acción"]];
+  ["planes", "Planes y sucesión"], ["informes", "Informe por equipo"], ["ficha", "Informe por persona"], ["panel", "★ Datos y plan de acción"]];
 function drS() {
   if (!S.dr) S.dr = { amb: null, cargando: false, error: "", ciclos: [], ciclo: null, ev: [], per: [], dec: [], vista: "recepcion",
-    f: { dep: "", cat: "", mgr: "", q: "" }, nombres: false, sel9: null, selR: null, ficha: null, msg: "", plan: { mgr: "", q: "" }, nuevo: false };
+    f: { dep: "", cat: "", mgr: "", q: "" }, nombres: false, sel9: null, selR: null, ficha: null, msg: "", plan: { mgr: "", q: "" }, nuevo: false, inf: null };
   return S.dr;
 }
 function resumenDesarrollo() {
@@ -88,7 +88,7 @@ function pintarDesarrollo(amb) {
   else {
     h += drKpis() + drCola() + drFiltros();
     h += `<nav class="tr-tabs">${DRV.map(([id, t]) => `<button class="${D.vista === id ? "on" : ""}${id === "panel" ? " oro" : ""}" data-tra="vista" data-v="${id}">${t}</button>`).join("")}</nav><div id="drVista">`;
-    h += ({ recepcion: drRecepcion, mapa: drMapa, retencion: drRetencion, competencias: drCompetencias, planes: drPlanes, ficha: drFicha, panel: drPanel })[D.vista](amb);
+    h += ({ recepcion: drRecepcion, mapa: drMapa, retencion: drRetencion, competencias: drCompetencias, planes: drPlanes, informes: drInformes, ficha: drFicha, panel: drPanel })[D.vista](amb);
     h += `</div>`;
   }
   $("vista").innerHTML = h + `</div>`;
@@ -168,7 +168,7 @@ function drRecepcion(amb) {
       const senales = [sen.filter(p => p.manual).length && `${sen.filter(p => p.manual).length} alta manual`, sen.filter(p => TR.d(p).baja).length && `${sen.filter(p => TR.d(p).baja).length} salida`].filter(Boolean).join(" · ");
       return `<tr><td><b>${esc(e.nombre)}</b>${e.email ? `<small>${esc(e.email)}</small>` : ""}${senales ? `<small class="tr-oro">${esc(senales)}</small>` : ""}</td><td>${esc(e.unidad || "—")}</td><td class="n">${n}</td><td>${estado(e)}</td><td><code>${esc(e.codigo)}</code></td>
         <td class="n tr-acc2">${e.email && !e.entregado && c.estado === "abierto" ? (envioDirecto() ? `<button class="btn small" data-tra="enviarCorreo" data-id="${e.id}">${e.enviado ? "Reenviar" : "Enviar"} correo</button>` : `<a class="btn small ghost" href="${esc(drMailto(e))}">Correo</a>`) : ""}<button class="btn small ghost" data-tra="copiarEnlace" data-id="${e.id}">Copiar código</button>
-          ${e.entregado ? `<button class="btn small ghost" data-tra="acuse" data-id="${e.id}">Copiar acuse</button>` : ""}<button class="btn small ghost danger" data-tra="quitarEv" data-id="${e.id}" title="Quitar a este responsable y a su equipo">Quitar</button></td></tr>`; }).join("")}</tbody></table></div>
+          ${e.entregado ? `<button class="btn small" data-tra="verInforme" data-id="${e.id}">Informe</button><button class="btn small ghost" data-tra="acuse" data-id="${e.id}">Copiar acuse</button>` : ""}<button class="btn small ghost danger" data-tra="quitarEv" data-id="${e.id}" title="Quitar a este responsable y a su equipo">Quitar</button></td></tr>`; }).join("")}</tbody></table></div>
     ${pend.length ? `<div class="tr-pend"><span class="hint">Pendientes:</span> ${pend.map(e => `<span class="tr-chip">${esc(TR.apellidos(e.nombre))}</span>`).join("")}
       ${envioDirecto() && c.estado === "abierto" ? `<button class="btn small primary" data-tra="enviarTodos">Enviar el código por correo a los ${pend.filter(e => e.email).length} pendientes con correo</button>` : ""}
       <button class="btn small" data-tra="recordatorio">Copiar recordatorio</button></div>` : ""}
@@ -287,31 +287,31 @@ function drPlanes(amb) {
   return h;
 }
 
-/* ---------- Ficha ejecutiva ---------- */
-function drFicha(amb) {
-  const D = drS(), { activas } = drSets(drFilas());
-  if (!activas.length) return `<p class="empty">Todavía no hay valoraciones enviadas.</p>`;
-  if (!activas.some(p => p.id === D.ficha)) D.ficha = activas[0].id;
-  const p = activas.find(x => x.id === D.ficha), e = TR.d(p), si = TRC.segIdx(e.perf, e.pot), c = drCiclo();
-  const nota = (t, v) => `<div class="tr-snap"><span class="tr-eyebrow">${t}</span><b>${v || "—"}</b><em class="tr-tag ${["", "bad", "mid", "ok"][TRC.band(v)]}">Banda ${["", "baja", "media", "alta"][TRC.band(v)] || "—"}</em><div class="tr-bar"><i style="width:${(v || 0) * 10}%"></i></div></div>`;
-  const fila = (k, v) => (v ? `<tr><th>${k}</th><td>${esc(v)}</td></tr>` : "");
-  const pill = v => `<span class="tr-tag ${v === "Alto" ? "bad" : v === "Medio" ? "mid" : "ok"}">${esc(v || "—")}</span>`;
-  const plan = k => (e["obj" + k] || e["acc" + k] ? `<div class="tr-plan"><b>${k === "A" ? "Plan principal" : "Plan secundario"}</b><p>${esc(e["obj" + k])} · ${esc(e["acc" + k])} · ${esc(e["tim" + k] || "")} <span class="tr-tag">${esc("Prioridad " + (e["pri" + k] || "—"))}</span>${e["bud" + k] === "Requiere presupuesto" ? ` <span class="tr-tag mid">Requiere presupuesto</span>` : ""}</p>${e["res" + k] ? `<div class="tr-key">¿Qué será distinto? ${esc(e["res" + k])}</div>` : ""}</div>` : "");
-  return `<div class="tr-filtros"><select data-trs="ficha">${activas.map(x => `<option value="${x.id}" ${x.id === p.id ? "selected" : ""}>${esc(x.nombre)}${x.departamento ? " — " + esc(x.departamento) : ""}</option>`).join("")}</select>
+/* ---------- Informe por equipo (un Talent Review) ---------- */
+const drCx = (e, ps) => ({ ciclo: drCiclo(), amb: drS().amb, ev: e, personas: ps, mgr: drMgr, ver: p => `data-tra="verFicha" data-id="${p.id}"` });
+function drInformes() {
+  const D = drS(), ent = D.ev.filter(e => e.entregado);
+  if (!ent.length) return `<p class="empty">Todavía no ha enviado nadie. El informe de cada equipo aparece aquí en cuanto su responsable pulsa «Enviar a RR.HH.».</p>`;
+  if (!ent.some(e => e.id === D.inf)) D.inf = ent[0].id;
+  const e = ent.find(x => x.id === D.inf), ps = D.per.filter(p => p.evaluador_id === e.id);
+  return `<div class="tr-filtros"><select data-trs="inf">${ent.map(x => `<option value="${x.id}" ${x.id === e.id ? "selected" : ""}>${esc(x.nombre)}${x.unidad ? " — " + esc(x.unidad) : ""}</option>`).join("")}</select>
+    <span class="hint">${ent.length} de ${D.ev.length} equipos enviados</span><span class="tr-sp"></span>
+    <button class="btn small" data-tra="imprimirInf">Imprimir el informe</button><button class="btn small ghost" data-tra="imprimirInfTodo">Imprimir con todas las fichas</button></div>
+    ${TRI.equipo(drCx(e, ps))}`;
+}
+
+/* ---------- Informe por persona (ficha ejecutiva) ---------- */
+function drFicha() {
+  const D = drS(), todas = drFilas(true), { activas } = drSets(drFilas());
+  const lista = activas.length ? activas : todas;
+  if (!lista.length) return `<p class="empty">Todavía no hay valoraciones enviadas.</p>`;
+  if (!todas.some(p => p.id === D.ficha)) D.ficha = lista[0].id;
+  const p = todas.find(x => x.id === D.ficha), e = D.ev.find(x => x.id === p.evaluador_id);
+  const opciones = lista.some(x => x.id === p.id) ? lista : [p, ...lista];
+  return `<div class="tr-filtros"><select data-trs="ficha">${opciones.map(x => `<option value="${x.id}" ${x.id === p.id ? "selected" : ""}>${esc(x.nombre)}${x.departamento ? " — " + esc(x.departamento) : ""}</option>`).join("")}</select>
+    ${e ? `<button class="tr-link" data-tra="verInforme" data-id="${e.id}">Informe del equipo de ${esc(TR.apellidos(e.nombre))} →</button>` : ""}<span class="tr-sp"></span>
     <button class="btn small" data-tra="imprimir">Imprimir / Guardar PDF</button></div>
-    <article class="tr-card tr-doc"><span class="tr-eyebrow">Ficha ejecutiva de talento · ${esc(c.nombre)}</span><h2>${esc(p.nombre)}</h2><p class="hint">${esc([p.puesto, p.departamento, p.categoria].filter(Boolean).join(" · "))}</p>
-      <p>${p.manual ? `<span class="tr-tag mid">Alta manual</span> ` : ""}${e.noEval ? `<span class="tr-tag">No evaluable: ${esc(e.noEvalWhy)}</span>` : ""}</p>
-      <div class="tr-meta"><span><small>Responsable</small>${esc(drMgr(p))}</span><span><small>ID</small>${esc(p.id_empleado || "—")}</span><span><small>¿Hablado con la persona?</small>${esc(e.talked || "—")}${e.talkedDate ? " · " + esc(e.talkedDate) : ""}</span></div>
-      ${e.noEval ? `<p>No evaluable en este ciclo. Motivo: ${esc(e.noEvalWhy)}.</p>` : `
-      <div class="tr-snaps"><div class="tr-snap seg"><span class="tr-eyebrow">Posición 9-Box</span><b>${si >= 0 ? esc(TRC.SEG[si][0]) : "—"}</b><small>Recomendación: ${si >= 0 ? esc(TRC.SEG[si][1]) : "—"}</small></div>${nota("Desempeño", e.perf)}${nota("Potencial", e.pot)}</div>
-      <h4>Evidencias</h4><table class="tr-ft">${fila("Evidencias de desempeño", e.evP)}${fila("Qué le distingue (desempeño)", e.justP)}${fila("Evidencias de potencial", e.evO)}${fila("Qué le distingue (potencial)", e.justO)}</table>
-      <h4>Competencias</h4><p>${e.star ? `<span class="tr-tag mid">★ ${esc(e.star)}</span> ` : ""}${(e.str || []).map(x => `<span class="tr-tag ok">${esc(x)}</span>`).join(" ")} ${(e.imp || []).map(x => `<span class="tr-tag bad">${esc(x)}</span>`).join(" ")}</p>
-      <h4>Riesgo y retención</h4><p>Riesgo ${pill(e.riesgo)} · Impacto ${pill(e.impacto)} · Criticidad del puesto ${pill(e.critRole)}</p>${e.retencion ? `<p><b>Acción de retención:</b> ${esc(e.retencion)}</p>` : ""}
-      <h4>Trayectoria y aspiraciones</h4><table class="tr-ft">${fila("Promoción / movimiento", e.promo)}${fila("Promoción a", [e.promoPos, e.promoRdy].filter(Boolean).join(" · "))}${fila("Movimiento horizontal a", [e.horizPos, e.horizRdy].filter(Boolean).join(" · "))}${fila("Ambición", e.ambicion)}${fila("Preferencia de carrera", e.carrera)}</table>
-      ${TR.necesitaSucesor(e, p, amb) ? `<h4>Sucesión del puesto</h4><p>${esc(e.sucExiste === "Sí" ? `Sí · ${e.sucQuien || ""}${e.sucRdy ? " · " + e.sucRdy : ""}` : "Sin sucesor identificado")}</p>` : ""}
-      <h4>Plan de desarrollo</h4>${plan("A") + plan("B") || "<p>Sin plan.</p>"}
-      ${e.note ? `<h4>Contexto para RR.HH.</h4><p>${esc(e.note)}</p>` : ""}`}
-      <p class="tr-foot">${esc(c.nombre)} · Confidencial</p></article>`;
+    ${TRI.persona(drCx(e, []), p)}`;
 }
 
 /* ---------- Panel de datos y plan de acción ---------- */
@@ -354,7 +354,32 @@ function drPanel(amb) {
       ${criticos.length ? `<ul class="tr-ul">${criticos.map(p => `<li><b>${esc(p.puesto || "—")}</b> — ${esc(p.nombre)} · ${esc(p.departamento || "")} ${drFichaBtn(p)}</li>`).join("")}</ul>` : `<p class="tr-ok">✓ Ninguno marcado como crítico.</p>`}</details>
     <details class="tr-card tr-pad tr-acc-tal" open><summary><b>Mayores talentos con mayor riesgo</b> <span class="hint">${talentos.length}</span></summary>
       ${talentos.length ? `<ul class="tr-ul">${talentos.map(p => { const e = TR.d(p); return `<li><b>${esc(p.nombre)}</b> · ${esc(p.puesto || "")} · D${e.perf}/P${e.pot} · riesgo ${esc(e.riesgo.toLowerCase())} ${drFichaBtn(p)}</li>`; }).join("")}</ul>` : `<p class="tr-ok">✓ Ninguno ahora mismo.</p>`}</details></div>`;
+  h += drTodos(evaluadas, activas, tier);
   return h;
+}
+/* Todos los Talent Review del ciclo: un resumen por equipo y la tabla completa */
+function drTodos(evaluadas, activas, tier) {
+  const D = drS(), filtrado = new Set(activas.map(p => p.id));
+  const fila = e => {
+    const ps = D.per.filter(p => p.evaluador_id === e.id && filtrado.has(p.id)), ev = evaluadas.filter(p => p.evaluador_id === e.id);
+    const act = ps.filter(p => !TR.d(p).noEval), pl = act.reduce((n, p) => { const x = TR.d(p); return n + (x.objA || x.accA ? 1 : 0) + (x.objB || x.accB ? 1 : 0); }, 0);
+    const crit = act.filter(p => TR.hot(TR.d(p))).length, suc = act.filter(p => { const x = TR.d(p); return TR.necesitaSucesor(x, p, D.amb) && x.sucExiste !== "Sí"; }).length;
+    const m = ev.length ? ev.reduce((s, p) => s + (TR.d(p).perf + TR.d(p).pot) / 2, 0) / ev.length : null;
+    return `<tr><td><b>${esc(e.nombre)}</b><small>${esc(e.unidad || "")}</small></td><td>${e.entregado ? `<span class="tr-tag ok">Enviado · ${esc(new Date(e.entregado).toLocaleDateString("es-ES"))}</span>` : `<span class="tr-tag">Pendiente</span>`}</td>
+      <td class="n">${e.entregado ? ev.length : "—"}</td><td class="n">${m == null ? "—" : SC.fmt(m, 1)}</td><td class="n">${ev.length ? pctS(ev.filter(p => tier(p) === "Alto").length, ev.length) + "%" : "—"}</td>
+      <td class="n">${e.entregado ? crit : "—"}</td><td class="n">${e.entregado ? pl : "—"}</td><td class="n">${e.entregado ? suc : "—"}</td>
+      <td>${e.entregado ? `<button class="tr-link" data-tra="verInforme" data-id="${e.id}">informe →</button>` : ""}</td></tr>`;
+  };
+  const pill = v => (v ? `<span class="tr-tag ${v === "Alto" ? "bad" : v === "Medio" ? "mid" : "ok"}">${esc(v)}</span>` : "—");
+  return `<section class="tr-card tr-pad"><div class="tr-ch"><h2>Todos los Talent Review</h2><span class="hint">un equipo por responsable · ${D.ev.filter(e => e.entregado).length} de ${D.ev.length} enviados</span></div>
+    <div class="tablewrap"><table class="tr-t"><thead><tr><th>Responsable</th><th>Estado</th><th class="n">Valoradas</th><th class="n">Índice medio</th><th class="n">% Alto</th><th class="n">Retención crítica</th><th class="n">Planes</th><th class="n">Sin sucesor</th><th></th></tr></thead>
+    <tbody>${D.ev.map(fila).join("")}</tbody></table></div></section>
+    <details class="tr-card tr-pad" ${D.todasAbierta ? "open" : ""} id="drTodas"><summary><b>Todas las personas valoradas</b> <span class="hint">${activas.length} · desempeño, potencial, riesgo, siguiente paso y plan de cada una</span></summary>
+    <div class="tablewrap"><table class="tr-t"><thead><tr><th>Persona</th><th>Responsable</th><th class="n">Desemp.</th><th class="n">Pot.</th><th>9-Box</th><th>Riesgo</th><th>Impacto</th><th>Siguiente paso</th><th>Plan principal</th><th>Sucesor/a</th><th></th></tr></thead><tbody>
+    ${activas.map(p => { const e = TR.d(p), si = TRC.segIdx(e.perf, e.pot);
+      return `<tr><td><b>${esc(p.nombre)}</b><small>${esc([p.puesto, p.departamento].filter(Boolean).join(" · "))}</small></td><td>${esc(TR.apellidos(drMgr(p)))}</td>
+        ${e.noEval ? `<td colspan="7" class="hint">No evaluable: ${esc(e.noEvalWhy || "")}</td>` : `<td class="n">${e.perf || "—"}</td><td class="n">${e.pot || "—"}</td><td>${si >= 0 ? esc(TRC.SEG[si][0]) : "—"}</td><td>${pill(e.riesgo)}</td><td>${pill(e.impacto)}</td><td>${esc(e.promo || "—")}</td>
+        <td>${e.accA ? esc(e.accA) + `<small>${esc(e.timA || "")}</small>` : "—"}</td>`}<td>${TR.necesitaSucesor(e, p, D.amb) && !e.noEval ? (e.sucExiste === "Sí" ? esc(e.sucQuien || "Sí") : `<span class="tr-tag bad">No</span>`) : ""}</td><td>${drFichaBtn(p)}</td></tr>`; }).join("")}</tbody></table></div></details>`;
 }
 
 /* =================== acciones =================== */
@@ -472,7 +497,12 @@ const ACCIONES_DR = {
     return false;
   },
   async resumen(b) { b.closest("details") && (b.closest("details").open = false); await drCopiar(drResumen(), "Resumen ejecutivo copiado"); return false; },
-  imprimir(b) { const d = b.closest("details"); if (d) d.open = false; const v = $("drVista"); if (v) trImprimir(`<div class="tr tr-hr">${v.innerHTML}</div>`); return false; },
+  verInforme(b) { const D = drS(); D.inf = b.dataset.id; D.vista = "informes"; window.scrollTo(0, 0); },
+  imprimirInf() { const D = drS(), e = D.ev.find(x => x.id === D.inf); TRI.imprimir(TRI.equipo(Object.assign(drCx(e, D.per.filter(p => p.evaluador_id === e.id)), { ver: null }))); return false; },
+  imprimirInfTodo() { const D = drS(), e = D.ev.find(x => x.id === D.inf), ps = D.per.filter(p => p.evaluador_id === e.id), cx = Object.assign(drCx(e, ps), { ver: null });
+    TRI.imprimir(TRI.equipo(cx) + ps.map(p => TRI.persona(cx, p)).join("")); return false; },
+  imprimir(b) { const d = b.closest("details"); if (d) d.open = false;
+    const art = drS().vista === "ficha" && document.querySelector("#drVista .tr-inf-p"); if (art) { TRI.imprimir(art.outerHTML); return false; } const v = $("drVista"); if (v) trImprimir(`<div class="tr tr-hr">${v.innerHTML}</div>`); return false; },
   async ejemplo() { await drEjemplo(); }
 };
 document.addEventListener("click", async ev => {
@@ -489,6 +519,7 @@ document.addEventListener("change", async ev => {
   else if (k === "f" && t.tagName === "SELECT") D.f[t.dataset.k] = t.value;
   else if (k === "plan" && t.tagName === "SELECT") D.plan[t.dataset.k] = t.value;
   else if (k === "ficha") D.ficha = t.value;
+  else if (k === "inf") D.inf = t.value;
   else if (k === "decision") {
     const clave = t.dataset.clave, est = t.value, prev = D.dec.find(d => d.clave === clave);
     const r = prev ? await sb.from("dr_decisiones").update({ estado: est, actualizado: new Date().toISOString() }).eq("id", prev.id)
