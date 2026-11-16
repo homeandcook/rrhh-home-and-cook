@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.26.0";
+const APP_VERSION = "0.27.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -7,7 +7,7 @@ let TODO_ABIERTO = false;
 const C = SC.CONFIG, esc = SC.esc, K = window.APP_CONFIG || {};
 let sb = null;
 const S = {
-  me: null, perfiles: [], tiendas: [], actividad: [],
+  me: null, real: null, perfiles: [], tiendas: [], todas: [], tiendaFoco: null, actividad: [],
   modulo: "inicio", indice: false, tab: "eval", equipoT: null, invT: null, fseg: null, curso: null, paso: null, chuleta: false, fam: 0, prod: null, busca: "", campanas: [], invitaciones: [], campana: null, vista: "recorrido", ui: { t: null, p: null, fase: "obj" },
   sucios: new Set(), guardando: false, errorGuardado: null,
   f: { per: "fy", rm: "", puesto: "", estado: "", orden: "bonus", dir: -1 }
@@ -27,6 +27,34 @@ const esMarketing = () => S.me && S.me.rol === "marketing";
 const MODULOS_MARKETING = ["pdc"];
 const puedeVer = id => !esMarketing() || MODULOS_MARKETING.includes(id);
 const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
+/* «Ver como»: RR.HH. puede ver la plataforma tal como la ve otro usuario.
+   S.me pasa a ser ese usuario (así toda la interfaz se recorta sola) y
+   S.real guarda el administrador. La sesión con la base de datos sigue
+   siendo la del administrador: lo que se guarde queda a su nombre. */
+const yoReal = () => S.real || S.me;
+const realEsAdmin = () => !!yoReal() && yoReal().rol === "admin";
+function aplicarVista() {
+  S.tiendas = S.todas;
+  if (!S.real) return;
+  if (S.me.rol === "rm") S.tiendas = S.todas.filter(x => x.rm_id === S.me.id);
+  else if (S.me.rol === "marketing") S.tiendas = S.todas.map(x => ({
+    id: x.id, nombre: x.nombre, codigo: x.codigo, rm_id: null, version: x.version,
+    objetivos: { s1: {}, fy: {} }, resultados: { s1: {}, fy: {} },
+    objetivosValidados: null, personas: [], equipo: [], kpis: x.kpis || {}
+  }));
+}
+function cambiarVista(id) {
+  const real = yoReal();
+  if (!id || id === real.id) { S.me = real; S.real = null; }
+  else {
+    const p = S.perfiles.find(x => x.id === id); if (!p) return false;
+    S.real = real; S.me = p;
+  }
+  S.modulo = "inicio"; S.indice = false; S.tiendaFoco = null; S.campana = null;
+  S.ui = { t: null, p: null, fase: "obj" }; S.invT = null;
+  aplicarVista();
+  window.scrollTo(0, 0);
+}
 /* Confirmación en la propia página: confirm() del navegador no funciona en
    todos los sitios donde corre esto, y una acción que borra datos no puede
    depender de un diálogo que a veces devuelve "no" sin preguntar. */
@@ -195,20 +223,21 @@ async function entrar() {
   const { data: me, error } = await sb.from("perfiles").select("*").eq("id", ses.session.user.id).maybeSingle();
   if (error) return pantallaLogin(traducirError(error));
   if (!me || !me.activo) { await sb.auth.signOut(); return pantallaLogin("Tu usuario no tiene acceso a la plataforma. Contacta con RR.HH."); }
-  S.me = me; S.modulo = "inicio"; S.tab = "eval"; S.vista = "recorrido"; S.ui = { t: null, p: null, fase: "obj" };
+  S.me = me; S.real = null; S.tiendaFoco = null; S.modulo = "inicio"; S.tab = "eval"; S.vista = "recorrido"; S.ui = { t: null, p: null, fase: "obj" };
   await recargar();
 }
 async function recargar() {
-  if (esMarketing()) return recargarMarketing();
+  if (!S.real && esMarketing()) return recargarMarketing();
   const [t, p] = await Promise.all([
     sb.from("tiendas").select("*").eq("anio", C.anio).order("nombre"),
     sb.from("perfiles").select("*").order("nombre")
   ]);
   if (t.error) { toast(traducirError(t.error)); return; }
-  S.tiendas = (t.data || []).map(desdeFila);
+  S.todas = (t.data || []).map(desdeFila);
+  aplicarVista();
   S.perfiles = p.data || [S.me];
   await Promise.all([recargarPruebas(), cargarDocumentos()]);
-  if (esAdmin()) { const a = await sb.from("actividad").select("*").order("fecha", { ascending: false }).limit(150); S.actividad = a.data || []; }
+  if (realEsAdmin()) { const a = await sb.from("actividad").select("*").order("fecha", { ascending: false }).limit(150); S.actividad = a.data || []; }
   if (!S.tiendas.some(x => x.id === S.ui.t)) S.ui.t = null;
   pintar();
 }
@@ -218,7 +247,7 @@ async function recargar() {
 async function recargarMarketing() {
   const { data, error } = await sb.rpc("red_kpis", { p_anio: C.anio });
   if (error) { toast(traducirError(error)); return; }
-  S.tiendas = (data || []).map(r => ({
+  S.todas = S.tiendas = (data || []).map(r => ({
     id: r.id, nombre: r.nombre, codigo: r.codigo, rm_id: null, version: 1,
     objetivos: { s1: {}, fy: {} }, resultados: { s1: {}, fy: {} },
     objetivosValidados: null, personas: [], equipo: [], kpis: r.kpis || {}
@@ -232,7 +261,7 @@ async function recargarMarketing() {
 async function salir() {
   if (S.sucios.size) await volcar();
   if (S.sucios.size && !confirm("Hay cambios sin guardar. ¿Salir igualmente?")) return;
-  await sb.auth.signOut(); S.me = null; S.tiendas = []; pantallaLogin();
+  await sb.auth.signOut(); S.me = null; S.real = null; S.tiendas = S.todas = []; pantallaLogin();
 }
 
 /* =================== Datos y guardado =================== */
@@ -269,7 +298,7 @@ function pintarEstado() {
   el.textContent = S.guardando || S.sucios.size ? t("guardando") : t("guardado");
   el.className = "saved" + (S.guardando || S.sucios.size ? " warn" : "");
 }
-function log(accion, t) { sb.from("actividad").insert({ accion, tienda_id: t ? t.id : null, usuario_id: S.me.id }).then(() => {}); }
+function log(accion, t) { sb.from("actividad").insert({ accion, tienda_id: t ? t.id : null, usuario_id: yoReal().id }).then(() => {}); }
 
 /* =================== Utilidades de evaluación =================== */
 const tienda = () => S.tiendas.find(t => t.id === S.ui.t);
@@ -338,13 +367,15 @@ function pintar() {
       <div class="busca-g"><input id="buscaGlobal" type="search" placeholder="Buscar tienda, persona o apartado" autocomplete="off" aria-label="Búsqueda rápida"><div id="buscaRes" hidden></div></div>
       <span id="estadoGuardado" class="saved"></span>
       ${selectorIdioma()}
-      <details class="user"><summary>${esc(S.me.nombre)} <small>${nombreRol()}</small></summary>
-        <div class="menu"><button data-action="inicio">${t("inicio")}</button>${esAdmin() ? `<button data-action="modulo" data-m="gestion">${t("gestionUsuarios")}</button>` : ""}<button data-action="miPassword">${t("cambiarPass")}</button><button data-action="salir">${t("salir")}</button></div></details>
+      <details class="user${S.real ? " como" : ""}"><summary>${S.real ? `<span class="como-ojo" aria-hidden="true">${ICO_OJO}</span>` : ""}${esc(S.me.nombre)} <small>${nombreRol()}</small></summary>
+        <div class="menu"><button data-action="inicio">${t("inicio")}</button>${esAdmin() ? `<button data-action="modulo" data-m="gestion">${t("gestionUsuarios")}</button>` : ""}${S.real ? "" : `<button data-action="miPassword">${t("cambiarPass")}</button>`}${menuVerComo()}<button data-action="salir">${t("salir")}</button></div></details>
     </header>
     ${sb.demo ? `<div class="demo-bar">${t("demoBarra")}</div>` : ""}
+    ${S.real ? `<div class="como-bar"><span>Estás viendo la plataforma como <b>${esc(S.me.nombre)}</b> (${esc(nombreRol())}). Lo que guardes queda a nombre de ${esc(S.real.nombre)}.</span><button class="btn sm" data-action="verComo" data-id="">Volver a mi usuario</button></div>` : ""}
     <div id="vista"></div><div id="print"></div>`;
   pintarEstado();
   if (S.modulo === "gestion" && esAdmin()) return pintarGestion();
+  if (S.modulo === "tienda") return pintarTiendaFoco();
   if (S.indice && tabs.length > 1) return pintarIndice(m, tabs);
   const tab = tabActual();
   if (S.modulo === "evaluacion") {
@@ -370,12 +401,15 @@ function pintar() {
    para saltar directo, y "Atrás" sube un nivel cada vez.
    ==================================================================== */
 function etiquetaAtras() {
+  if (S.tiendaFoco && S.modulo !== "tienda" && S.modulo !== "inicio") { const x = S.tiendas.find(y => y.id === S.tiendaFoco); if (x) return x.nombre || "Tienda"; }
   if (S.indice || S.modulo === "gestion") return t("inicio");
   const m = modActual();
   const n = m && m.tabs ? m.tabs.filter(x => !x[2] || esAdmin()).length : 0;
   return n > 1 ? modTxt(m.id, 0) : t("inicio");
 }
 function irAtras() {
+  if (S.tiendaFoco && S.modulo !== "tienda" && S.modulo !== "inicio") { S.modulo = "tienda"; S.indice = false; S.campana = null; window.scrollTo(0, 0); return; }
+  if (S.modulo === "tienda") { S.tiendaFoco = null; S.modulo = "inicio"; S.indice = false; window.scrollTo(0, 0); return; }
   const m = modActual();
   const n = m && m.tabs ? m.tabs.filter(x => !x[2] || esAdmin()).length : 0;
   if (!S.indice && n > 1) { S.indice = true; S.campana = null; if (S.docs) { S.docs.sel = null; S.docs.edit = null; } }
@@ -419,6 +453,69 @@ function pintarIndice(m, tabs) {
     <div class="idx-h"><h1>${esc(modTxt(m.id, 0))}</h1><p>${esc(modTxt(m.id, 1))}</p></div>
     <div class="cards">${tabs.map(tarjeta).join("")}</div>
     ${bandaMarcas()}</div>`;
+}
+function menuVerComo() {
+  if (!realEsAdmin()) return "";
+  const real = yoReal();
+  const rolDe = p => (p.rol === "admin" ? t("admin") : p.rol === "marketing" ? t("marketing") : t("rm"));
+  const otros = S.perfiles.filter(p => p.id !== real.id && p.activo !== false);
+  if (!otros.length) return "";
+  return `<div class="menu-sep">Ver como</div>
+    <button data-action="verComo" data-id="" class="${S.real ? "" : "on"}">${esc(real.nombre)} <small>${esc(rolDe(real))}</small></button>
+    ${otros.map(p => `<button data-action="verComo" data-id="${esc(p.id)}" class="${S.me.id === p.id ? "on" : ""}">${esc(p.nombre)} <small>${esc(rolDe(p))}</small></button>`).join("")}`;
+}
+/* ============ Mis tiendas (Regional Manager) ============
+   Lo primero que ve un Regional Manager son sus tiendas. Al entrar en una
+   se abre su ficha: los mismos apartados de la plataforma, ya filtrados por
+   esa tienda. El menú general de apartados sigue debajo, como siempre.
+   ======================================================== */
+function tarjetaTienda(x) {
+  const e = estadoTienda(x);
+  const abiertas = (x.bajas || []).filter(b => !b.fin).length;
+  const prl = typeof resumenPrl === "function" ? resumenPrl(x) : { vencidas: 0 };
+  const avisos = [abiertas ? `${abiertas} ${abiertas === 1 ? "baja abierta" : "bajas abiertas"}` : "", prl.vencidas ? `${prl.vencidas} PRL ${prl.vencidas === 1 ? "pendiente" : "pendientes"}` : ""].filter(Boolean);
+  return `<button class="mod tda" data-action="abrirTienda" data-id="${esc(x.id)}">
+    <span class="mod-t">${esc(x.nombre || "Tienda sin nombre")}</span>
+    <span class="mod-d">${esc(x.codigo || "")}${x.codigo ? " · " : ""}${x.personas.length} ${x.personas.length === 1 ? "persona evaluada" : "personas evaluadas"}</span>
+    <span class="phases"><span class="ph ${e.obj ? "cerrado" : "pendiente"}" title="Objetivos ${e.obj ? "validados" : "sin validar"}">Obj</span><span class="ph ${e.s1}" title="Seguimiento 6 meses">6m</span><span class="ph ${e.fy}" title="Cierre anual">Año</span></span>
+    <span class="mod-f">${avisos.length ? esc(avisos.join(" · ")) : "Nada pendiente"} →</span></button>`;
+}
+function bloqueMisTiendas() {
+  if (esAdmin() || esMarketing()) return "";
+  if (!S.tiendas.length) return `<h2 class="grupo">Mis tiendas</h2><p class="muted">Todavía no tienes tiendas asignadas. RR.HH. te las asignará.</p>`;
+  return `<h2 class="grupo">Mis tiendas <em class="cuenta">${S.tiendas.length}</em></h2><div class="cards">${S.tiendas.map(tarjetaTienda).join("")}</div>`;
+}
+const APARTADOS_TIENDA = [
+  ["Evaluación y Desarrollo", [["evaluacion", "eval", "Scorecard", "Objetivos, seguimiento a 6 meses y cierre anual con bonus"], ["evaluacion", "talent", "Talent Matrix", "Desempeño, potencial, riesgo y sucesión del equipo"], ["evaluacion", "onboarding", "Onboarding", "Encuesta de incorporación"], ["evaluacion", "offboarding", "Offboarding", "Encuesta de salida"]]],
+  ["PRL", [["prl", "bajas", "Bajas y absentismo", "Procesos abiertos y cerrados"], ["prl", "prevencion", "Prevención", "Formación PRL y revisiones del local"], ["prl", "clima", "Clima", "Encuestas de clima del equipo"]]],
+  ["People Data Centre", [["pdc", "", "Cuadro de mando", "KPIs de negocio y de personas de la tienda"]]],
+  ["Formaciones", [["formacion", "envios", "Enviar a tienda", "Códigos para que el equipo haga las formaciones"], ["formacion", "seguimiento", "Seguimiento", "Quién ha hecho cada formación y con qué nota"], ["formacion", "psico", "Pruebas situacionales", "Pruebas de selección con código"]]]
+];
+function resumenEnTienda(x, m, tab) {
+  const codigos = tipo => {
+    const cs = (S.campanas || []).filter(c => c.tipo === tipo).map(c => c.id);
+    const inv = (S.invitaciones || []).filter(i => i.tienda_id === x.id && cs.includes(i.campana_id));
+    return inv.length ? `${inv.filter(i => i.estado === "respondida").length} de ${inv.length} códigos respondidos` : "Sin códigos para esta tienda";
+  };
+  try {
+    if (tab === "eval") { const e = estadoTienda(x); return `Objetivos ${e.obj ? "validados" : "sin validar"} · ${x.personas.filter(p => ((p.evals || {}).fy || {}).cerrado).length} de ${x.personas.length} cierres`; }
+    if (tab === "talent") { const f = x.personas.map(p => SC.talent(x, p)); return `${f.filter(r => r.cerrado).length} de ${f.length} fichas cerradas`; }
+    if (tab === "onboarding" || tab === "offboarding" || tab === "clima" || tab === "psico") return codigos(tab);
+    if (tab === "envios" || tab === "seguimiento") return codigos("formacion");
+    if (tab === "bajas") { const a = (x.bajas || []).filter(b => !b.fin).length; return a ? `${a} ${a === 1 ? "baja abierta" : "bajas abiertas"}` : "Sin bajas abiertas"; }
+    if (tab === "prevencion") { const r = resumenPrl(x); return r.personas ? `${r.alDia} de ${r.personas} con la formación al día` : "Sin personas dadas de alta"; }
+    if (m === "pdc") { const n = Object.keys(x.kpis || {}).length; return n ? `${n} ${n === 1 ? "mes cargado" : "meses cargados"}` : "Sin datos cargados todavía"; }
+  } catch (e) {}
+  return "";
+}
+function pintarTiendaFoco() {
+  const x = S.tiendas.find(y => y.id === S.tiendaFoco);
+  if (!x) { S.modulo = "inicio"; S.tiendaFoco = null; return pintarInicio(); }
+  $("vista").innerHTML = `<div class="home idx">
+    <div class="idx-h"><h1>${esc(x.nombre || "Tienda sin nombre")}</h1><p>${esc(x.codigo || "")}${x.codigo ? " · " : ""}Regional Manager: ${esc(rmNombre(x))}. Todos los apartados, filtrados por esta tienda.</p></div>
+    ${APARTADOS_TIENDA.filter(([, items]) => puedeVer(items[0][0])).map(([tit, items]) => `<h2 class="grupo">${esc(tit)}</h2><div class="cards">${items.map(([m, tab, et, des]) => `<button class="mod" data-action="apartadoTienda" data-m="${m}" data-tab="${tab}">
+      <span class="mod-t">${esc(et)}</span><span class="mod-d">${esc(des)}</span><span class="mod-f">${esc(resumenEnTienda(x, m, tab))}</span></button>`).join("")}</div>`).join("")}
+  </div>`;
 }
 function pintarInicio() {
   const resumen = m => {
@@ -466,6 +563,7 @@ function pintarInicio() {
   $("vista").innerHTML = `<div class="home">
     <div class="home-h">${logo(76)}<div class="home-txt">${marcaSVG("grande", 34)}
       <p>${t("homeIntro")} ${esAdmin() ? t("homeAdmin") : esMarketing() ? t("homeMk") : t("homeRM")}</p></div></div>
+    ${bloqueMisTiendas()}
     ${bloqueHoy(AV)}
     <h2 class="grupo">${t("enMarcha")}</h2><div class="cards">${enMarcha.map(tarjeta).join("")}</div>
     ${esAdmin() ? `<button class="adminbar" data-action="modulo" data-m="gestion">
@@ -945,9 +1043,16 @@ document.addEventListener("click", async e => {
   const nombreYo = S.me.nombre;
   const acciones = Object.assign({
     idioma() { setLang(b.dataset.l); },
-    inicio() { S.modulo = "inicio"; S.indice = false; b.closest("details") && (b.closest("details").open = false); },
+    inicio() { S.modulo = "inicio"; S.indice = false; S.tiendaFoco = null; b.closest("details") && (b.closest("details").open = false); },
+    verComo() { if (!realEsAdmin()) return false; b.closest("details") && (b.closest("details").open = false); cambiarVista(b.dataset.id); },
+    abrirTienda() { S.tiendaFoco = b.dataset.id; S.modulo = "tienda"; S.indice = false; window.scrollTo(0, 0); },
+    apartadoTienda() {
+      const id = S.tiendaFoco; if (!id) return false;
+      irA({ m: b.dataset.m, tab: b.dataset.tab || undefined, tienda: id, t: id });
+    },
     modulo() {
       if (!puedeVer(b.dataset.m)) return false;
+      S.tiendaFoco = null;
       S.modulo = b.dataset.m; S.campana = null;
       if (S.docs) { S.docs.sel = null; S.docs.edit = null; S.docs.busca = ""; }
       S.tab = tabPorDefecto(S.modulo);

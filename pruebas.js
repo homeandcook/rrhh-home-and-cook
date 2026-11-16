@@ -350,7 +350,7 @@ const ACCIONES_PRUEBAS = {
     const nom = SC.txt(SC.CONFIG.tiposPrueba[tipo].t);
     const titulo = prompt(`Título de la campaña:`, `${nom} ${SC.CONFIG.anio}`);
     if (!titulo) return false;
-    const { error } = await sb.from("campanas").insert({ anio: SC.CONFIG.anio, tipo, plantilla, titulo: titulo.trim(), estado: "abierta", creado_por: S.me.id });
+    const { error } = await sb.from("campanas").insert({ anio: SC.CONFIG.anio, tipo, plantilla, titulo: titulo.trim(), estado: "abierta", creado_por: (S.real || S.me).id });
     if (error) { alert("No se ha podido crear: " + traducirError(error)); return false; }
     log(`Campaña creada: ${titulo}`); await recargarPruebas();
     S.campana = (S.campanas.filter(c => c.tipo === tipo).slice(-1)[0] || {}).id;

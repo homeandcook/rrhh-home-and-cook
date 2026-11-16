@@ -957,6 +957,21 @@ svg.chart .lbl{fill:var(--ink);font-size:11.5px;font-weight:700}
 .badge.abierta{background:var(--warnbg);color:var(--warn);border-color:transparent}
 .inline-form small.ayuda{font-size:11.5px;color:var(--muted);font-weight:400}
 .hint.aviso{background:var(--warnbg);color:var(--warn);border-radius:8px;padding:10px 12px;margin:0 0 16px}
+
+/* Ver como (RR.HH.) y Mis tiendas (Regional Manager) */
+.como-bar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:8px 16px;background:#EFEAFE;color:#2E2163;font-size:13.5px;border-bottom:1px solid var(--line)}
+.como-bar .btn{background:var(--paper)}
+.user.como summary{color:var(--red)}
+.como-ojo{display:inline-flex;vertical-align:-3px;margin-right:6px}
+.como-ojo svg{width:16px;height:16px}
+.user .menu .menu-sep{padding:10px 12px 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--line);margin-top:4px}
+.user .menu button small{color:var(--muted);font-weight:500;margin-left:6px}
+.user .menu button.on{background:#EFEAFE;font-weight:700}
+.mod.tda .phases{display:flex;gap:6px;margin-top:2px}
+.grupo .cuenta{font-style:normal;margin-left:8px;color:var(--muted);font-weight:600}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .como-bar{background:#2A2342;color:#E4DCFF}:root:not([data-theme="light"]) .user .menu button.on{background:#2A2342}}
+:root[data-theme="dark"] .como-bar{background:#2A2342;color:#E4DCFF}
+:root[data-theme="dark"] .user .menu button.on{background:#2A2342}
 </style>
 </head>
 <body>

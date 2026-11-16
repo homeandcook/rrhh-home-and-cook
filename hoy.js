@@ -102,13 +102,19 @@ function irA(d) {
       S.ui = { t: d.tienda || d.t || null, p: d.p || null, fase: S.tab === "talent" ? "talent" : (d.fase || (d.p ? "fy" : "obj")) };
   } else if (d.m === "pdc") { const f = filtroPDC(); f.tienda = d.tienda || ""; f.vista = d.carga ? "cargar" : "cuadro"; }
   else if (d.m === "prl") { if (S.tab === "bajas") filtroBajas().tienda = d.tienda || ""; else filtroPrl().tienda = d.tienda || ""; }
-  else if (d.m === "formacion") { S.curso = d.curso || null; S.chuleta = false; S.vista = "recorrido"; if (d.curso) S.paso = progresoCurso(d.curso).ultimo || (pasosDe(d.curso)[0] || {}).id; }
+  if (d.tienda) {
+    S.invT = d.tienda;
+    if (typeof filtroSeg === "function") filtroSeg().tienda = d.m === "formacion" && S.tab === "seguimiento" ? d.tienda : filtroSeg().tienda;
+  }
+  if (d.m === "pdc" && d.tienda) filtroPDC().zona = "";
+  if (d.m === "prl" && d.tienda) { if (S.tab === "bajas") filtroBajas().zona = ""; else filtroPrl().zona = ""; }
+  if (d.m === "formacion") { S.curso = d.curso || null; S.chuleta = false; S.vista = "recorrido"; if (d.curso) S.paso = progresoCurso(d.curso).ultimo || (pasosDe(d.curso)[0] || {}).id; }
   const i = $("buscaGlobal"); if (i) i.value = "";
   window.scrollTo(0, 0);
 }
 const ACCIONES_HOY = {
-  irAviso(b) { irA(b.dataset); },
-  irBusca(b) { irA(b.dataset); }
+  irAviso(b) { S.tiendaFoco = null; irA(b.dataset); },
+  irBusca(b) { S.tiendaFoco = null; irA(b.dataset); }
 };
 document.addEventListener("input", e => { if (e.target.id === "buscaGlobal") pintarBusqueda(); });
 document.addEventListener("keydown", e => {

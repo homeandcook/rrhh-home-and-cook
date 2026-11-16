@@ -253,6 +253,16 @@ La plataforma pasa a llamarse **Pippole** y se sirve en www.pippole.es. Identida
 - **Sigue igual (contenido del cliente)**: nombres de las tiendas, guiones del Circuito de Venta, pregunta eNPS y fotos de la formación PRL.
 - El correo de invitación cambia de diseño: hay que volver a desplegar la función `enviar-invitacion`.
 
+## 0.27.0 · 16/11/2026 · **SQL: no**
+- **Ver como (RR.HH.)**: en el menú de usuario, arriba a la derecha, el administrador elige cualquier usuario y ve la plataforma exactamente como la ve esa persona, al instante y sin cerrar sesión.
+  - Una banda avisa de que estás en esa vista y lleva el botón «Volver a mi usuario».
+  - Lo que se guarde en esa vista queda a nombre del administrador, porque la sesión con la base de datos sigue siendo la suya.
+  - En esa vista se ocultan «Cambiar mi contraseña» y Usuarios y tiendas.
+- **Mis tiendas (Regional Manager)**: lo primero de la portada son sus tiendas, con el estado de objetivos, seguimiento y cierre, y lo que está pendiente (bajas abiertas, PRL).
+  - Al entrar en una tienda se abre su ficha con todos los apartados ya filtrados por esa tienda: Scorecard, Talent Matrix, Onboarding, Offboarding, Bajas, Prevención, Clima, People Data Centre, Enviar formaciones, Seguimiento y Pruebas situacionales.
+  - «Atrás» vuelve a la ficha de la tienda.
+  - El menú general de apartados sigue debajo, como antes.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

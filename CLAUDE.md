@@ -49,6 +49,12 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
   - Navegación en dos niveles: índice del apartado con tarjetas y botón atrás.
   - Para confirmar, usa `confirmar()`, un modal propio; nunca `confirm()`.
+  - **Ver como** (0.27.0): `cambiarVista(id)` pone en `S.me` el usuario elegido y guarda el administrador en `S.real`.
+    - `S.todas` tiene todas las tiendas; `aplicarVista()` recorta `S.tiendas` según el rol que se está viendo.
+    - Para escribir en la base de datos con el usuario real, usa `yoReal()`. Por ejemplo, `actividad.usuario_id` debe ser `auth.uid()`.
+  - **Mis tiendas** (0.27.0): portada del RM y ficha de tienda (`S.modulo = "tienda"`, `S.tiendaFoco`, `APARTADOS_TIENDA`).
+    - Abre cada apartado con `irA()` de `hoy.js`, filtrado por la tienda.
+    - Los nombres de acción son globales: `irTienda` ya existe en Usuarios y tiendas. Antes de crear una acción, comprueba que el nombre no esté usado.
 - **Invitados con código**: `pruebas.js` (`abrirInvitacion`, `pintarInvitado`) usa las funciones de base de datos SECURITY DEFINER `invitacion_abrir` e `invitacion_responder`. Encuestas, pruebas, formaciones y el escape room son **plantillas de preguntas** que puntúa `SC.puntuar`.
 - **Clima**: anónima o nominal. Las anónimas no guardan nombre.
 - **Correo**: Edge Function `supabase/functions/enviar-invitacion` (Deno) que envía con Resend.
@@ -71,7 +77,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: **falla** porque faltan `SUPABASE_ACCESS_TOKEN` (secreto) y `SUPABASE_PROJECT_REF` (variable) en GitHub. Mientras falten, la función de correo se despliega pegando el código en el panel de Supabase.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.26.0**.
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.27.0**.
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.
