@@ -1,7 +1,7 @@
 # Mantiene despierto el proyecto de Supabase.
 # El plan gratuito pausa el proyecto tras ~7 días sin actividad. Esta tarea
 # hace una consulta mínima cada 3 días (no lee ni cambia datos: sin sesión,
-# las reglas de la base de datos devuelven una lista vacía).
+# la base de datos deniega el acceso, pero la consulta cuenta como actividad).
 # Si falla, GitHub te avisa por correo: suele significar que ya está pausado
 # y hay que pulsar "Restore project" en Supabase.
 name: Mantener Supabase activo
@@ -31,4 +31,8 @@ jobs:
             "$URL/rest/v1/tiendas?select=id&limit=1" \
             -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
           echo "Respuesta: $CODE"; head -c 300 /tmp/r.txt; echo
-          test "$CODE" = "200" || { echo "Supabase no responde bien. Revisa si el proyecto está pausado."; exit 1; }
+          # 200 = respuesta con datos; 401/403 con código 42501 = la base de datos
+          # respondió y denegó el acceso anónimo (lo esperado con las reglas actuales).
+          # En los dos casos la consulta llegó a Postgres y cuenta como actividad.
+          if [ "$CODE" = "200" ] || grep -q '"42501"' /tmp/r.txt; then echo "Supabase activo."; exit 0; fi
+          echo "Supabase no responde bien. Revisa si el proyecto está pausado."; exit 1
