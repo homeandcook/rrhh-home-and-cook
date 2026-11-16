@@ -31,7 +31,7 @@ jobs:
           mkdir -p _sitio
           cp index.html manifest.json _sitio/
           cp *.js _sitio/
-          cp *.png _sitio/
+          cp *.png favicon.svg _sitio/
           mkdir -p _sitio/img && cp img/*.jpg _sitio/img/
           mkdir -p _sitio/fonts && cp fonts/*.woff2 _sitio/fonts/
           # Nada de SQL, documentación, flujos ni la función del correo:
