@@ -73,8 +73,8 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 - **Correo**: Edge Function `supabase/functions/enviar-invitacion` (Deno) que envía con Resend.
   - Lee las invitaciones con el JWT del usuario, así que aplican las reglas por fila.
   - Secretos en Supabase: `RESEND_API_KEY`, `CORREO_DE`, `URL_PLATAFORMA=https://www.pippole.es/`.
-  - Resend **no tiene dominio verificado**: solo envía al correo de la cuenta. Falta verificar `pippole.es` en Resend, con registros DNS en Hostinger.
-  - El cambio de diseño del correo de la 0.26.0 **no está desplegado** todavía.
+  - Resend: cuenta propia de Pippole (no la personal del usuario), dominio `pippole.es` en región Irlanda, registros DNS añadidos en Hostinger el 16/11/2026 (DKIM `resend._domainkey`, CNAME `send` y `rsend`). Remitente `Pippole <no-responder@pippole.es>`.
+  - La función con el diseño de la 0.26.0 y el envío de Desarrollo está desplegada desde el 16/11/2026.
 - **Modo demostración**: `?demo` usa `demo.js`, un cliente falso en memoria. Usuarios `admin`, `rm.es`, `rm.pt` y `marketing`, contraseña `demo1234`.
 - **Idiomas**: `i18n.js` (es, en y fr) para el acceso y las pantallas de invitado. El resto de la interfaz está en español.
 
@@ -89,7 +89,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 - **Flujos de GitHub Actions**:
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
-  - `desplegar-funciones.yml`: **falla** porque faltan `SUPABASE_ACCESS_TOKEN` (secreto) y `SUPABASE_PROJECT_REF` (variable) en GitHub. Mientras falten, la función de correo se despliega pegando el código en el panel de Supabase.
+  - `desplegar-funciones.yml`: despliega `enviar-invitacion` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
 - **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.30.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
