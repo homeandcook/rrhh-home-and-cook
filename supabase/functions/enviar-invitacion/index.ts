@@ -133,7 +133,7 @@ ${quien.nombre}`;
   <tr><td style="height:5px;background:${R};font-size:0;line-height:0;border-radius:13px 13px 0 0">&nbsp;</td></tr>
 
   <tr><td class="pad" style="padding:30px 36px 0">
-    <div style="font:700 21px/1.2 ${SANS};color:${TINTA};letter-spacing:-.01em"><span style="color:${R}">&#9679;</span> pippole</div>
+    <div style="font:700 21px/1.2 ${SANS};color:${TINTA};letter-spacing:-.01em"><span style="color:${R}">&#960;</span> pippole</div>
     <div style="font:600 10.5px/1.4 ${SANS};color:${GRIS};letter-spacing:.11em;text-transform:uppercase;padding-top:7px">Plataforma de Recursos Humanos</div>
   </td></tr>
 

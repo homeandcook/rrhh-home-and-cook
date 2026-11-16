@@ -14,7 +14,7 @@ Este repositorio es **público**: aquí no van datos de personas, claves secreta
 - Identidad «Cercana»:
   - Color principal violeta `#5B3FD9` (variable CSS `--red` por historia; el nombre se mantiene), tinta `#231A3D`, fondo `#FBF7FF`, con tema oscuro.
   - Tipografía Plus Jakarta Sans, alojada en `fonts/`. Sin Google Fonts: evita mandar la IP de quien entra a terceros.
-  - Logotipo «pippole» en minúsculas (`marca.js`) y símbolo de un bocadillo con dos puntos (`simboloPippole()` en `marcas.js`). `logoSEB()` y `bandaMarcas()` son nombres heredados: el primero devuelve el símbolo y el segundo nada.
+  - Logotipo «pippole» en minúsculas (`marca.js`) y símbolo de la **π**: dos personas que sostienen juntas una barra (`simboloPippole()` en `marcas.js`, `favicon.svg`; desde 0.27.1). `logoSEB()` y `bandaMarcas()` son nombres heredados: el primero devuelve el símbolo y el segundo nada.
 - El lienzo con las cuatro direcciones de marca estudiadas está en claude.ai (artefacto «Pippole · Direcciones de marca»). La elegida es la 2, «Cercana».
 
 ## Siguiente trabajo acordado: Pippole genérica + configuración por cliente
@@ -77,7 +77,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: **falla** porque faltan `SUPABASE_ACCESS_TOKEN` (secreto) y `SUPABASE_PROJECT_REF` (variable) en GitHub. Mientras falten, la función de correo se despliega pegando el código en el panel de Supabase.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.27.0**.
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.27.1**.
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.

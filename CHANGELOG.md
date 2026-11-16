@@ -263,6 +263,10 @@ La plataforma pasa a llamarse **Pippole** y se sirve en www.pippole.es. Identida
   - «Atrás» vuelve a la ficha de la tienda.
   - El menú general de apartados sigue debajo, como antes.
 
+## 0.27.1 · 16/11/2026 · **SQL: no**
+- **Logotipo nuevo: la π de pippole.** Dos personas que sostienen juntas una barra y forman una π, el «pi» con el que empieza el nombre. Sustituye al bocadillo en la cabecera, la pantalla de acceso, los informes, el icono de pestaña y de app, y el correo (donde aparece como «π pippole»).
+- El icono de pestaña cambia de nombre (`favicon.svg?v=28`), así el navegador no muestra uno antiguo guardado.
+
 ## Cómo numerar
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).

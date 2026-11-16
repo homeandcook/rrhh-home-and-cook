@@ -1,9 +1,9 @@
 "use strict";
-/* Símbolo de Pippole: un bocadillo con dos puntos (dos personas que hablan).
-   Sustituye a los logos de marca anteriores: la interfaz no muestra ninguno. */
-function simboloPippole(px, fondo) {
+/* Símbolo de Pippole: dos personas que sostienen juntas una barra y forman
+   una π, el «pi» con el que empieza el nombre. */
+function simboloPippole(px) {
   const p = px || 32;
-  return `<svg class="pp-simbolo" width="${p}" height="${p}" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 18a14 13 0 1 1 7 11.3L6 33l2.2-6.6A12.8 12.8 0 0 1 6 18z" fill="var(--red)"></path><circle cx="15" cy="18" r="2.4" fill="${fondo || "#FFFFFF"}"></circle><circle cx="25" cy="18" r="2.4" fill="${fondo || "#FFFFFF"}"></circle></svg>`;
+  return `<svg class="pp-simbolo" width="${p}" height="${p}" viewBox="0 0 48 48" aria-hidden="true"><circle cx="15" cy="9" r="5" fill="var(--red)"></circle><circle cx="33" cy="9" r="5" fill="#B6A6FF"></circle><rect x="4" y="17" width="40" height="6.5" rx="3.25" fill="var(--red)"></rect><rect x="12" y="20" width="6.5" height="24" rx="3.25" fill="var(--red)"></rect><rect x="29.5" y="20" width="6.5" height="24" rx="3.25" fill="#B6A6FF"></rect></svg>`;
 }
 /* Nombres antiguos, mantenidos para no tocar cada pantalla */
 function logoSEB(alto) { return simboloPippole(alto || 34); }
