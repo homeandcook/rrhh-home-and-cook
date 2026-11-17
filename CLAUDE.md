@@ -55,7 +55,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 
 ## Cómo está hecho
 - **HTML, CSS y JavaScript sin framework ni compilación.** `index.html` lleva todos los estilos y carga los scripts en este orden:
-  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
+  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
 - **`app.js`**:
   - Estado global `S`, pintado completo con `pintar()` y apartados en el array `MODULOS`.
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
@@ -72,10 +72,13 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 - **Clima**: anónima o nominal. Las anónimas no guardan nombre.
 - **Correo**: Edge Function `supabase/functions/enviar-invitacion` (Deno) que envía con Resend.
   - Lee las invitaciones con el JWT del usuario, así que aplican las reglas por fila.
+  - Modos (0.31.0): `{ids}` invitaciones con nombre, `{anonimos:[{id,email}]}` anónimas (la dirección no se guarda), `{recordatorio:{campana_id,emails}}` recordatorio general sin código, `{tipo:"desarrollo", ids}`. `info` lleva duración, preguntas y nota de la plantilla (que vive en el navegador). Texto y aspecto por tipo de campaña. Envía con la API por lotes de Resend, máximo 100 por llamada; el tope diario llega como motivo `LIMITE_DIARIO`.
+  - Plan gratuito de Resend: 100 correos al día y 3.000 al mes. Para enviar a toda la red de una vez hace falta un plan de pago.
+- **Envíos masivos** (0.31.0): `envios.js` (`bloqueMasivo`, `infoCampana`, `enviarEnLotes`), dentro de cada campaña. Toma a las personas de `equipoDe(t)`. En anónimas, las direcciones ya enviadas se recuerdan solo en `localStorage` (`pp-anon-<campaña>`), nunca junto al código.
   - Secretos en Supabase: `RESEND_API_KEY`, `CORREO_DE`, `URL_PLATAFORMA=https://www.pippole.es/`.
   - Resend: cuenta propia de Pippole (no la personal del usuario), dominio `pippole.es` en región Irlanda, registros DNS añadidos en Hostinger el 16/11/2026 (DKIM `resend._domainkey`, CNAME `send` y `rsend`). Remitente `Pippole <no-responder@pippole.es>`.
   - La función con el diseño de la 0.26.0 y el envío de Desarrollo está desplegada desde el 16/11/2026.
-- **Modo demostración**: `?demo` usa `demo.js`, un cliente falso en memoria. Usuarios `admin`, `rm.es`, `rm.pt` y `marketing`, contraseña `demo1234`.
+- **Modo demostración**: `?demo` usa `demo.js`, un cliente falso en memoria, con equipos de ejemplo en cada tienda y la función de correo simulada (`sb.functions.invoke`). Usuarios `admin`, `rm.es`, `rm.pt` y `marketing`, contraseña `demo1234`.
 - **Idiomas**: `i18n.js` (es, en y fr) para el acceso y las pantallas de invitado. El resto de la interfaz está en español.
 
 ## Despliegue
@@ -90,7 +93,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.30.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.31.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.

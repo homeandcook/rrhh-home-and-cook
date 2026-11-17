@@ -20,6 +20,22 @@ window.crearClienteDemo = function () {
     db = { perfiles: u, auth, tiendas, actividad: [], campanas: [], invitaciones: [], documentos: [], sesion: null, seq: 1 };
   }
   db.documentos = db.documentos || [];
+  /* Equipos de ejemplo para probar los envíos (nombres inventados y correos
+     en ejemplo.com, que no existe). Una persona por tienda sin correo. */
+  if (!db.equiposDemo) {
+    const N = ["Lucía", "Hugo", "Martina", "Pablo", "Sofía", "Álvaro", "Carla", "Diego", "Nerea", "Iván", "Paula", "Rubén", "Inês", "Tiago", "Beatriz", "João"];
+    const A = ["Ortega", "Vidal", "Campos", "Serrano", "Rey", "Prieto", "Lozano", "Pastor", "Costa", "Silva", "Mora", "Nieto"];
+    const P = ["Store Manager", "Assistant Store Manager", "Vendedor/a", "Vendedor/a", "Vendedor/a", "Vendedor/a", "Vendedor/a"];
+    const plano = x => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    db.tiendas.forEach((t, k) => {
+      const n = 6 + (k % 3);
+      t.datos.equipo = Array.from({ length: n }, (_, i) => {
+        const nom = N[(k * 3 + i) % N.length], ap = A[(k + i * 5) % A.length];
+        return { nombre: `${nom} ${ap}`, puesto: P[Math.min(i, P.length - 1)], email: i === n - 1 ? "" : `${plano(nom)}.${plano(ap)}${k}@ejemplo.com` };
+      });
+    });
+    db.equiposDemo = true;
+  }
   ["dr_ciclos", "dr_evaluadores", "dr_personas", "dr_decisiones"].forEach(k => { db[k] = db[k] || []; });
   const save = () => sessionStorage.setItem(KEY, JSON.stringify(db));
   save();
@@ -116,6 +132,31 @@ window.crearClienteDemo = function () {
   return {
     demo: true,
     from: t => new Q(t),
+    /* La función de correo, simulada: no sale nada, pero se marca la fecha
+       de envío y se devuelve lo mismo que la real. */
+    functions: {
+      invoke(nombre, { body }) {
+        return new Promise(r => setTimeout(() => {
+          const ahora = new Date().toISOString(), res = [];
+          const tabla = body.tipo === "desarrollo" ? db.dr_evaluadores : db.invitaciones;
+          (body.ids || []).forEach(id => {
+            const x = (tabla || []).find(y => y.id === id);
+            if (!x) return res.push({ id, ok: false, motivo: "No existe" });
+            if (!x.email) return res.push({ id, ok: false, motivo: "Sin correo válido" });
+            if (x.estado === "respondida" || x.entregado) return res.push({ id, ok: false, motivo: "Ya ha respondido" });
+            x.enviado = ahora; res.push({ id, ok: true });
+          });
+          (body.anonimos || []).forEach(a => {
+            const x = db.invitaciones.find(y => y.id === a.id);
+            if (!x || x.destinatario || x.email || x.enviado) return res.push({ id: a.id, ok: false, motivo: "No se puede enviar" });
+            x.enviado = ahora; res.push({ id: a.id, ok: true });
+          });
+          if (body.recordatorio) body.recordatorio.emails.forEach((e, k) => res.push({ id: "rec-" + k, ok: true }));
+          save();
+          r({ data: { enviados: res.filter(x => x.ok).length, total: res.length, resultados: res }, error: null });
+        }, 250));
+      }
+    },
     rpc(fn, a) {
       return new Promise(r => setTimeout(() => {
         if (fn === "invitacion_abrir") {

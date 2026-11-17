@@ -287,6 +287,18 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.31.0 · 17/11/2026 · **SQL: no** · se despliega la función de correo
+- **Correo nuevo, adaptado a cada tipo**: encuesta de clima (con nombre o anónima), formación, prueba, incorporación, salida, Mystery Shopper y Talent Review.
+  - Cada uno con su asunto, etiqueta, texto, botón («Responder la encuesta», «Empezar la formación», «Valorar a mi equipo»…) y una franja de datos: duración, preguntas, nota para aprobar, certificado, personas a valorar o fecha límite.
+  - Código destacado, «Cómo funciona» en tres pasos y firma con el cargo de quien envía (Recursos Humanos o Regional Manager).
+  - Si ya se había enviado, sale como recordatorio («Todavía no consta como hecho…»).
+  - Se adapta al móvil y lleva versión de solo texto.
+- **Envío a muchas personas a la vez** (encuestas, formaciones y pruebas): todas las tiendas, las tiendas que se marquen o persona a persona.
+  - Toma a las personas con correo de la ficha de equipo de cada tienda, crea los códigos que falten y envía los que aún no han salido. Enseña antes cuántos recibirán el correo, cuántos ya lo tienen, cuántos han respondido y cuántos no tienen correo.
+  - **Anónimas**: cada persona recibe un código sin su nombre. La plataforma no guarda qué dirección recibió cada código; este navegador recuerda a qué direcciones ya se envió, para no repetir. Recordatorio general sin código.
+  - Se envía en lotes de 100 (API por lotes del proveedor). Con el plan gratuito salen 100 correos al día: al llegar al tope se avisa y lo que falta queda pendiente para otro día.
+- Demostración: las tiendas tienen equipos de ejemplo (nombres inventados, correos en ejemplo.com) y el envío se simula.
+
 ## 0.30.0 · 16/11/2026 · **SQL: no**
 - **Avisos de lo que se completa**: campana arriba a la derecha con lo último que se ha terminado (encuestas de clima, formaciones con su nota y entregas del Talent Review). Marca lo que no has visto, lleva al sitio al pulsar y, con la sesión abierta, mira cada minuto y avisa abajo si llega algo nuevo.
   - RR.HH. ve todo; el Regional Manager, lo de sus tiendas.

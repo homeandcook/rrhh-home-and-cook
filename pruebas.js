@@ -132,6 +132,8 @@ function pintarPruebas(tipo) {
     <div><small>Estado de la campaña</small><b>${esc(sel.estado)}</b>${esAdmin() ? `<small><button class="btn small ghost" data-action="toggleCampana">${sel.estado === "abierta" ? "Cerrar campaña" : "Reabrir"}</button></small>` : ""}</div>
     <div><small>Plantilla</small><b style="font-size:16px">${esc(SC.txt(pl.nombre))}</b><small>${pl.preguntas.length} preguntas${pl.anonima ? ", anónima" : ""}</small></div></div>`;
 
+  if (typeof bloqueMasivo === "function") h += bloqueMasivo(sel, pl);
+
   // Generar invitaciones
   if (sel.estado === "abierta") {
     const tiendas = esAdmin() ? S.tiendas : S.tiendas.filter(t => t.rm_id === S.me.id);
@@ -142,7 +144,7 @@ function pintarPruebas(tipo) {
       if (tEq) S.invT = tEq.id;
       const eq = tEq ? (tEq.equipo || []) : [];
       const yaTiene = n => invs.some(i => i.tienda_id === tEq.id && (i.destinatario || "").trim().toLowerCase() === (n || "").trim().toLowerCase());
-      h += `<section class="card"><div class="card-h"><h2>Elegir del equipo de la tienda</h2></div>
+      h += `<section class="card" id="envPersona"><div class="card-h"><h2>Persona a persona: elegir del equipo de la tienda</h2></div>
         <div class="inline-form" style="border:0;margin:0 0 12px;padding:0">
           <label>Tienda<select data-action="invTienda">${tiendas.map(t => `<option value="${t.id}" ${t.id === (tEq || {}).id ? "selected" : ""}>${esc(t.nombre)} · ${(t.equipo || []).length} en el equipo</option>`).join("")}</select></label></div>
         ${eq.length ? `<div class="tablewrap"><table><thead><tr><th style="width:36px"><input type="checkbox" data-action="eqTodos" class="chk"></th><th>Nombre</th><th>Puesto</th><th>Correo</th><th>Estado</th></tr></thead><tbody>
@@ -157,7 +159,7 @@ function pintarPruebas(tipo) {
         : `<p class="empty">Esta tienda no tiene equipo dado de alta. Añádelo en <b>Usuarios y tiendas → Tiendas y equipos de tienda</b>, o mete a la persona a mano aquí abajo.</p>`}
       </section>`;
     }
-    h += `<section class="card"><h2>${pl.anonima ? "Generar códigos" : "Añadir a una persona a mano"}</h2>
+    h += `<section class="card" ${pl.anonima ? 'id="envPersona"' : ""}><h2>${pl.anonima ? "Generar códigos sueltos para repartir en tienda" : "Añadir a una persona a mano"}</h2>
       <form class="inline-form" id="formInv" style="border:0;margin:0;padding:0">
         <label>Tienda<select name="tienda_id" required><option value="">Elige tienda</option>${tiendas.map(t => `<option value="${t.id}">${esc(t.nombre)}</option>`).join("")}</select></label>
         ${pl.anonima ? `<label>¿Cuántos códigos?<input name="n" type="number" min="1" max="30" value="6" class="short2"></label>`
@@ -315,9 +317,13 @@ async function recargarPruebas() {
 /* El envío directo solo existe si está montada la función de Supabase y
    config.js lo declara. Mientras no lo esté, el botón abre tu correo, que
    funciona desde el primer día y no depende de nadie. */
-const envioDirecto = () => !!(K.correoDirecto && sb && sb.functions && !sb.demo);
-async function enviarPorLaPlataforma(ids, tipo) {
-  const { data, error } = await sb.functions.invoke("enviar-invitacion", { body: tipo ? { ids, tipo } : { ids } });
+const envioDirecto = () => !!(K.correoDirecto && sb && sb.functions);
+/* ids: invitaciones (o responsables con tipo "desarrollo"). extra: anonimos,
+   recordatorio o info. Si no se pasa info, se calcula de las campañas. */
+async function enviarPorLaPlataforma(ids, tipo, extra) {
+  const body = Object.assign({}, ids && ids.length ? { ids } : {}, tipo ? { tipo } : {}, extra || {});
+  if (!body.info && ids && !tipo && typeof infoDe === "function") body.info = infoDe(ids);
+  const { data, error } = await sb.functions.invoke("enviar-invitacion", { body });
   if (error) {
     let det = "";
     try { det = (await error.context.json()).error || ""; } catch (e) {}
@@ -335,7 +341,7 @@ Te envío el acceso a "${c.titulo}". No necesitas usuario ni contraseña: abre e
 Enlace: ${url}
 Código: ${inv.codigo}
 
-Son ${pl.preguntas.length} preguntas y se tarda unos ${pl.id === "clima-tienda" ? "5" : "10"} minutos. El código sirve una sola vez y es solo tuyo, no lo reenvíes.
+Son ${pl.preguntas.length} preguntas y se tarda unos ${infoCampana(c).min} minutos. El código sirve una sola vez y es solo tuyo, no lo reenvíes.
 
 Gracias,
 ${S.me.nombre}`;
@@ -448,7 +454,7 @@ const ACCIONES_PRUEBAS = {
     try {
       const r = await enviarPorLaPlataforma([inv.id]);
       const mal = (r.resultados || []).find(x => !x.ok);
-      if (mal) { alert("No se ha enviado: " + (mal.motivo || "motivo desconocido")); }
+      if (mal) { alert("No se ha enviado: " + (motivoLegible(mal.motivo) || "motivo desconocido")); }
       else { log(`Código enviado a ${inv.email}`); toast("Correo enviado"); }
     } catch (e) { alert("No se ha podido enviar: " + e.message); }
     await recargarPruebas(); pintar();
@@ -464,14 +470,15 @@ const ACCIONES_PRUEBAS = {
     if (!ok) return false;
     toast("Enviando…");
     let bien = 0; const fallos = [];
-    for (let i = 0; i < pend.length; i += 25) {
+    for (let i = 0; i < pend.length; i += LOTE) {
       try {
-        const r = await enviarPorLaPlataforma(pend.slice(i, i + 25).map(x => x.id));
+        const r = await enviarPorLaPlataforma(pend.slice(i, i + LOTE).map(x => x.id));
         bien += r.enviados || 0;
         (r.resultados || []).filter(x => !x.ok).forEach(x => {
           const inv = pend.find(y => y.id === x.id);
-          fallos.push(`${(inv && (inv.destinatario || inv.email)) || "?"}: ${x.motivo}`);
+          fallos.push(`${(inv && (inv.destinatario || inv.email)) || "?"}: ${motivoLegible(x.motivo)}`);
         });
+        if ((r.resultados || []).some(x => x.motivo === "LIMITE_DIARIO")) break;
       } catch (e) { fallos.push(e.message); break; }
     }
     log(`${bien} códigos enviados de ${c.titulo}`);

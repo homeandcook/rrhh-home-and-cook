@@ -400,11 +400,16 @@ function drResumen() {
 async function drEnviar(ids) {
   if (!ids.length) return toast("Nadie con correo pendiente");
   const D = drS();
+  let enviados = 0; const mal = [];
   try {
-    const r = await enviarPorLaPlataforma(ids, "desarrollo"), mal = (r.resultados || []).filter(x => !x.ok);
-    (r.resultados || []).filter(x => x.ok).forEach(x => { const e = D.ev.find(y => y.id === x.id); if (e) e.enviado = new Date().toISOString(); });
-    D.msg = `${r.enviados} de ${r.total} correos enviados.` + (mal.length ? ` Sin enviar: ${mal.map(x => `${TR.apellidos((D.ev.find(y => y.id === x.id) || {}).nombre)} (${x.motivo})`).join("; ")}.` : "");
-  } catch (err) { D.msg = "No se ha podido enviar: " + err.message; }
+    for (let i = 0; i < ids.length; i += LOTE) {
+      const r = await enviarPorLaPlataforma(ids.slice(i, i + LOTE), "desarrollo");
+      enviados += r.enviados || 0;
+      (r.resultados || []).forEach(x => { if (x.ok) { const e = D.ev.find(y => y.id === x.id); if (e) e.enviado = new Date().toISOString(); } else mal.push(x); });
+      if (mal.some(x => x.motivo === "LIMITE_DIARIO")) break;
+    }
+    D.msg = `${enviados} de ${ids.length} correos enviados.` + (mal.length ? ` Sin enviar: ${mal.map(x => `${TR.apellidos((D.ev.find(y => y.id === x.id) || {}).nombre)} (${motivoLegible(x.motivo)})`).join("; ")}.` : "");
+  } catch (err) { D.msg = `${enviados ? enviados + " enviados. " : ""}No se ha podido enviar: ` + err.message; }
 }
 async function drCopiar(txt, ok) {
   try { await navigator.clipboard.writeText(txt); toast(ok || "Copiado"); }

@@ -692,11 +692,11 @@ const ACCIONES_SEG = {
     }
     toast("Enviando…");
     let bien = 0; const fallos = [];
-    for (let i = 0; i < pend.length; i += 25) {
+    for (let i = 0; i < pend.length; i += LOTE) {
       try {
-        const r = await enviarPorLaPlataforma(pend.slice(i, i + 25).map(x => x.inv.id));
+        const r = await enviarPorLaPlataforma(pend.slice(i, i + LOTE).map(x => x.inv.id));
         bien += r.enviados || 0;
-        (r.resultados || []).filter(z => !z.ok).forEach(z => fallos.push(z.motivo));
+        (r.resultados || []).filter(z => !z.ok).forEach(z => fallos.push(motivoLegible(z.motivo)));
       } catch (e) { fallos.push(e.message); break; }
     }
     log(`${bien} recordatorios de formación enviados`);
