@@ -166,6 +166,7 @@ window.crearClienteDemo = function () {
           if (i.estado === "pendiente" && c.estado === "abierta") { i.estado = "abierta"; i.abierto = new Date().toISOString(); save(); }
           return r({ data: { titulo: c.titulo, plantilla: c.plantilla, tipo: c.tipo, campana_estado: c.estado, estado: i.estado,
             destinatario: i.destinatario, tienda: t ? t.nombre : null,
+            config: c.config || {}, responsable: i.responsable || null, grupo: i.grupo || null,
             respuestas: i.estado === "respondida" ? {} : clone(i.respuestas || {}) }, error: null });
         }
         if (fn === "invitacion_responder") {

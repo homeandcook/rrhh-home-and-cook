@@ -55,7 +55,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 
 ## Cómo está hecho
 - **HTML, CSS y JavaScript sin framework ni compilación.** `index.html` lleva todos los estilos y carga los scripts en este orden:
-  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
+  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
 - **`app.js`**:
   - Estado global `S`, pintado completo con `pintar()` y apartados en el array `MODULOS`.
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
@@ -69,7 +69,13 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
     - Los nombres de acción son globales: `irTienda` ya existe en Usuarios y tiendas. Antes de crear una acción, comprueba que el nombre no esté usado.
 - **Avisos** (0.30.0): `avisos.js`, campana de la cabecera con lo completado (invitaciones respondidas y entregas `dr_evaluadores.entregado`). Sondeo cada minuto; «visto» en `localStorage` por usuario. Las anónimas se agrupan sin hora ni tienda.
 - **Invitados con código**: `pruebas.js` (`abrirInvitacion`, `pintarInvitado`) usa las funciones de base de datos SECURITY DEFINER `invitacion_abrir` e `invitacion_responder`. Encuestas, pruebas, formaciones y el escape room son **plantillas de preguntas** que puntúa `SC.puntuar`.
-- **Clima**: anónima o nominal. Las anónimas no guardan nombre.
+- **Clima** (0.32.0): `clima.js` (banco de preguntas `CL`, plantillas `clima2-tiendas|campo|oficinas|demo|gptw`, pestañas `clnueva/clcurso/clanteriores/clresultados/clmodelos`, acciones `ACCIONES_CLIMA`) y `clima_inv.js` (pantalla de quien responde, estado `CI`, acciones `cli*`, vista previa `clPrevia`).
+  - Siempre anónimas. `campanas.config` = {version 2, encuesta, colectivo, parte2, cierre, pendientes [{e,t,g,r}], enviadosA}. `invitaciones.responsable` (a quién evalúa la parte 2) y `grupo` (listas pegadas). Migración 0.32.
+  - El código de cada correo se crea justo antes de enviarlo (`clEnviarPendientes`); si no sale, se borra y vuelve a pendientes.
+  - Resultados: % favorable (respuestas 3 y 4 de 0–4), mínimo `CL.MIN` = 5 por grupo y por responsable.
+  - Las frases de la tipo Great Place To Work son propias: su cuestionario está protegido y no se copia.
+  - `?codigo=XXXX&r=b0:3` abre directamente con la primera respuesta (correo).
+  - Las campañas antiguas (plantillas `clima-*`) se siguen viendo con `pintarPruebas`.
 - **Correo**: Edge Function `supabase/functions/enviar-invitacion` (Deno) que envía con Resend.
   - Lee las invitaciones con el JWT del usuario, así que aplican las reglas por fila.
   - Modos (0.31.0): `{ids}` invitaciones con nombre, `{anonimos:[{id,email}]}` anónimas (la dirección no se guarda), `{recordatorio:{campana_id,emails}}` recordatorio general sin código, `{tipo:"desarrollo", ids}`. `info` lleva duración, preguntas y nota de la plantilla (que vive en el navegador). Texto y aspecto por tipo de campaña. Envía con la API por lotes de Resend, máximo 100 por llamada; el tope diario llega como motivo `LIMITE_DIARIO`.
@@ -93,7 +99,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.31.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.32.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.

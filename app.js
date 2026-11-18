@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.31.0";
+const APP_VERSION = "0.32.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -110,7 +110,9 @@ function arrancar() {
      dentro. Quien recibe la invitación teclea el código: es lo único que
      demuestra que el correo le llegó a quien tenía que llegarle, y evita
      que un enlace reenviado abra la prueba de otra persona. */
-  if (par.has("codigo")) return abrirInvitacion("");
+  /* ?codigo=XXXX-XXXX abre directamente; &r=b0:3 trae la primera respuesta
+     pulsada en el correo de las encuestas de clima */
+  if (par.has("codigo")) { INV.pre = par.get("r") || null; return abrirInvitacion(par.get("codigo") || ""); }
   sb.auth.getSession().then(({ data }) => (data && data.session ? entrar() : pantallaLogin()));
 }
 function pantallaSinLibreria() {
@@ -322,7 +324,8 @@ function autoGrow(el) { el.style.height = "auto"; el.style.height = el.scrollHei
 /* =================== Estructura =================== */
 const MODULOS = [
   { id: "clima", t: "Encuestas de clima", grupo: "activo",
-    d: "Encuestas de clima anónimas o nominales: envío con código, seguimiento de respuestas y resultados por dimensión." },
+    d: "Encuestas anónimas por colectivo o tipo Great Place To Work: se envían por correo, se responden en 3 minutos y los resultados salen por dimensión.",
+    tabs: [["clnueva", "Nueva encuesta", true], ["clcurso", "En curso"], ["clanteriores", "Anteriores"], ["clresultados", "Resultados"], ["clmodelos", "Modelos", true]] },
   { id: "desarrollo", t: "Desarrollo", grupo: "activo",
     d: "Talent Review y plan de desarrollo: cada responsable valora a su equipo y RR.HH. calibra.",
     tabs: [["oficina", "Oficina"], ["retail", "Retail"]] },
@@ -344,7 +347,7 @@ const MODULOS = [
   { id: "hometime", t: "HomeTime", grupo: "externo", enlace: "hometime", d: "" }
 ];
 /* Qué apartado y qué pestaña corresponden a cada cuestionario con código */
-const TAB_TXT = { envios: "envios", seguimiento: "seguimiento", eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
+const TAB_TXT = { clnueva: "clnueva", clcurso: "clcurso", clanteriores: "clanteriores", clresultados: "clresultados", clmodelos: "clmodelos", envios: "envios", seguimiento: "seguimiento", eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
   onboarding: "onboarding", offboarding: "offboarding", bajas: "bajas", prevencion: "prevencion",
   clima: "clima", cursos: "cursos", psico: "psico", process: "process", politica: "politica" };
 const TAB_PRUEBA = { onboarding: ["evaluacion", "onboarding"], offboarding: ["evaluacion", "offboarding"],
@@ -387,7 +390,7 @@ function pintar() {
   pintarEstado();
   if (S.modulo === "gestion" && esAdmin()) return pintarGestion();
   if (S.modulo === "tienda") return pintarTiendaFoco();
-  if (S.modulo === "clima") return pintarPruebas("clima");
+  if (S.modulo === "clima" && !(S.indice && tabs.length > 1)) return pintarClima(tabActual());
   if (S.modulo === "desarrollo" && !(S.indice && tabs.length > 1)) return pintarDesarrollo(tabActual());
   if (S.indice && tabs.length > 1) return pintarIndice(m, tabs);
   const tab = tabActual();
@@ -448,6 +451,7 @@ function resumenTab(id) {
     if (id === "prevencion") { const R = S.tiendas.map(resumenPrl), per = R.reduce((a, x) => a + x.personas, 0), ok = R.reduce((a, x) => a + x.alDia, 0); return per ? `${SC.pct(ok / per, 0)} con la formación al día` : "Sin personas dadas de alta"; }
     if (id === "cursos") { const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0; return `${cursosVisibles().length} ${cursosVisibles().length === 1 ? "formación" : "formaciones"} · ${n} ${n === 1 ? "completada" : "completadas"}`; }
     if (id === "process") return `${libro("process").items.length} procesos`;
+    if (id.startsWith("cl") && typeof clResumenTab === "function") return clResumenTab(id);
     if (id === "politica") return `${libro("politica").items.length} fichas`;
   } catch (e) {}
   return "";
@@ -1166,7 +1170,7 @@ document.addEventListener("click", async e => {
       if (error) { alert(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
-  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO);
+  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO);
   if (!acciones[a]) return;
   const res = await acciones[a](b, t);
   if (res !== false) pintar();

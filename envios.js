@@ -24,6 +24,12 @@ const LIMITE_GRATIS = 100;
 /* Datos de la plantilla para el texto del correo (duración, preguntas…) */
 function infoCampana(c) {
   const pl = SC.plantilla(c.plantilla) || {}, n = (pl.preguntas || []).length;
+  /* Clima por colectivo: preguntas según la parte 2 y la primera pregunta,
+     que el correo trae ya para contestar con un clic */
+  if (pl.v2 && typeof clPreguntas === "function") {
+    const qs = clPreguntas(pl, (c.config || {})), q1 = qs[0];
+    return { min: clMinutos(pl, c.config || {}), n: qs.length, primera: q1 && q1.tipo === "likert" ? { id: q1.id, t: q1.t } : undefined };
+  }
   const curso = pl.curso && typeof cursoDe === "function" ? cursoDe(pl.curso) : null;
   const aviso = SC.txt(pl.aviso || "") || "";
   const m = aviso.match(/(\d+)\s*minutos/);

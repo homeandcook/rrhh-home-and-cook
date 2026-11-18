@@ -31,6 +31,8 @@ function pintarInvitado() {
       <p class="login-err">${esc(INV.error)}</p>
       <button class="btn primary block" type="submit">${t("entrar")}</button></form>
       <p class="hint" style="text-align:center">${t("soyRRHH")} <a href="#" data-action="irLogin">${t("entraUsuario")}</a></p>`;
+  } else if (pl && pl.v2 && d.campana_estado !== "cerrada" && typeof pintarClimaInvitado === "function") {
+    pintarClimaInvitado(); return;
   } else if (INV.enviado && pl && pl.curso) {
     /* En una formación la persona tiene derecho a ver su nota y a saber qué
        falló: de eso va la formación. En una encuesta no hay nota que dar. */

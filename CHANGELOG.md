@@ -287,6 +287,17 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.32.0 · 18/11/2026 · **SQL: sí** (`supabase/migracion_0.32.sql`) · se despliega la función de correo
+- **Encuestas de clima, rehechas.** El apartado se abre con cinco secciones: Nueva encuesta, En curso, Anteriores, Resultados y Modelos de encuesta.
+  - **Nueva encuesta**: RR.HH. elige el tipo (de colectivo o tipo Great Place To Work), el colectivo (tiendas, comerciales de campo, oficinas, demostradores en córner), si incluye la evaluación al responsable, a quién va (todas las tiendas, algunas o una lista pegada desde Excel) y el cierre previsto. Resumen al lado con personas, correos y papeletas, y vista previa. Quien responde no elige nada.
+  - **En curso / Anteriores**: tarjetas con la participación; el detalle enseña envíos hechos y pendientes, papeletas para imprimir, recordatorio general y participación por tienda o grupo.
+  - **Resultados**: clima favorable (% de «A menudo» y «Casi siempre»), valoración global, eNPS, dimensiones, lo mejor y lo peor valorado, apartados en la tipo Great Place To Work, tiendas o grupos, responsables y comentarios. Nada se enseña con menos de 5 respuestas.
+  - **Modelos**: las preguntas de los 5 modelos y «Probarla como empleado».
+- **Pantalla nueva para quien responde**: una pregunta cada vez, se toca y pasa sola; barra de avance por partes; teclas 1–5 en el ordenador; se guarda en el dispositivo; la parte 2 enseña a quién se evalúa; la abierta pregunta por lo que la persona ha valorado más bajo.
+- **Correo con la primera pregunta**: se contesta con un clic y la encuesta se abre con esa respuesta guardada. El botón del correo ya lleva el código (`?codigo=…`), en todos los correos.
+- Siempre anónimas: los códigos no llevan nombre. La encuesta guarda a quién se ha invitado (para pendientes y recordatorios), nunca qué código recibió cada persona.
+- Las encuestas creadas antes siguen abriéndose con su pantalla de siempre.
+
 ## 0.31.0 · 17/11/2026 · **SQL: no** · se despliega la función de correo
 - **Correo nuevo, adaptado a cada tipo**: encuesta de clima (con nombre o anónima), formación, prueba, incorporación, salida, Mystery Shopper y Talent Review.
   - Cada uno con su asunto, etiqueta, texto, botón («Responder la encuesta», «Empezar la formación», «Valorar a mi equipo»…) y una franja de datos: duración, preguntas, nota para aprobar, certificado, personas a valorar o fecha límite.

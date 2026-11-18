@@ -56,7 +56,7 @@ const esc = (s: unknown) =>
 const MAIL = /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/;
 const MAX = 100;
 
-type Info = { min?: number; n?: number; umbral?: number; cert?: boolean };
+type Info = { min?: number; n?: number; umbral?: number; cert?: boolean; primera?: { id: string; t: string } };
 type Item = {
   id: string; codigo: string; nombre: string; email: string; titulo: string;
   modo: "clima" | "anonima" | "formacion" | "psico" | "onboarding" | "offboarding" | "mystery" | "desarrollo" | "recordatorio";
@@ -146,17 +146,22 @@ function correo(it: Item, x: ReturnType<typeof textos>, URL_APP: string, cargo: 
     return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
   })();
   const conCodigo = it.modo !== "recordatorio";
+  const primera = conCodigo && (it.modo === "anonima" || it.modo === "clima") && it.info.primera ? it.info.primera : null;
+  const ESCALA = ["Casi nunca", "Pocas veces", "A veces", "A menudo", "Casi siempre"];
   const enlace = `${URL_APP}?codigo=`;
+  // El botón ya lleva el código: la persona no tiene que escribirlo
+  const directo = conCodigo ? enlace + encodeURIComponent(it.codigo) : URL_APP;
   const pasos = it.modo === "desarrollo"
-    ? ["Abre el enlace y escribe tu código.", "Completa la ficha de cada persona.", "Pulsa «Enviar a RR.HH.» al terminar."]
+    ? ["Pulsa el botón: tu código ya va incluido.", "Completa la ficha de cada persona.", "Pulsa «Enviar a RR.HH.» al terminar."]
     : it.modo === "formacion"
-      ? ["Abre el enlace y escribe tu código.", "Repasa los módulos a tu ritmo.", "Haz el examen final y envíalo."]
-      : ["Abre el enlace y escribe tu código.", "Responde las preguntas.", "Pulsa enviar al terminar."];
+      ? ["Pulsa el botón: tu código ya va incluido.", "Repasa los módulos a tu ritmo.", "Haz el examen final y envíalo."]
+      : ["Pulsa el botón: tu código ya va incluido.", "Responde las preguntas.", "Pulsa enviar al terminar."];
 
   const texto = [
     pila ? `Hola ${pila},` : "Hola,", "", x.intro, "",
     ...x.datos.map(([k, v]) => `${k}: ${v}`), x.datos.length ? "" : null,
-    `Enlace: ${enlace}`, conCodigo ? `Código: ${it.codigo}` : null, "",
+    primera ? `Empieza aquí. Primera pregunta: ${primera.t} Respóndela en ${enlace}${it.codigo}` : null, primera ? "" : null,
+    `Enlace: ${directo}`, conCodigo ? `Código: ${it.codigo}` : null, "",
     conCodigo ? "Cómo funciona:\n" + pasos.map((p, k) => `${k + 1}. ${p}`).join("\n") + "\n" : null,
     x.nota, "", "Gracias,", x.firma, cargo
   ].filter((l) => l !== null).join("\n");
@@ -212,6 +217,23 @@ function correo(it: Item, x: ReturnType<typeof textos>, URL_APP: string, cargo: 
     </tr></table>
   </td></tr>` : ""}
 
+  ${primera ? `<tr><td class="pad" style="padding:22px 38px 0">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${FONDO};border:1px solid #DCD2F7;border-radius:12px">
+      <tr><td style="padding:18px 18px 6px">
+        <div style="font:700 10.5px/1.3 ${SANS};color:${R};letter-spacing:.11em;text-transform:uppercase">Empieza aquí, con un clic · pregunta 1${it.info.n ? " de " + it.info.n : ""}</div>
+        <div style="font:700 18px/1.35 ${SANS};color:${TINTA};padding-top:10px">${esc(primera.t)}</div>
+        <div style="font:400 13px/1.4 ${SANS};color:${GRIS};padding-top:6px">¿Hasta qué punto es verdad?</div>
+      </td></tr>
+      <tr><td style="padding:8px 14px 6px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          ${ESCALA.map((e, k) => `<td width="20%" style="padding:0 3px"><a href="${esc(enlace + encodeURIComponent(it.codigo) + "&r=" + primera.id + ":" + k)}" style="display:block;text-decoration:none;background:#ffffff;border:1.5px solid ${LINEA};border-radius:10px;padding:10px 2px;text-align:center">
+            <span style="display:block;font:700 16px/1.2 ${SANS};color:${R}">${k + 1}</span><span style="display:block;font:400 11.5px/1.25 ${SANS};color:${TINTA};padding-top:3px">${e}</span></a></td>`).join("")}
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:6px 18px 16px;font:400 12.5px/1.5 ${SANS};color:${GRIS}">Al pulsar, se abre la encuesta con esta respuesta ya guardada y sigues por la pregunta 2.</td></tr>
+    </table>
+  </td></tr>` : ""}
+
   ${conCodigo ? `<tr><td class="pad" style="padding:22px 38px 0">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${FONDO};border:1px dashed #C9BCF5;border-radius:12px">
       <tr><td align="center" style="padding:20px 18px 21px">
@@ -224,10 +246,10 @@ function correo(it: Item, x: ReturnType<typeof textos>, URL_APP: string, cargo: 
   <tr><td class="pad" align="center" style="padding:24px 38px 0">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
       <td align="center" bgcolor="${R}" style="border-radius:10px">
-        <a href="${esc(enlace)}" style="display:inline-block;padding:15px 36px;font:600 16px/1 ${SANS};color:#ffffff;text-decoration:none;border-radius:10px">${esc(x.boton)} &rarr;</a>
+        <a href="${esc(directo)}" style="display:inline-block;padding:15px 36px;font:600 16px/1 ${SANS};color:#ffffff;text-decoration:none;border-radius:10px">${esc(x.boton)} &rarr;</a>
       </td>
     </tr></table>
-    <p style="margin:12px 0 0;font:400 12.5px/1.5 ${SANS};color:${GRIS}">o copia esta dirección: <span style="color:${TINTA};word-break:break-all">${esc(enlace)}</span></p>
+    <p style="margin:12px 0 0;font:400 12.5px/1.5 ${SANS};color:${GRIS}">o copia esta dirección: <span style="color:${TINTA};word-break:break-all">${esc(directo)}</span></p>
   </td></tr>
 
   ${conCodigo ? `<tr><td class="pad" style="padding:26px 38px 0">
@@ -286,7 +308,9 @@ Deno.serve(async (req) => {
     const o = v as any; if (!o || typeof o !== "object") continue;
     info[k] = { min: Number(o.min) > 0 && Number(o.min) < 600 ? Math.round(Number(o.min)) : undefined,
       n: Number(o.n) > 0 && Number(o.n) < 500 ? Math.round(Number(o.n)) : undefined,
-      umbral: Number(o.umbral) > 0 && Number(o.umbral) <= 1 ? Number(o.umbral) : undefined, cert: o.cert === true };
+      umbral: Number(o.umbral) > 0 && Number(o.umbral) <= 1 ? Number(o.umbral) : undefined, cert: o.cert === true,
+      primera: o.primera && typeof o.primera.id === "string" && /^[a-z0-9_]{1,12}$/.test(o.primera.id) && typeof o.primera.t === "string"
+        ? { id: o.primera.id, t: o.primera.t.slice(0, 300) } : undefined };
   }
   const total = ids.length + anon.length + (rec ? rec.emails.length : 0);
   if (!total) return json({ error: "No se ha indicado ningún envío" }, 400);
