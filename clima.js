@@ -154,6 +154,7 @@ function pintarClima(tab) {
   const v = { clnueva: clNueva, clcurso: () => (c ? clDetalle(c) : clLista("abierta")), clanteriores: () => (c ? clDetalle(c) : clLista("cerrada")),
     clresultados: clResultados, clmodelos: clModelos }[tab] || (() => clLista("abierta"));
   $("vista").innerHTML = `<div class="page cl">${v()}</div>`;
+  if (tab === "clnueva") clFiltrarPers();
 }
 
 function clChips(c) {
@@ -185,43 +186,74 @@ function clLista(estado) {
 }
 
 /* ---------- Nueva encuesta: el asistente ---------- */
+const CL_TIP = { tiendas: "tiendas", campo: "comerciales", oficinas: "oficinas", demo: "demostradores" };
 function clN() {
-  if (!S.cn) S.cn = { tipo: "colectivo", col: "tiendas", p2: true, modoT: "todas", sel: [], usarT: true, usarL: false, lista: "", titulo: "", cierre: "" };
+  if (!S.cn) S.cn = { tipo: "colectivo", col: "tiendas", p2: true, usarB: true, usarL: false, tips: Object.keys(IMP_TIPOS), modoB: "todas", grupos: [], pers: [],
+    imp: null, impNombre: "", titulo: "", cierre: "" };
   return S.cn;
 }
 const clMail = e => /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test((e || "").trim());
 function clEsSM(x) { return /store\s*manager|encargad|gerente de tienda/i.test(x.puesto || "") && !/assist|asistente|adjunt|segund/i.test(x.puesto || ""); }
+/* Grupo de resultados de una persona: su tienda, su departamento (oficinas)
+   o su ubicación (zona, córner…) */
+function clGrupoEmp(e) { return e.tipologia === "oficinas" ? (e.departamento || e.ubicacion || "Sin departamento") : (e.ubicacion || "Sin ubicación"); }
+/* A quién evalúa en la parte 2: su responsable directo; si no lo tiene,
+   en tiendas el Store Manager, y para el Store Manager su Regional Manager */
+function clRespEmp(e) {
+  const r = empPorId(e.responsable_id);
+  if (r && r.activo) return `${empNombre(r)} (${r.puesto || "Responsable"})`;
+  if (e.tipologia !== "tiendas" || !e.tienda_id) return null;
+  const t = (S.todas || []).find(x => x.id === e.tienda_id), rm = t && perfil(t.rm_id);
+  if (clEsSM(e)) return rm ? rm.nombre + " (Regional Manager)" : "Regional Manager";
+  const sm = empActivos().find(x => x.tienda_id === e.tienda_id && clEsSM(x));
+  return sm ? `${empNombre(sm)} (Store Manager)` : "Store Manager de la tienda";
+}
+/* Personas de la base que entran según tipología (sin el filtro de ubicación o persona) */
+function clBase(N) {
+  const tips = N.tipo === "gptw" ? N.tips : [CL_TIP[N.col]];
+  return empActivos().filter(e => tips.includes(e.tipologia));
+}
 /* A quién va y a quién evalúa cada uno en la parte 2 */
 function clDestinatarios(N) {
   const out = [], vistos = new Set();
-  const usarT = N.tipo === "gptw" ? N.usarT : N.col === "tiendas";
-  const usarL = N.tipo === "gptw" ? N.usarL : N.col !== "tiendas";
-  if (usarT) {
-    const ts = (esAdmin() ? S.tiendas : S.tiendas.filter(t => t.rm_id === S.me.id)).filter(t => N.modoT === "todas" || N.sel.includes(t.id));
-    ts.forEach(t => {
-      const eq = equipoDe(t), sm = eq.find(clEsSM), rm = perfil(t.rm_id);
-      eq.forEach(x => {
-        const e = (x.email || "").trim().toLowerCase();
-        if (e && vistos.has(e)) return;
-        if (e) vistos.add(e);
-        const esSM = clEsSM(x);
-        out.push({ e: clMail(e) ? e : "", t: t.id, g: null,
-          r: esSM ? (rm ? rm.nombre + " (Regional Manager)" : "Regional Manager") : (sm && sm.nombre !== x.nombre ? sm.nombre + " (Store Manager)" : "Store Manager de la tienda") });
-      });
-    });
+  const meter = (e, x) => { if (e && vistos.has(e)) return; if (e) vistos.add(e); out.push(x); };
+  if (N.usarB && Array.isArray(S.emp)) {
+    let ps = clBase(N);
+    if (N.modoB === "grupos") ps = ps.filter(e => N.grupos.includes(clGrupoEmp(e)));
+    if (N.modoB === "personas") ps = ps.filter(e => N.pers.includes(e.id));
+    ps.forEach(e => { const m = (e.correo || "").toLowerCase(); meter(m, { e: clMail(m) ? m : "", t: e.tienda_id || null, g: e.tienda_id ? null : clGrupoEmp(e), r: clRespEmp(e) }); });
   }
-  if (usarL) {
-    (N.lista || "").split(/\r?\n/).forEach(l => {
-      const p = l.split(/\t|;/).map(x => x.trim());
-      if (!p[0] && !p[1]) return;
-      const e = (p[1] || "").toLowerCase();
-      if (/^(nombre|name)$/i.test(p[0]) && /correo|mail/i.test(p[1] || "")) return;
-      if (e && vistos.has(e)) return;
-      if (e) vistos.add(e);
-      out.push({ e: clMail(e) ? e : "", t: null, g: p[2] || null, r: p[3] || null, err: !clMail(e) });
-    });
-  }
+  if (N.usarL && N.imp) N.imp.forEach(x => { const m = (x.e || "").toLowerCase(); meter(m, { e: clMail(m) ? m : "", t: x.t || null, g: x.t ? null : x.g, r: x.r, err: !clMail(m) }); });
   return out;
+}
+function clQuien(N, gptw, col) {
+  const radio = (accion, v, on, tit, des) => `<button type="button" class="cl-op ${on ? "on" : ""}" data-action="${accion}" data-v="${v}" aria-pressed="${on}"><b>${tit}</b>${des ? `<small>${des}</small>` : ""}</button>`;
+  let h = `<div class="cl-ops dos">${radio("clUsar", "B", N.usarB, "Personas dadas de alta", Array.isArray(S.emp) ? `${empActivos().length} en Personas` : "Falta la migración 0.33")}${radio("clUsar", "L", N.usarL, "Subir un archivo", "Excel, CSV o Word solo para esta encuesta")}</div>`;
+  if (N.usarB) {
+    if (!Array.isArray(S.emp)) h += `<p class="hint warn">Para elegir de Personas hay que ejecutar <code>supabase/migracion_0.33.sql</code> en Supabase. Mientras tanto, sube un archivo.</p>`;
+    else {
+      const base = clBase(N);
+      if (gptw) h += `<div class="cl-tips" role="group" aria-label="Tipologías">${Object.entries(IMP_TIPOS).map(([k, n]) => { const c = empActivos().filter(e => e.tipologia === k).length; return `<button type="button" class="cl-tip ${N.tips.includes(k) ? "on" : ""}" data-action="clTip" data-v="${k}" aria-pressed="${N.tips.includes(k)}">${n} <small>${c}</small></button>`; }).join("")}</div>`;
+      else h += `<p class="hint">Va a las personas con tipología <b>${esc(IMP_TIPOS[CL_TIP[N.col]])}</b>: ${base.length} en Personas.</p>`;
+      const grupos = [...base.reduce((m, e) => m.set(clGrupoEmp(e), (m.get(clGrupoEmp(e)) || 0) + 1), new Map())].sort((a, b) => a[0].localeCompare(b[0], "es"));
+      const nG = base.filter(e => N.grupos.includes(clGrupoEmp(e))).length, nP = base.filter(e => N.pers.includes(e.id)).length;
+      const etG = !gptw && N.col === "tiendas" ? "Elegir tiendas" : !gptw && N.col === "oficinas" ? "Elegir departamentos" : !gptw && N.col === "campo" ? "Elegir zonas" : !gptw && N.col === "demo" ? "Elegir córners" : "Elegir ubicaciones";
+      h += `<div class="cl-ops tres">${radio("clModoB", "todas", N.modoB === "todas", "Todas", `${base.length} ${base.length === 1 ? "persona" : "personas"}`)}${radio("clModoB", "grupos", N.modoB === "grupos", etG, N.grupos.length ? `${N.grupos.length} marcadas · ${nG} personas` : "una o varias")}${radio("clModoB", "personas", N.modoB === "personas", "Persona a persona", N.pers.length ? `${nP} marcadas` : "buscar y marcar")}</div>`;
+      if (N.modoB === "grupos") h += grupos.length ? `<div class="env-ts">${grupos.map(([g, n]) => `<label class="env-t"><input type="checkbox" class="chk" data-action="clGrupo" data-v="${esc(g)}" ${N.grupos.includes(g) ? "checked" : ""}><span>${esc(g)}</span><small>${n}</small></label>`).join("")}</div>` : `<p class="hint">No hay nadie con esa tipología.</p>`;
+      if (N.modoB === "personas") h += `<div class="cl-pers"><input id="clBusca" type="search" placeholder="Buscar por nombre, puesto o ubicación" autocomplete="off" aria-label="Buscar personas">
+        <div class="cl-pers-l">${base.map(e => `<label class="cl-per" data-q="${esc(impNorm([empNombre(e), e.puesto, e.ubicacion, e.departamento].join(" ")))}"><input type="checkbox" class="chk" data-action="clPers" data-id="${e.id}" ${N.pers.includes(e.id) ? "checked" : ""}><span><b>${esc(empNombre(e))}</b><small>${esc([e.puesto, clGrupoEmp(e)].filter(Boolean).join(" · "))}${e.correo ? "" : " · sin correo"}</small></span></label>`).join("") || `<p class="hint">No hay nadie con esa tipología.</p>`}</div></div>`;
+      if (!base.length) h += `<p class="hint warn">No hay nadie con ${gptw ? "las tipologías elegidas" : `tipología ${esc(IMP_TIPOS[CL_TIP[N.col]])}`} en Personas. Dalos de alta allí o sube un archivo.</p>`;
+    }
+  }
+  if (N.usarL) {
+    if (N.imp) {
+      const c = N.imp.filter(x => clMail(x.e)).length;
+      h += `<div class="cl-arch"><span><b>${esc(N.impNombre || "Lista")}</b><small>${N.imp.length} ${N.imp.length === 1 ? "persona" : "personas"} · ${c} con correo · ${N.imp.length - c} papeleta</small></span>
+        <button class="btn small" data-action="clImp">Cambiar</button><button class="btn small ghost" data-action="clImpQuitar">Quitar</button></div>`;
+    } else h += `<button class="btn" data-action="clImp">Subir un archivo o pegar una lista</button>
+      <p class="hint">Columnas que se usan: nombre, correo, ${gptw ? "grupo (ubicación o departamento)" : esc(col.eq)} y responsable. El nombre solo sirve para revisar: no se guarda.</p>`;
+  }
+  return h;
 }
 function clNueva() {
   if (!esAdmin()) return `<div class="cl-vacio"><b>Solo RR.HH. crea encuestas</b><p>Puedes seguir las de tus tiendas en «En curso».</p></div>`;
@@ -229,8 +261,6 @@ function clNueva() {
   const pl = SC.plantilla(gptw ? "clima2-gptw" : "clima2-" + N.col), cfg = { parte2: N.p2 };
   const qs = clPreguntas(pl, cfg), D = clDestinatarios(N);
   const conMail = D.filter(x => x.e).length, sinMail = D.length - conMail;
-  const usarT = gptw ? N.usarT : N.col === "tiendas", usarL = gptw ? N.usarL : N.col !== "tiendas";
-  const ts = S.tiendas;
   const titulo = N.titulo || `Clima ${SC.CONFIG.anio} · ${gptw ? "Toda la empresa" : col.n}`;
   const radio = (accion, v, on, tit, des) => `<button type="button" class="cl-op ${on ? "on" : ""}" data-action="${accion}" data-v="${v}" aria-pressed="${on}"><b>${tit}</b>${des ? `<small>${des}</small>` : ""}</button>`;
   return `<div class="page-h"><div><h1>Nueva encuesta de clima</h1><p class="muted">Lo que elijas aquí decide qué encuesta recibe cada persona. Quien responde no elige nada.</p></div></div>
@@ -244,16 +274,11 @@ function clNueva() {
         <p class="hint">${esc(col.n)} añade: «${esc(col.propias[0][1])}» y «${esc(col.propias[1][1])}».</p></section>`}
       <section class="cl-paso"><h2><span>${gptw ? 2 : 3}</span>Evaluación al responsable</h2>
         <button type="button" class="cl-switch ${N.p2 ? "on" : ""}" data-action="clP2" aria-pressed="${N.p2}">
-          <span><b>Incluir 10 preguntas sobre el responsable directo</b><small>${N.col === "tiendas" && !gptw ? "En tiendas se evalúa al Store Manager de cada tienda, y al Regional Manager en el caso de los Store Managers." : "Se evalúa al responsable que indiques en la lista."} Solo se enseña con ${CL.MIN} respuestas o más.</small></span>
+          <span><b>Incluir 10 preguntas sobre el responsable directo</b><small>Cada persona evalúa a su responsable directo de Personas (o el de la columna «responsable» del archivo). En tiendas, sin responsable, al Store Manager, y al Regional Manager en el caso de los Store Managers. Solo se enseña con ${CL.MIN} respuestas o más.</small></span>
           <i aria-hidden="true"></i></button></section>
       <section class="cl-paso"><h2><span>${gptw ? 3 : 4}</span>A quién</h2>
-        ${gptw ? `<div class="cl-ops dos">${radio("clUsar", "T", N.usarT, "Equipos de tiendas", "De las fichas de equipo de cada tienda")}${radio("clUsar", "L", N.usarL, "Pegar una lista", "Oficinas, comerciales, demostradores…")}</div>` : ""}
-        ${usarT ? `<div class="cl-ops dos">${radio("clModoT", "todas", N.modoT === "todas", `Todas las tiendas`, `${ts.length} tiendas`)}${radio("clModoT", "elegir", N.modoT === "elegir", "Elegir tiendas", N.sel.length ? `${N.sel.length} marcadas` : "una o varias")}</div>
-          ${N.modoT === "elegir" ? `<div class="env-ts">${ts.map(t => `<label class="env-t"><input type="checkbox" class="chk" data-action="clTienda" data-id="${t.id}" ${N.sel.includes(t.id) ? "checked" : ""}><span>${esc(t.nombre)}</span><small>${equipoDe(t).length}</small></label>`).join("")}</div>` : ""}` : ""}
-        ${usarL ? `<label class="cl-lista-in">Pega la lista desde Excel: <b>Nombre; correo; ${gptw ? "grupo" : esc(col.eq)}; responsable</b>, una persona por línea
-          <textarea data-cn="lista" rows="6" placeholder="Ana Ortega; ana.ortega@empresa.com; ${gptw ? "Marketing" : col.eq === "zona" ? "Zona Norte" : col.eq === "departamento" ? "Finanzas" : "Córner Castellana"}; Marta Ruiz">${esc(N.lista)}</textarea>
-          <small>El nombre solo sirve para que te ubiques: no se guarda. Del correo se guarda que se le ha invitado, nunca qué código recibió.</small></label>` : ""}
-        ${D.some(x => x.err) ? `<p class="hint warn">${D.filter(x => x.err).length} ${D.filter(x => x.err).length === 1 ? "línea no tiene" : "líneas no tienen"} un correo válido: recibirán papeleta.</p>` : ""}
+        ${clQuien(N, gptw, col)}
+        ${D.some(x => x.err) ? `<p class="hint warn">${D.filter(x => x.err).length} ${D.filter(x => x.err).length === 1 ? "persona del archivo no tiene" : "personas del archivo no tienen"} un correo válido: recibirán papeleta.</p>` : ""}
       </section>
       <section class="cl-paso"><h2><span>${gptw ? 4 : 5}</span>Nombre y cierre</h2>
         <div class="cl-campos"><label>Nombre de la encuesta<input data-cn="titulo" value="${esc(titulo)}"></label>
@@ -271,7 +296,7 @@ function clNueva() {
       <button class="btn" data-action="clPrevia" data-pl="${pl.id}">Ver cómo la recibirán</button>
       <button class="btn primary" data-action="clCrear" data-enviar="1" ${D.length && envioDirecto() ? "" : "disabled"}>Crear y enviar ahora</button>
       <button class="btn ghost" data-action="clCrear" data-enviar="0" ${D.length ? "" : "disabled"}>Crear sin enviar</button>
-      ${!D.length ? `<p class="hint">${usarT && !usarL ? "Las tiendas elegidas no tienen equipo dado de alta (Usuarios y tiendas → Tiendas y equipos)." : "Añade al menos a una persona."}</p>` : ""}
+      ${!D.length ? `<p class="hint">${N.usarB && N.modoB !== "todas" ? "Marca al menos una ubicación o una persona." : "No hay nadie todavía: elige de Personas o sube un archivo."}</p>` : ""}
     </aside>
   </div>`;
 }
@@ -438,12 +463,22 @@ function clModelos() {
 const ACCIONES_CLIMA = {
   clAbrir(b) { S.campana = b.dataset.id; window.scrollTo(0, 0); },
   clVolver() { S.campana = null; },
-  clTipo(b) { clN().tipo = b.dataset.v; },
-  clCol(b) { clN().col = b.dataset.v; },
+  clTipo(b) { const N = clN(); N.tipo = b.dataset.v; N.grupos = []; N.pers = []; N.modoB = "todas"; },
+  clCol(b) { const N = clN(); N.col = b.dataset.v; N.grupos = []; N.pers = []; N.modoB = "todas"; },
   clP2() { const N = clN(); N.p2 = !N.p2; },
-  clUsar(b) { const N = clN(); if (b.dataset.v === "T") N.usarT = !N.usarT; else N.usarL = !N.usarL; },
-  clModoT(b) { clN().modoT = b.dataset.v; },
-  clTienda(b) { const N = clN(), id = b.dataset.id; N.sel = b.checked ? [...new Set(N.sel.concat(id))] : N.sel.filter(x => x !== id); },
+  clUsar(b) { const N = clN(); if (b.dataset.v === "B") N.usarB = !N.usarB; else { N.usarL = !N.usarL; if (N.usarL && !N.imp) return ACCIONES_CLIMA.clImp(); } },
+  clTip(b) { const N = clN(), k = b.dataset.v; N.tips = N.tips.includes(k) ? N.tips.filter(x => x !== k) : N.tips.concat(k); N.grupos = []; N.pers = []; N.modoB = "todas"; },
+  clModoB(b) { clN().modoB = b.dataset.v; },
+  clGrupo(b) { const N = clN(), v = b.dataset.v; N.grupos = b.checked ? [...new Set(N.grupos.concat(v))] : N.grupos.filter(x => x !== v); },
+  clPers(b) {
+    const N = clN(), id = b.dataset.id; N.pers = b.checked ? [...new Set(N.pers.concat(id))] : N.pers.filter(x => x !== id);
+    const l = document.querySelector(".cl-pers-l"), y = l ? l.scrollTop : 0, wy = window.scrollY;
+    pintar(); window.scrollTo(0, wy);
+    const l2 = document.querySelector(".cl-pers-l"); if (l2) l2.scrollTop = y;
+    clFiltrarPers(); return false;
+  },
+  clImp() { abrirImportador("encuesta", { alUsar: (lista, nombre) => { const N = clN(); N.imp = lista; N.impNombre = nombre; N.usarL = true; pintar(); } }); return false; },
+  clImpQuitar() { const N = clN(); N.imp = null; N.impNombre = ""; },
   clModelo(b) { S.clModelo = S.clModelo === b.dataset.id ? null : b.dataset.id; },
   clVerResultados(b) { S.clRes = b.dataset.id; S.campana = null; S.tab = "clresultados"; window.scrollTo(0, 0); },
   clPrevia(b) { if (typeof clPrevia === "function") clPrevia(b.dataset.pl, { parte2: b.dataset.pl && S.tab === "clnueva" ? clN().p2 : true }); return false; },
@@ -524,12 +559,19 @@ const ACCIONES_CLIMA = {
     S.campana = null; await recargarPruebas(); toast("Encuesta borrada");
   }
 };
+/* Buscador de «Persona a persona»: filtra sin repintar */
+function clFiltrarPers() {
+  const i = document.getElementById("clBusca"); if (!i) return;
+  if (i.value !== (clN().busca || "")) i.value = clN().busca || "";
+  const q = impNorm(i.value);
+  document.querySelectorAll(".cl-per").forEach(l => { l.hidden = !!q && !l.dataset.q.includes(q); });
+}
+document.addEventListener("input", e => { if (e.target.id !== "clBusca") return; clN().busca = e.target.value; clFiltrarPers(); });
 /* Campos de texto del asistente: se guardan sin repintar */
 document.addEventListener("input", e => {
   const k = e.target && e.target.dataset && e.target.dataset.cn;
   if (!k || !S.cn) return;
   S.cn[k] = e.target.value;
-  if (k === "lista") { clearTimeout(clN()._t); clN()._t = setTimeout(() => { const y = window.scrollY, pos = e.target.selectionStart; pintar(); window.scrollTo(0, y); const ta = document.querySelector('[data-cn="lista"]'); if (ta) { ta.focus(); try { ta.setSelectionRange(pos, pos); } catch (er) {} } }, 700); }
 });
 document.addEventListener("change", e => {
   const b = e.target;

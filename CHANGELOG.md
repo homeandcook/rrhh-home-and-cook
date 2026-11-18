@@ -287,6 +287,27 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.33.0 · 18/11/2026 · **SQL: sí** (`supabase/migracion_0.33.sql`, después de la 0.32)
+- **Personas**, apartado nuevo: la plantilla de la empresa (nombre, apellidos, correo, puesto, tipología, ubicación, departamento, responsable directo, fechas de alta y baja).
+  - Tipologías: tiendas, oficinas, comerciales y demostradores. Si la ubicación coincide con una tienda, la persona queda en esa tienda.
+  - RR.HH. da de alta, edita, da de baja (se conserva) o borra. El Regional Manager ve a las personas de sus tiendas, sin editar. Marketing no las ve.
+  - Cifras por tipología, búsqueda, filtros por ubicación y estado, y descarga en CSV.
+- **Importar desde un archivo**, que se lee en el navegador sin salir a ningún sitio:
+  - Excel (.xlsx), CSV o texto, tablas de Word (.docx) o una lista pegada.
+  - Reconoce las columnas por su título («E-mail», «Centro de trabajo», «Cargo», «Responsable directo»…), aunque haya filas de título encima, y separa «Nombre y apellidos» en dos.
+  - Pantalla de revisión antes de guardar: qué hay en cada columna (se puede cambiar), cada fila editable, y avisos de correo mal escrito o repetido, sin correo, sin ubicación, tienda que no existe o responsable que no se encuentra.
+  - Quien ya estaba (mismo correo) no se duplica: se actualiza lo que el archivo trae relleno. Los responsables se enlazan por nombre o correo, también entre personas del mismo archivo.
+  - La lectura con IA (PDF, fotos, texto sin tabla) aparece preparada pero apagada hasta que lo apruebe el responsable de protección de datos.
+  - Excel antiguo (.xls) y Word antiguo (.doc): se pide guardarlos como .xlsx o .docx.
+- **Encuestas de clima, «A quién»**: ya no se pega una lista.
+  - **Personas dadas de alta**: todas las de la tipología de la encuesta, solo algunas tiendas, departamentos, zonas o córners, o persona a persona con buscador. En la tipo Great Place To Work se eligen las tipologías.
+  - **Subir un archivo** solo para esa encuesta (no se guarda en Personas), con la misma pantalla de revisión.
+  - Se pueden combinar las dos; los correos repetidos se envían una vez.
+  - La parte 2 evalúa al responsable directo de Personas; en tiendas, sin responsable, al Store Manager, y para el Store Manager, a su Regional Manager.
+- Los equipos de tienda salen de Personas en todo lo demás (envíos de campañas, Desarrollo retail). «Usuarios y tiendas» lleva a Personas. Si la migración no se ha ejecutado, todo sigue como antes y Personas explica qué falta.
+- **Base de datos** (`migracion_0.33.sql`): tabla `empresas` (una fila, preparada para varias empresas), `perfiles.empresa_id`, función `mi_empresa()` y tabla `empleados` con reglas por fila. Copia los equipos que ya había dentro de cada tienda.
+- Lectores cargados solo al usarlos desde jsdelivr: `read-excel-file@9.3.17` y `mammoth@1.13.0`.
+
 ## 0.32.0 · 18/11/2026 · **SQL: sí** (`supabase/migracion_0.32.sql`) · se despliega la función de correo
 - **Encuestas de clima, rehechas.** El apartado se abre con cinco secciones: Nueva encuesta, En curso, Anteriores, Resultados y Modelos de encuesta.
   - **Nueva encuesta**: RR.HH. elige el tipo (de colectivo o tipo Great Place To Work), el colectivo (tiendas, comerciales de campo, oficinas, demostradores en córner), si incluye la evaluación al responsable, a quién va (todas las tiendas, algunas o una lista pegada desde Excel) y el cierre previsto. Resumen al lado con personas, correos y papeletas, y vista previa. Quien responde no elige nada.

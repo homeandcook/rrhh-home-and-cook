@@ -1405,42 +1405,106 @@ textarea.big{min-height:118px}
 .ia-cert{page-break-after:always;color:#231A3D}
 .ia-cert-in{border:3px double #5B3FD9;padding:48px 56px;text-align:center;min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-family:"Plus Jakarta Sans",system-ui,sans-serif}
 .ia-cert-in h1{font-size:34px;margin:14px 0 0}.ia-cert-in h2{font-size:22px;margin:0 0 10px;color:#5B3FD9}.ia-cert-in p{max-width:60ch}.ia-cert-pie{font-size:12px;color:#5A5170;margin-top:24px}
+/* ===== 0.33 · Importar personas ===== */
+body.imp-on{overflow:hidden}
+.imp-ov{position:fixed;inset:0;z-index:70;overflow:auto;background:rgba(20,14,38,.45);padding:28px 16px}
+.imp{max-width:1180px;margin:0 auto;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:22px 24px;display:flex;flex-direction:column;gap:16px}
+.imp-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.imp-h h2{margin:0 0 4px;font-size:20px}.imp-h p{margin:0;max-width:70ch}
+.imp-zona{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;border:2px dashed var(--line);border-radius:14px;padding:34px 18px;cursor:pointer;background:var(--mist);color:var(--ink)}
+.imp-zona b{font-size:15.5px}.imp-zona small{color:var(--muted);font-size:13px}
+.imp-zona:hover,.imp-zona.on{border-color:var(--red)}.imp-zona.leyendo{opacity:.7;cursor:progress}
+.imp-zona:focus-within{outline:2px solid var(--red);outline-offset:2px}
+.imp-pegar{display:flex;flex-direction:column;gap:8px;align-items:flex-start}.imp-pegar label{width:100%}
+.imp-pegar textarea{font:inherit;font-size:13.5px;resize:vertical}
+.imp-ia{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;border-top:1px solid var(--line);padding-top:14px}.imp-ia small{flex:1 1 300px;color:var(--muted);font-size:12.5px}
+.imp-ia .btn:disabled{opacity:.55;cursor:not-allowed}
+.imp-map h3{margin:0 0 10px;font-size:14.5px}
+.imp-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.imp-cols label{border:1px solid var(--line);border-radius:10px;padding:9px 10px;gap:3px;min-width:0}
+.imp-cols label span{color:var(--ink);font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.imp-cols label small{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:1.2em}
+.imp-cols select{margin-top:4px;font-size:13px}
+.imp-def{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}.imp-def select{width:auto}
+.imp-barra{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.imp-filtro{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.imp-filtro button{font:inherit;font-size:13px;font-weight:600;border:0;background:var(--paper);color:var(--muted);padding:6px 12px;cursor:pointer}
+.imp-filtro button.on{background:var(--ink);color:var(--paper)}
+.imp-tabla{border:1px solid var(--line);border-radius:12px;max-height:56vh}
+.imp-tabla table{font-size:13px}.imp-tabla th{position:sticky;top:0;background:var(--paper);z-index:1;white-space:nowrap}
+.imp-tabla td{padding:4px 6px;vertical-align:top}.imp-tabla input:not(.chk),.imp-tabla select{font-size:13px;padding:4px 7px;border-radius:7px}
+.imp-tabla td:first-child{padding-top:9px}
+.imp-est{min-width:150px;max-width:190px}.imp-est .badge{display:inline-block;margin:4px 0 2px}
+.imp-av{display:block;color:var(--warn);font-size:12px;line-height:1.35}
+.badge.err{background:var(--errbg);color:var(--l0)}
+.imp-pie{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;position:sticky;bottom:0;background:var(--paper);padding:12px 0;border-top:1px solid var(--line)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:640px){.imp-ov{padding:0}.imp{border-radius:0;min-height:100%;padding:18px 16px}.imp-pie .btn{flex:1}}
+/* ===== 0.33 · Personas ===== */
+.pp .page-h{align-items:flex-start;flex-wrap:wrap}.pp .page-h p{margin:4px 0 0;max-width:72ch}
+.pp-cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-bottom:14px}
+.pp-cifra{font:inherit;text-align:left;display:flex;flex-direction:column;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:12px;padding:10px 12px;cursor:pointer}
+.pp-cifra b{font-size:21px;font-variant-numeric:tabular-nums}.pp-cifra small{font-size:12.5px;color:var(--muted)}
+.pp-cifra:hover{border-color:var(--red)}.pp-cifra.on{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red);background:var(--mist)}
+.pp-cifra.fija{cursor:default}.pp-cifra.fija:hover{border-color:var(--line)}.pp-cifra.aviso b{color:var(--warn)}
+.pp-filtros{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;margin-bottom:12px}
+.pp-filtros label{flex:0 1 200px}.pp-filtros .pp-busca{flex:1 1 260px}
+.pp-tabla{padding:0}.pp-tabla td{vertical-align:top}
+.pp-sub{display:block;font-size:12.5px}.pp-sin{color:var(--warn)}
+.pp-form{border-color:var(--red)}
+.pp-campos{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.pp-acc{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+@media (max-width:640px){.pp-tabla thead{display:none}.pp-tabla table,.pp-tabla tbody{display:block}.pp-tabla tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:10px 12px;border-bottom:1px solid var(--line)}.pp-tabla tr[hidden]{display:none}.pp-tabla td{display:block;padding:0;border:0;font-size:13px;color:var(--muted)}.pp-tabla td:first-child{flex-basis:100%;color:var(--ink);font-size:14px}.pp-tabla td.n{margin-left:auto}.pp-filtros label{flex:1 1 140px}}
+/* ===== 0.33 · Encuestas: a quién ===== */
+.cl-ops.tres{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.cl-tips{display:flex;flex-wrap:wrap;gap:8px}
+.cl-tip{font:inherit;font-size:13.5px;font-weight:600;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer}
+.cl-tip small{color:inherit;opacity:.7;font-variant-numeric:tabular-nums;margin-left:3px}
+.cl-tip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.cl-pers{display:flex;flex-direction:column;gap:8px}
+.cl-pers-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 14px;max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.cl-per{flex-direction:row;align-items:flex-start;gap:9px;color:var(--ink);padding:5px 0;cursor:pointer;min-width:0}
+.cl-per input{margin-top:3px}.cl-per span{display:flex;flex-direction:column;min-width:0}.cl-per b{font-size:13.5px;font-weight:600}
+.cl-per small{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-arch{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.cl-arch span{flex:1 1 220px;display:flex;flex-direction:column;min-width:0}.cl-arch small{font-size:12.5px}
 </style>
 </head>
 <body>
 <div id="app"><div class="loading">Cargando…</div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=0.32.0"></script>
-<script src="i18n.js?v=0.32.0"></script>
-<script src="marca.js?v=0.32.0"></script>
-<script src="marcas.js?v=0.32.0"></script>
-<script src="engine.js?v=0.32.0"></script>
-<script src="talent.js?v=0.32.0"></script>
-<script src="pruebas.js?v=0.32.0"></script>
-<script src="envios.js?v=0.32.0"></script>
-<script src="clima.js?v=0.32.0"></script>
-<script src="clima_inv.js?v=0.32.0"></script>
-<script src="pdc.js?v=0.32.0"></script>
-<script src="pdc_carga.js?v=0.32.0"></script>
-<script src="bajas.js?v=0.32.0"></script>
-<script src="prl.js?v=0.32.0"></script>
-<script src="curso_datos.js?v=0.32.0"></script>
-<script src="cursos.js?v=0.32.0"></script>
-<script src="formacion.js?v=0.32.0"></script>
-<script src="docs_base.js?v=0.32.0"></script>
-<script src="docs.js?v=0.32.0"></script>
-<script src="arcade.js?v=0.32.0"></script>
-<script src="escape.js?v=0.32.0"></script>
-<script src="ia_datos.js?v=0.32.0"></script>
-<script src="ia.js?v=0.32.0"></script>
-<script src="desarrollo_cat.js?v=0.32.0"></script>
-<script src="desarrollo_inf.js?v=0.32.0"></script>
-<script src="desarrollo_eval.js?v=0.32.0"></script>
-<script src="desarrollo.js?v=0.32.0"></script>
-<script src="hoy.js?v=0.32.0"></script>
-<script src="avisos.js?v=0.32.0"></script>
-<script src="demo.js?v=0.32.0"></script>
-<script src="app.js?v=0.32.0"></script>
+<script src="config.js?v=0.33.0"></script>
+<script src="i18n.js?v=0.33.0"></script>
+<script src="marca.js?v=0.33.0"></script>
+<script src="marcas.js?v=0.33.0"></script>
+<script src="engine.js?v=0.33.0"></script>
+<script src="talent.js?v=0.33.0"></script>
+<script src="pruebas.js?v=0.33.0"></script>
+<script src="envios.js?v=0.33.0"></script>
+<script src="importar.js?v=0.33.0"></script>
+<script src="personas.js?v=0.33.0"></script>
+<script src="clima.js?v=0.33.0"></script>
+<script src="clima_inv.js?v=0.33.0"></script>
+<script src="pdc.js?v=0.33.0"></script>
+<script src="pdc_carga.js?v=0.33.0"></script>
+<script src="bajas.js?v=0.33.0"></script>
+<script src="prl.js?v=0.33.0"></script>
+<script src="curso_datos.js?v=0.33.0"></script>
+<script src="cursos.js?v=0.33.0"></script>
+<script src="formacion.js?v=0.33.0"></script>
+<script src="docs_base.js?v=0.33.0"></script>
+<script src="docs.js?v=0.33.0"></script>
+<script src="arcade.js?v=0.33.0"></script>
+<script src="escape.js?v=0.33.0"></script>
+<script src="ia_datos.js?v=0.33.0"></script>
+<script src="ia.js?v=0.33.0"></script>
+<script src="desarrollo_cat.js?v=0.33.0"></script>
+<script src="desarrollo_inf.js?v=0.33.0"></script>
+<script src="desarrollo_eval.js?v=0.33.0"></script>
+<script src="desarrollo.js?v=0.33.0"></script>
+<script src="hoy.js?v=0.33.0"></script>
+<script src="avisos.js?v=0.33.0"></script>
+<script src="demo.js?v=0.33.0"></script>
+<script src="app.js?v=0.33.0"></script>
 </body>
 </html>

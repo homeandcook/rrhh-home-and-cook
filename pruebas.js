@@ -144,11 +144,11 @@ function pintarPruebas(tipo) {
     if (!pl.anonima) {
       const tEq = tiendas.find(t => t.id === S.invT) || tiendas[0];
       if (tEq) S.invT = tEq.id;
-      const eq = tEq ? (tEq.equipo || []) : [];
+      const eq = tEq ? equipoDe(tEq) : [];
       const yaTiene = n => invs.some(i => i.tienda_id === tEq.id && (i.destinatario || "").trim().toLowerCase() === (n || "").trim().toLowerCase());
       h += `<section class="card" id="envPersona"><div class="card-h"><h2>Persona a persona: elegir del equipo de la tienda</h2></div>
         <div class="inline-form" style="border:0;margin:0 0 12px;padding:0">
-          <label>Tienda<select data-action="invTienda">${tiendas.map(t => `<option value="${t.id}" ${t.id === (tEq || {}).id ? "selected" : ""}>${esc(t.nombre)} · ${(t.equipo || []).length} en el equipo</option>`).join("")}</select></label></div>
+          <label>Tienda<select data-action="invTienda">${tiendas.map(t => `<option value="${t.id}" ${t.id === (tEq || {}).id ? "selected" : ""}>${esc(t.nombre)} · ${equipoDe(t).length} en el equipo</option>`).join("")}</select></label></div>
         ${eq.length ? `<div class="tablewrap"><table><thead><tr><th style="width:36px"><input type="checkbox" data-action="eqTodos" class="chk"></th><th>Nombre</th><th>Puesto</th><th>Correo</th><th>Estado</th></tr></thead><tbody>
           ${eq.map((x, i) => {
             const sinMail = !(x.email || "").trim(), ya = yaTiene(x.nombre);
@@ -433,7 +433,7 @@ const ACCIONES_PRUEBAS = {
   eqTodos(b) { document.querySelectorAll(".eqchk:not(:disabled)").forEach(c => { c.checked = b.checked; }); return false; },
   async generarEquipo() {
     const t2 = S.tiendas.find(x => x.id === S.invT); if (!t2) return false;
-    const eq = t2.equipo || [];
+    const eq = equipoDe(t2);
     const elegidos = [...document.querySelectorAll(".eqchk:checked")].map(c => eq[Number(c.dataset.i)]).filter(Boolean);
     if (!elegidos.length) { toast("Marca al menos a una persona"); return false; }
     const c = S.campanas.find(x => x.id === S.campana);

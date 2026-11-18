@@ -55,7 +55,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 
 ## Cómo está hecho
 - **HTML, CSS y JavaScript sin framework ni compilación.** `index.html` lleva todos los estilos y carga los scripts en este orden:
-  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
+  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
 - **`app.js`**:
   - Estado global `S`, pintado completo con `pintar()` y apartados en el array `MODULOS`.
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
@@ -69,7 +69,13 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
     - Los nombres de acción son globales: `irTienda` ya existe en Usuarios y tiendas. Antes de crear una acción, comprueba que el nombre no esté usado.
 - **Avisos** (0.30.0): `avisos.js`, campana de la cabecera con lo completado (invitaciones respondidas y entregas `dr_evaluadores.entregado`). Sondeo cada minuto; «visto» en `localStorage` por usuario. Las anónimas se agrupan sin hora ni tienda.
 - **Invitados con código**: `pruebas.js` (`abrirInvitacion`, `pintarInvitado`) usa las funciones de base de datos SECURITY DEFINER `invitacion_abrir` e `invitacion_responder`. Encuestas, pruebas, formaciones y el escape room son **plantillas de preguntas** que puntúa `SC.puntuar`.
+- **Personas** (0.33.0): `personas.js` (apartado `personas`, estado `S.emp` (null si falta la migración 0.33, con `S.empFalta`), filtros `S.pf`, formulario `S.pe`, acciones `p*` en `ACCIONES_PERSONAS`) e `importar.js` (`abrirImportador("base"|"encuesta", {alUsar})`, estado `IMP`, overlay `#impOv` con sus propios eventos `data-imp*`, sin pasar por `pintar()`).
+  - Tabla `empleados` con `empresa_id` (tabla `empresas`, función `mi_empresa()`; migración 0.33). Tipologías fijas: tiendas, oficinas, comerciales, demostradores. `tienda_id` se rellena si la ubicación coincide con una tienda (`impTiendaDe`).
+  - `equipoDe(t)` (app.js) devuelve las personas activas de esa tienda desde `S.emp`; si `S.emp` es null, el equipo antiguo de `tiendas.datos.equipo`.
+  - Lectores cargados al usarlos: `read-excel-file@9.3.17` (global `readXlsxFile`; no lee .xls) y `mammoth@1.13.0` (Word). No se usa SheetJS: la versión de npm (0.18.5) tiene fallos de seguridad conocidos y la corregida no está en npm.
+  - La lectura con IA está como botón desactivado: no activarla sin el visto bueno del DPO del cliente.
 - **Clima** (0.32.0): `clima.js` (banco de preguntas `CL`, plantillas `clima2-tiendas|campo|oficinas|demo|gptw`, pestañas `clnueva/clcurso/clanteriores/clresultados/clmodelos`, acciones `ACCIONES_CLIMA`) y `clima_inv.js` (pantalla de quien responde, estado `CI`, acciones `cli*`, vista previa `clPrevia`).
+  - «A quién» (0.33): `N.usarB` (de Personas: `modoB` todas|grupos|personas, `tips` en GPTW) y `N.usarL` (archivo con el importador, `N.imp`). `clRespEmp(e)` decide a quién evalúa en la parte 2.
   - Siempre anónimas. `campanas.config` = {version 2, encuesta, colectivo, parte2, cierre, pendientes [{e,t,g,r}], enviadosA}. `invitaciones.responsable` (a quién evalúa la parte 2) y `grupo` (listas pegadas). Migración 0.32.
   - El código de cada correo se crea justo antes de enviarlo (`clEnviarPendientes`); si no sale, se borra y vuelve a pendientes.
   - Resultados: % favorable (respuestas 3 y 4 de 0–4), mínimo `CL.MIN` = 5 por grupo y por responsable.
@@ -99,7 +105,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.32.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.33.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.

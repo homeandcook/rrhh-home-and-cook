@@ -37,6 +37,37 @@ window.crearClienteDemo = function () {
     db.equiposDemo = true;
   }
   ["dr_ciclos", "dr_evaluadores", "dr_personas", "dr_decisiones"].forEach(k => { db[k] = db[k] || []; });
+  /* Personas (0.33): los equipos de tienda pasan a la tabla empleados, y se
+     añaden oficinas, comerciales y demostradores de ejemplo. Inventados. */
+  if (!db.empleados) {
+    const ahora = new Date().toISOString(), E = [];
+    const alta = (o) => { const r = Object.assign({ id: uid(), empresa_id: "e-demo", apellidos: "", correo: null, puesto: "", tipologia: "tiendas", ubicacion: "", tienda_id: null,
+      departamento: "", responsable_id: null, fecha_alta: null, fecha_baja: null, activo: true, creado: ahora, actualizado: ahora }, o); E.push(r); return r; };
+    db.tiendas.forEach(t => {
+      let sm = null;
+      (t.datos.equipo || []).forEach(x => {
+        const [n, ...ap] = x.nombre.split(" ");
+        const r = alta({ nombre: n, apellidos: ap.join(" "), correo: x.email || null, puesto: x.puesto, ubicacion: t.nombre, tienda_id: t.id });
+        if (x.puesto === "Store Manager") sm = r; else if (sm) r.responsable_id = sm.id;
+      });
+    });
+    const dg = alta({ nombre: "Elena", apellidos: "Marín Soto", correo: "elena.marin@ejemplo.com", puesto: "Directora general", tipologia: "oficinas", ubicacion: "Oficina central", departamento: "Dirección" });
+    [["Finanzas", "Jorge", "Pardo Gil", ["Controller", "Analista financiera", "Contable"]], ["Marketing", "Irene", "Bravo Ruiz", ["Brand manager", "Diseñador", "Community manager"]],
+     ["Recursos Humanos", "Sergio", "Lago Peña", ["Técnica de selección", "Administración de personal"]], ["Operaciones", "Clara", "Fuentes Roca", ["Logística", "Compras", "Atención al cliente"]]]
+      .forEach(([dep, n, ap, ps], k) => {
+        const jefe = alta({ nombre: n, apellidos: ap, correo: `${n.toLowerCase()}.${ap.split(" ")[0].toLowerCase()}@ejemplo.com`, puesto: "Responsable de " + dep, tipologia: "oficinas", ubicacion: "Oficina central", departamento: dep, responsable_id: dg.id });
+        ps.forEach((pu, i) => alta({ nombre: ["Nuria", "Óscar", "Lidia", "Marcos", "Eva", "Raúl", "Alba", "Gonzalo", "Sara", "Iker", "Noelia"][(k * 3 + i) % 11], apellidos: ["Cano", "Rubio", "Vega", "Molina", "Cruz"][(k + i) % 5] + " " + ["Díaz", "Ibáñez", "León"][i % 3],
+          correo: i === 2 && k === 3 ? null : `persona.oficina${k}${i}@ejemplo.com`, puesto: pu, tipologia: "oficinas", ubicacion: "Oficina central", departamento: dep, responsable_id: jefe.id }));
+      });
+    const jv = alta({ nombre: "Tomás", apellidos: "Herrera Cid", correo: "tomas.herrera@ejemplo.com", puesto: "Jefe de ventas", tipologia: "comerciales", ubicacion: "Zona Centro", responsable_id: dg.id });
+    [["Zona Norte", "Andrea", "Sanz Ortiz"], ["Zona Sur", "Bruno", "Gallego Mena"], ["Zona Este", "Celia", "Ramos Vila"], ["Zona Centro", "Daniel", "Nieto Paz"], ["Portugal", "Rita", "Lopes Faria"]]
+      .forEach(([z, n, ap], i) => alta({ nombre: n, apellidos: ap, correo: `comercial${i}@ejemplo.com`, puesto: "Comercial de zona", tipologia: "comerciales", ubicacion: z, responsable_id: jv.id }));
+    const cd = alta({ nombre: "Marina", apellidos: "Ferrer Luna", correo: "marina.ferrer@ejemplo.com", puesto: "Coordinadora de demostradores", tipologia: "demostradores", ubicacion: "Madrid", responsable_id: jv.id });
+    [["Córner Castellana", "Lola", "Peña Ríos"], ["Córner Preciados", "Félix", "Romero Gil"], ["Córner Diagonal", "Gema", "Soler Vidal"], ["Córner Nervión", "Héctor", "Lara Mesa"], ["Córner Gran Vía", "Ana", "Pons Rey"], ["Córner Sanchinarro", "Pau", "Mir Bosch"]]
+      .forEach(([c, n, ap], i) => alta({ nombre: n, apellidos: ap, correo: i === 5 ? null : `demo${i}@ejemplo.com`, puesto: "Demostrador/a", tipologia: "demostradores", ubicacion: c, responsable_id: cd.id }));
+    db.empleados = E;
+    db.empresas = [{ id: "e-demo", slug: "principal", nombre: "Empresa de demostración", marca: {}, activa: true, creado: ahora }];
+  }
   const save = () => sessionStorage.setItem(KEY, JSON.stringify(db));
   save();
   const yo = () => db.perfiles.find(p => db.sesion && p.id === db.sesion.user.id && p.activo);
@@ -49,6 +80,8 @@ window.crearClienteDemo = function () {
     actividad: r => rol() === "admin" || (db.sesion && r.usuario_id === db.sesion.user.id),
     campanas: r => (rol() === "admin" || rol() === "rm") || (rol() === "marketing" && r.tipo === "mystery"),
     documentos: () => !!rol(),
+    empresas: () => !!rol(),
+    empleados: r => rol() === "admin" || (rol() === "rm" && !!db.tiendas.find(t => t.id === r.tienda_id && t.rm_id === db.sesion.user.id)),
     dr_ciclos: () => rol() === "admin", dr_evaluadores: () => rol() === "admin", dr_personas: () => rol() === "admin", dr_decisiones: () => rol() === "admin",
     invitaciones: r => {
       if (rol() === "admin") return true;
@@ -91,6 +124,10 @@ window.crearClienteDemo = function () {
           if (!ok) return err("new row violates row-level security policy");
         }
         else if (rol() !== "admin") return err("new row violates row-level security policy");
+        if (this.t === "empleados") {
+          const ms = (Array.isArray(this.v) ? this.v : [this.v]).map(v => (v.correo || "").trim().toLowerCase()).filter(Boolean);
+          if (new Set(ms).size < ms.length || ms.some(m => db.empleados.some(e => e.correo === m))) return err('duplicate key value violates unique constraint "empleados_correo"');
+        }
         const rows = (Array.isArray(this.v) ? this.v : [this.v]).map(v => {
           const r = clone(v);
           if (this.t === "tiendas") Object.assign(r, { id: r.id || uid(), version: 1, actualizado: new Date().toISOString(), datos: r.datos || {} });
@@ -104,12 +141,17 @@ window.crearClienteDemo = function () {
             Object.assign(r, { id: r.id || uid(), creado: r.creado || ahora, actualizado: ahora });
           }
           if (this.t === "documentos") Object.assign(r, { actualizado: new Date().toISOString(), actualizado_por: db.sesion.user.id });
+          if (this.t === "empleados") {
+            r.correo = (r.correo || "").trim().toLowerCase() || null;
+            Object.assign(r, Object.assign({ apellidos: "", puesto: "", tipologia: "tiendas", ubicacion: "", tienda_id: null, departamento: "", responsable_id: null, fecha_alta: null, fecha_baja: null, activo: true }, r),
+              { id: r.id || uid(), empresa_id: "e-demo", creado: new Date().toISOString(), actualizado: new Date().toISOString() });
+          }
           if (this.t === "perfiles") { if (db.perfiles.some(p => p.usuario === r.usuario)) throw new Error("dup"); Object.assign(r, { activo: r.activo !== false, creado: new Date().toISOString() }); }
           return r;
         });
         T.push(...rows); out = rows;
       } else if (this.op === "update") {
-        if ((this.t === "perfiles" || this.t === "documentos") && rol() !== "admin") return err("Sin permiso");
+        if ((this.t === "perfiles" || this.t === "documentos" || this.t === "empleados") && rol() !== "admin") return err("Sin permiso");
         out = T.filter(match);
         out.forEach(r => {
           const v = clone(this.v);

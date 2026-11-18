@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.32.0";
+const APP_VERSION = "0.33.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -57,6 +57,7 @@ function cambiarVista(id) {
   S.modulo = "inicio"; S.indice = false; S.tiendaFoco = null; S.campana = null;
   S.ui = { t: null, p: null, fase: "obj" }; S.invT = null;
   aplicarVista();
+  S.pe = null; cargarEmpleados().then(() => pintar());
   window.scrollTo(0, 0);
 }
 /* Confirmación en la propia página: confirm() del navegador no funciona en
@@ -242,7 +243,7 @@ async function recargar() {
   S.todas = (t.data || []).map(desdeFila);
   aplicarVista();
   S.perfiles = p.data || [S.me];
-  await Promise.all([recargarPruebas(), cargarDocumentos(), typeof cargarAvisosDr === "function" ? cargarAvisosDr() : null]);
+  await Promise.all([recargarPruebas(), cargarDocumentos(), cargarEmpleados(), typeof cargarAvisosDr === "function" ? cargarAvisosDr() : null]);
   if (realEsAdmin()) { const a = await sb.from("actividad").select("*").order("fecha", { ascending: false }).limit(150); S.actividad = a.data || []; }
   if (!S.tiendas.some(x => x.id === S.ui.t)) S.ui.t = null;
   pintar();
@@ -341,6 +342,8 @@ const MODULOS = [
   { id: "formacion", t: "Formación de IA", grupo: "activo",
     d: "Formación en inteligencia artificial: cursos, envío con código y seguimiento de quién la ha hecho.",
     tabs: [["cursos", "Cursos"], ["envios", "Enviar"], ["seguimiento", "Seguimiento"]] },
+  { id: "personas", t: "Personas", grupo: "activo",
+    d: "La plantilla de la empresa: altas de una en una o importando un Excel, con tipología, ubicación y responsable. De aquí salen los destinatarios de las encuestas." },
   { id: "docs", t: "Process Book y Políticas", grupo: "activo",
     d: "Los procesos de tienda paso a paso y las normas que el equipo consulta a diario, en un solo sitio.",
     tabs: [["process", "Process Book"], ["politica", "Políticas"]] },
@@ -390,6 +393,7 @@ function pintar() {
   pintarEstado();
   if (S.modulo === "gestion" && esAdmin()) return pintarGestion();
   if (S.modulo === "tienda") return pintarTiendaFoco();
+  if (S.modulo === "personas") return pintarPersonas();
   if (S.modulo === "clima" && !(S.indice && tabs.length > 1)) return pintarClima(tabActual());
   if (S.modulo === "desarrollo" && !(S.indice && tabs.length > 1)) return pintarDesarrollo(tabActual());
   if (S.indice && tabs.length > 1) return pintarIndice(m, tabs);
@@ -552,6 +556,11 @@ function pintarInicio() {
       const inv = (S.invitaciones || []).filter(i => cs.some(c => c.id === i.campana_id));
       const pruebas = inv.length ? ` · ${inv.filter(i => i.estado === "respondida").length} de ${inv.length} pruebas` : "";
       return `${cursosVisibles().length} ${cursosVisibles().length === 1 ? "formación" : "formaciones"} · ${n} ${n === 1 ? "completada" : "completadas"}${pruebas}`;
+    }
+    if (m.id === "personas") {
+      if (!Array.isArray(S.emp)) return S.empFalta ? "Falta ejecutar la migración 0.33" : "";
+      const n = empActivos().length, sin = empActivos().filter(e => !e.correo).length;
+      return n ? `${n} ${n === 1 ? "persona activa" : "personas activas"}${sin ? ` · ${sin} sin correo` : ""}` : "Nadie dado de alta todavía";
     }
     if (m.id === "docs") return `${libro("process").items.length} procesos · ${libro("politica").items.length} fichas de política`;
     if (m.id === "prl") {
@@ -1170,7 +1179,7 @@ document.addEventListener("click", async e => {
       if (error) { alert(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
-  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO);
+  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO, typeof ACCIONES_PERSONAS === "undefined" ? {} : ACCIONES_PERSONAS);
   if (!acciones[a]) return;
   const res = await acciones[a](b, t);
   if (res !== false) pintar();
@@ -1187,11 +1196,23 @@ arrancar();
    ve y lo edita quien ya puede editar esa tienda.
    ========================================================== */
 const PUESTOS_EQUIPO = ["Store Manager", "Assistant Store Manager", "Vendedor/a", "Vendedor/a a tiempo parcial", "Visual", "Suplente", "Becario/a"];
-function equipoDe(t) { return (t && t.equipo) || []; }
+/* Desde la 0.33 el equipo de cada tienda sale de Personas (tabla empleados).
+   Si la migración aún no está, se sigue usando el de dentro de la tienda. */
+function equipoDe(t) {
+  if (!t) return [];
+  if (Array.isArray(S.emp)) return S.emp.filter(e => e.activo && e.tienda_id === t.id).map(e => ({ id: e.id, nombre: empNombre(e), puesto: e.puesto, email: e.correo || "", responsable_id: e.responsable_id }));
+  return t.equipo || [];
+}
 function tiendasQueVeo() { return esAdmin() ? S.tiendas : S.tiendas.filter(t => t.rm_id === S.me.id); }
 function bloqueEquipos() {
   const ts = tiendasQueVeo();
   if (!ts.length) return "";
+  if (Array.isArray(S.emp)) {
+    const n = empActivos().filter(e => e.tienda_id).length;
+    return `<section class="card" id="equipos"><div class="card-h"><h2>Equipos de tienda</h2><span class="muted">${n} ${n === 1 ? "persona" : "personas"} en tiendas</span></div>
+      <p class="hint" style="margin-top:0">Los equipos ahora se llevan en <b>Personas</b>, junto con oficinas, comerciales y demostradores: altas de una en una o importando un Excel.</p>
+      <button class="btn" data-action="modulo" data-m="personas">Ir a Personas</button></section>`;
+  }
   const sel = ts.find(t => t.id === S.equipoT) || ts[0];
   S.equipoT = sel.id;
   const eq = equipoDe(sel), total = ts.reduce((a, t) => a + equipoDe(t).length, 0);
