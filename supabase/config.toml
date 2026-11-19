@@ -9,3 +9,7 @@ project_id = "rrhh-home-and-cook"
 # filtran). El filtro automático exige un token firmado con la clave
 # antigua y este proyecto usa las nuevas, así que se deja apagado.
 verify_jwt = false
+
+[functions.resenas]
+# Igual que enviar-invitacion: comprueba la sesión y el rol por su cuenta.
+verify_jwt = false

@@ -68,6 +68,11 @@ window.crearClienteDemo = function () {
     db.empleados = E;
     db.empresas = [{ id: "e-demo", slug: "principal", nombre: "Empresa de demostración", marca: {}, activa: true, creado: ahora }];
   }
+  /* Employer Branding (0.36): algunas tiendas ya vinculadas con Google (inventado) */
+  if (!db.resenas_sitios) {
+    db.resenas_sitios = db.tiendas.slice(0, 6).map((t, k) => ({ id: uid(), empresa_id: "e-demo", nombre: t.nombre, tipo: "tienda", tienda_id: t.id, place_id: "DEMOplace" + String(k).padStart(6, "0"), direccion: "Calle de ejemplo " + (k + 1), creado: new Date().toISOString() }));
+    db.resenas_sitios.push({ id: uid(), empresa_id: "e-demo", nombre: "Oficina central", tipo: "oficina", tienda_id: null, place_id: "DEMOplace000099", direccion: "Avenida de ejemplo 10", creado: new Date().toISOString() });
+  }
   const save = () => sessionStorage.setItem(KEY, JSON.stringify(db));
   save();
   const yo = () => db.perfiles.find(p => db.sesion && p.id === db.sesion.user.id && p.activo);
@@ -80,6 +85,7 @@ window.crearClienteDemo = function () {
     actividad: r => rol() === "admin" || (db.sesion && r.usuario_id === db.sesion.user.id),
     campanas: r => (rol() === "admin" || rol() === "rm") || (rol() === "marketing" && r.tipo === "mystery"),
     documentos: () => !!rol(),
+    resenas_sitios: () => rol() === "admin",
     empresas: () => !!rol(),
     empleados: r => rol() === "admin" || (rol() === "rm" && !!db.tiendas.find(t => t.id === r.tienda_id && t.rm_id === db.sesion.user.id)),
     dr_ciclos: () => rol() === "admin", dr_evaluadores: () => rol() === "admin", dr_personas: () => rol() === "admin", dr_decisiones: () => rol() === "admin",
@@ -178,6 +184,7 @@ window.crearClienteDemo = function () {
        de envío y se devuelve lo mismo que la real. */
     functions: {
       invoke(nombre, { body }) {
+        if (nombre === "resenas") return new Promise(r => setTimeout(() => r({ data: demoResenas(body), error: null }), 400));
         return new Promise(r => setTimeout(() => {
           const ahora = new Date().toISOString(), res = [];
           const tabla = body.tipo === "desarrollo" ? db.dr_evaluadores : db.invitaciones;
@@ -288,3 +295,23 @@ window.crearClienteDemo = function () {
     }
   };
 };
+
+/* Reseñas inventadas para el modo demostración (Employer Branding). El total
+   sube un poco en cada consulta para que se vean «nuevas». */
+function demoResenas(body) {
+  const frases = [[5, "Me atendieron muy bien y me explicaron las diferencias entre modelos sin prisa."], [4, "Buen trato. Había cola en caja pero se organizaron rápido."],
+    [2, "Tardaron mucho en atenderme y no supieron decirme si había stock."], [5, "El equipo es encantador, volveré."], [3, "Correcto, aunque la tienda estaba algo desordenada."],
+    [1, "Nadie me atendió en veinte minutos."], [4, "Me ayudaron con una devolución sin problema."], [5, "Muy buenos consejos para elegir regalo."]];
+  const nombres = ["Laura M.", "Javier R.", "Carmen T.", "Pablo S.", "Lucía G.", "Andrés P.", "Marta V.", "Sergio L."];
+  if (body.buscar) return { sitios: [1, 2, 3].map(k => ({ id: "DEMObusca" + k + String(body.buscar.length).padStart(4, "0"), nombre: body.buscar + (k > 1 ? " (" + k + ")" : ""), direccion: "Resultado de ejemplo " + k + ", Madrid" })) };
+  const n = (Number(sessionStorage.getItem("demo-eb-n") || 0) + 1); sessionStorage.setItem("demo-eb-n", n);
+  return { consultado: new Date().toISOString(), sitios: (body.sitios || []).map((id, k) => {
+    const h = [...id].reduce((a, c) => a + c.charCodeAt(0), 0) + k;
+    const total = 40 + (h % 260) + (n > 1 && k % 3 === 0 ? n : 0);
+    const rs = [0, 1, 2, 3, 4].map(j => { const f = frases[(h + j * 3) % frases.length]; const dias = j * 9 + (h % 5) - (n > 1 && k % 3 === 0 && j === 0 ? 30 : 0);
+      return { id: id + "/r" + j, nota: f[0], texto: f[1], hace: dias <= 0 ? "hace unas horas" : "hace " + dias + " días", fecha: new Date(Date.now() - Math.max(0, dias) * 864e5 - 36e5).toISOString(), enlace: null,
+        autor: { nombre: nombres[(h + j) % nombres.length], uri: null } }; });
+    const nota = Math.round((3.6 + (h % 13) / 10) * 10) / 10;
+    return { id, nombre: "Sitio " + (k + 1), direccion: "Dirección de ejemplo", nota: Math.min(4.9, nota), total, enlace: "https://maps.google.com/", resenas: rs };
+  }) };
+}

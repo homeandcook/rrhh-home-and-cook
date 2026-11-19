@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.35.0";
+const APP_VERSION = "0.36.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -29,7 +29,8 @@ const MODULOS_MARKETING = ["pdc"];
    de IA y Desarrollo. El resto de apartados sigue en el código, oculto: para
    recuperar uno basta con quitarlo de esta lista. */
 const MODULOS_OCULTOS = ["prl", "pdc", "docs", "hometime"];
-const puedeVer = id => !MODULOS_OCULTOS.includes(id) && (!esMarketing() || MODULOS_MARKETING.includes(id));
+const MODULOS_SOLO_ADMIN = ["employer"];
+const puedeVer = id => !MODULOS_OCULTOS.includes(id) && (!esMarketing() || MODULOS_MARKETING.includes(id)) && (!MODULOS_SOLO_ADMIN.includes(id) || esAdmin());
 const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
 /* «Ver como»: RR.HH. puede ver la plataforma tal como la ve otro usuario.
    S.me pasa a ser ese usuario (así toda la interfaz se recorta sola) y
@@ -244,6 +245,8 @@ async function recargar() {
   aplicarVista();
   S.perfiles = p.data || [S.me];
   await Promise.all([recargarPruebas(), cargarDocumentos(), cargarEmpleados(), typeof cargarAvisosDr === "function" ? cargarAvisosDr() : null]);
+  // Reseñas de Google: sin esperar; como mucho una consulta automática al día
+  if (esAdmin() && typeof cargarSitiosResenas === "function") cargarSitiosResenas().then(() => { if (S.modulo === "inicio") pintar(); ebActualizar(true); });
   if (realEsAdmin()) { const a = await sb.from("actividad").select("*").order("fecha", { ascending: false }).limit(150); S.actividad = a.data || []; }
   if (!S.tiendas.some(x => x.id === S.ui.t)) S.ui.t = null;
   pintar();
@@ -346,6 +349,8 @@ const MODULOS = [
   { id: "formacion", t: "Formación de IA", grupo: "activo",
     d: "Formación en inteligencia artificial: cursos, envío con código y seguimiento de quién la ha hecho.",
     tabs: [["cursos", "Cursos"], ["envios", "Enviar"], ["seguimiento", "Seguimiento"]] },
+  { id: "employer", t: "Employer Branding", grupo: "activo",
+    d: "Las reseñas de Google de cada tienda y de la oficina en un solo sitio: nota, total, las últimas reseñas y aviso de las nuevas." },
   { id: "personas", t: "Personas", grupo: "activo",
     d: "La plantilla, los usuarios con acceso y las tiendas, en un solo sitio. De aquí salen los destinatarios de encuestas, Desarrollo y formaciones.",
     tabs: [["pplantilla", "Plantilla"], ["paccesos", "Usuarios con acceso", true], ["ptiendas", "Tiendas", true], ["pactividad", "Actividad", true]] },
@@ -399,6 +404,7 @@ function pintar() {
     <div id="vista"></div><div id="print"></div>`;
   pintarEstado();
   if (S.modulo === "tienda") return pintarTiendaFoco();
+  if (S.modulo === "employer") return pintarEmployer();
   if (S.modulo === "personas" && !(S.indice && tabs.length > 1)) { const tp = tabActual(); return tp === "pplantilla" || !esAdmin() ? pintarPersonas() : pintarGestion(tp); }
   if (S.modulo === "clima" && !(S.indice && tabs.length > 1)) return pintarClima(tabActual());
   if (S.modulo === "desarrollo" && !(S.indice && tabs.length > 1)) return pintarDesarrollo(tabActual());
@@ -566,6 +572,14 @@ function pintarInicio() {
       const inv = (S.invitaciones || []).filter(i => cs.some(c => c.id === i.campana_id));
       const pruebas = inv.length ? ` · ${inv.filter(i => i.estado === "respondida").length} de ${inv.length} pruebas` : "";
       return `${cursosVisibles().length} ${cursosVisibles().length === 1 ? "formación" : "formaciones"} · ${n} ${n === 1 ? "completada" : "completadas"}${pruebas}`;
+    }
+    if (m.id === "employer") {
+      const E = ebS();
+      if (E.falta) return "Falta ejecutar la migración 0.36";
+      if (!E.sitios) return "";
+      if (!E.sitios.length) return "Vincula las tiendas con Google";
+      const xs = Object.values(E.datos).filter(x => !x.error && x.total), tot = xs.reduce((a, x) => a + x.total, 0), n = ebNuevasTotal();
+      return tot ? `Nota ${ebNota(xs.reduce((a, x) => a + (x.nota || 0) * x.total, 0) / tot)} · ${tot.toLocaleString("es-ES")} reseñas${n ? ` · ${n} nuevas` : ""}` : `${E.sitios.length} ${E.sitios.length === 1 ? "sitio" : "sitios"} de Google`;
     }
     if (m.id === "personas") {
       if (!Array.isArray(S.emp)) return S.empFalta ? "Falta ejecutar la migración 0.33" : "";
@@ -1205,7 +1219,7 @@ document.addEventListener("click", async e => {
       if (error) { alert(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
-  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO, typeof ACCIONES_PERSONAS === "undefined" ? {} : ACCIONES_PERSONAS);
+  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO, typeof ACCIONES_PERSONAS === "undefined" ? {} : ACCIONES_PERSONAS, typeof ACCIONES_EB === "undefined" ? {} : ACCIONES_EB);
   if (!acciones[a]) return;
   const res = await acciones[a](b, t);
   if (res !== false) pintar();

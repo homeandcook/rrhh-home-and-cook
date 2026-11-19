@@ -287,6 +287,16 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.36.0 · 19/11/2026 · **SQL: sí** (`supabase/migracion_0.36.sql`) · función nueva `resenas`
+- **Employer Branding**, apartado nuevo (solo RR.HH.): las reseñas de Google de cada tienda y de la oficina.
+  - Cifras: nota media ponderada, total de reseñas, nuevas desde tu última revisión y sitios por debajo de 4.
+  - Una ficha por sitio con su nota, total, enlace a Google Maps y las reseñas que da Google (hasta 5), con las de 3 estrellas o menos destacadas. Filtros «Con nuevas» y «Con reseñas de 3 o menos», y orden por peor nota, más reseñas o nombre.
+  - **Avisos**: la campana avisa de las reseñas nuevas (porque sube el total). Se consulta Google sola una vez al día por persona y siempre que se pulse «Actualizar».
+  - «Sitios de Google»: cada tienda se vincula con su ficha buscando en Google; la oficina y otros sitios se añaden igual.
+- Función `supabase/functions/resenas` (Google Places API New, clave en el secreto `GOOGLE_PLACES_KEY`; solo rol admin). No guarda reseñas: las condiciones de Google solo permiten guardar el identificador del sitio. Lo «ya visto» se recuerda en el navegador de cada persona.
+- Límite de Google con esta vía: nota, total y como mucho 5 reseñas por sitio. Para leerlas todas (y responderlas) el paso siguiente es Google Business Profile, con el acceso de quien gestiona las fichas.
+- `desplegar-funciones.yml` despliega también `resenas`.
+
 ## 0.35.0 · 19/11/2026 · **SQL: no** · se vuelve a desplegar la función de correo
 - **Encuestas de clima anónimas o con nombre.** En «Nueva encuesta» → Opciones, interruptor «Respuestas anónimas» (encendido por defecto).
   - Anónima, como hasta ahora: el código no lleva nombre, nadie sabe quién ha respondido qué y los resultados salen por tienda, departamento o grupo con 5 respuestas o más.

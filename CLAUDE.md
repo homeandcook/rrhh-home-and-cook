@@ -55,7 +55,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 
 ## Cómo está hecho
 - **HTML, CSS y JavaScript sin framework ni compilación.** `index.html` lleva todos los estilos y carga los scripts en este orden:
-  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, correo_vista (carga la plantilla del correo al usarla con un `<script>` normal: `cargarPlantillaCorreo()` → `window.CORREO`), clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
+  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, correo_vista (carga la plantilla del correo al usarla con un `<script>` normal: `cargarPlantillaCorreo()` → `window.CORREO`), resenas, clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
 - **`app.js`**:
   - Estado global `S`, pintado completo con `pintar()` y apartados en el array `MODULOS`.
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
@@ -67,6 +67,10 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - **Mis tiendas** (0.27.0): portada del RM y ficha de tienda (`S.modulo = "tienda"`, `S.tiendaFoco`, `APARTADOS_TIENDA`).
     - Abre cada apartado con `irA()` de `hoy.js`, filtrado por la tienda.
     - Los nombres de acción son globales: `irTienda` ya existe en Usuarios y tiendas. Antes de crear una acción, comprueba que el nombre no esté usado.
+- **Employer Branding** (0.36.0): `resenas.js` (apartado `employer`, solo admin vía `MODULOS_SOLO_ADMIN`; estado `S.eb` con `ebS()`, acciones `eb*` en `ACCIONES_EB`). Tabla `resenas_sitios` (solo `place_id`, migración 0.36). Edge Function `supabase/functions/resenas`: `{buscar}` (Text Search) y `{sitios:[place_id]}` (Place Details con reseñas, máximo 5 por sitio). Secreto `GOOGLE_PLACES_KEY`.
+  - **Condiciones de Google**: no se guarda contenido de Places en la base de datos (solo el `place_id`); hay que mostrar la atribución a Google y el autor de cada reseña. Lo visto por cada persona va en `localStorage` (`pp-eb-<usuario>`).
+  - Coste: Place Details con reseñas es SKU «Enterprise + Atmosphere» (1.000 gratis al mes). Consulta automática como mucho cada 20 h por persona (`EB_HORAS_AUTO`).
+  - Siguiente paso acordado: Google Business Profile API (todas las reseñas y respuestas) cuando haya acceso de quien gestiona las fichas.
 - **Avisos** (0.30.0): `avisos.js`, campana de la cabecera con lo completado (invitaciones respondidas y entregas `dr_evaluadores.entregado`). Sondeo cada minuto; «visto» en `localStorage` por usuario. Las anónimas se agrupan sin hora ni tienda.
 - **Invitados con código**: `pruebas.js` (`abrirInvitacion`, `pintarInvitado`) usa las funciones de base de datos SECURITY DEFINER `invitacion_abrir` e `invitacion_responder`. Encuestas, pruebas, formaciones y el escape room son **plantillas de preguntas** que puntúa `SC.puntuar`.
 - **Personas** (0.33.0): `personas.js` (apartado `personas`, estado `S.emp` (null si falta la migración 0.33, con `S.empFalta`), filtros `S.pf`, formulario `S.pe`, acciones `p*` en `ACCIONES_PERSONAS`) e `importar.js` (`abrirImportador("base"|"encuesta", {alUsar})`, estado `IMP`, overlay `#impOv` con sus propios eventos `data-imp*`, sin pasar por `pintar()`).
@@ -111,8 +115,8 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 - **Flujos de GitHub Actions**:
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
-  - `desplegar-funciones.yml`: despliega `enviar-invitacion` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.35.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+  - `desplegar-funciones.yml`: despliega `enviar-invitacion` y `resenas` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.36.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.

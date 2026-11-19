@@ -51,6 +51,7 @@ function avLista() {
     const c = (S.drCic || []).find(x => x.id === e.ciclo_id); if (!c) return;
     out.push({ tipo: "dr", e, c, fecha: e.entregado, quien: e.nombre, donde: e.unidad || "", que: `ha enviado su Talent Review (${c.nombre})` });
   });
+  if (typeof ebAvisos === "function") ebAvisos().forEach(x => out.push(x));
   return out.sort((a, b) => (a.fecha < b.fecha ? 1 : -1)).slice(0, 30);
 }
 const avEsNuevo = (x, visto) => (x.tipo === "anon" ? x.nuevas > 0 : x.fecha > visto);
@@ -126,6 +127,7 @@ const ACCIONES_AVISOS = {
     const d = $("avisos"); if (d) d.open = false;
     if (!x) return false;
     S.tiendaFoco = null;
+    if (x.tipo === "eb") { S.modulo = "employer"; S.indice = false; ebS().ver = "nuevas"; window.scrollTo(0, 0); return; }
     if (x.tipo === "dr") {
       irA({ m: "desarrollo", tab: x.c.ambito });
       const D = drS(); D.ciclo = x.c.id; D.vista = "informes"; D.inf = x.e.id; D.amb = null;
