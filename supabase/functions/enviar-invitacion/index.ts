@@ -108,7 +108,8 @@ Deno.serve(async (req) => {
         ? { id: o.primera.id, t: o.primera.t.slice(0, 300) } : undefined };
   }
   const total = ids.length + anon.length + (rec ? rec.emails.length : 0);
-  if (!total) return json({ error: "No se ha indicado ningún envío" }, 400);
+  const vista = body?.vista_previa && typeof body.vista_previa === "object" ? body.vista_previa : null;
+  if (!total && !vista) return json({ error: "No se ha indicado ningún envío" }, 400);
   if (total > MAX) return json({ error: `Máximo ${MAX} envíos por llamada` }, 400);
 
   const URL_SB = Deno.env.get("SUPABASE_URL")!;
@@ -120,6 +121,32 @@ Deno.serve(async (req) => {
   const { data: quien } = await suyo.from("perfiles").select("nombre, rol").eq("id", usuario.user.id).maybeSingle();
   if (!quien) return json({ error: "Tu usuario no tiene perfil en la plataforma" }, 403);
   const cargo = quien.rol === "rm" ? "Regional Manager" : "Recursos Humanos";
+
+  // Vista previa (0.34.3): devuelve el correo montado, sin enviar nada ni
+  // leer datos de nadie. La web la usa si no puede cargar la plantilla.
+  if (vista) {
+    const MODOS = ["clima", "anonima", "formacion", "psico", "onboarding", "offboarding", "mystery", "desarrollo", "recordatorio"];
+    const v = vista.it || {};
+    const texto = (x: unknown, n: number) => (typeof x === "string" ? x.slice(0, n) : "");
+    // deno-lint-ignore no-explicit-any
+    const o: any = v.info && typeof v.info === "object" ? v.info : {};
+    const it: Item = {
+      id: "vista", codigo: "ABCD-2345", email: "", nombre: texto(v.nombre, 100), titulo: texto(v.titulo, 200),
+      modo: (MODOS.includes(v.modo) ? v.modo : "psico") as Item["modo"], repite: false,
+      info: { min: Number(o.min) > 0 && Number(o.min) < 600 ? Math.round(Number(o.min)) : undefined,
+        n: Number(o.n) > 0 && Number(o.n) < 500 ? Math.round(Number(o.n)) : undefined,
+        umbral: Number(o.umbral) > 0 && Number(o.umbral) <= 1 ? Number(o.umbral) : undefined, cert: o.cert === true,
+        primera: o.primera && typeof o.primera.id === "string" && /^[a-z0-9_]{1,12}$/.test(o.primera.id) && typeof o.primera.t === "string"
+          ? { id: o.primera.id, t: o.primera.t.slice(0, 300) } : undefined },
+      limite: typeof v.limite === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.limite) ? v.limite : null,
+      personas: Number(v.personas) > 0 && Number(v.personas) < 1000 ? Math.round(Number(v.personas)) : 0
+    };
+    // deno-lint-ignore no-explicit-any
+    const C = (globalThis as any).CORREO;
+    const base = C.textosCorreo(it, quien.nombre, {});
+    const m = prepararCorreo(it, quien.nombre, cargo, URL_APP, vista.aj && typeof vista.aj === "object" ? vista.aj : {});
+    return json({ asunto: m.asunto, html: m.html, base: { asunto: base.asunto, intro: base.intro }, firma: quien.nombre, cargo });
+  }
 
   const items: Item[] = [];
   if (desarrollo) {

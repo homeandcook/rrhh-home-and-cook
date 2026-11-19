@@ -46,17 +46,30 @@ function cargarPlantillaCorreo() {
   return vcCarga;
 }
 window.addEventListener("load", () => { cargarPlantillaCorreo().catch(() => {}); });
-function abrirVistaCorreo(op) {
-  if (!window.CORREO) {
-    cargarPlantillaCorreo().then(() => abrirVistaCorreo(op))
-      .catch(e => alert("No se ha podido cargar la plantilla del correo (" + ((e && e.message) || e) + "). Vuelve a cargar la página con Ctrl+F5; si sigue, avisa a quien mantiene Pippole con este mensaje."));
-    return;
-  }
-  const def = vcFirmaPorDefecto();
+/* Si el navegador no consigue descargar la plantilla (pasa en algunas redes
+   de empresa), el correo lo monta la función de envío: modo vista_previa,
+   que no envía nada. */
+async function vcPedir(op, aj) {
   const it = vcItem(op);
-  const base = CORREO.textosCorreo(it, def.firma, {});
+  const r = await sb.functions.invoke("enviar-invitacion", { body: { vista_previa: { it: { modo: it.modo, titulo: it.titulo, nombre: it.nombre, info: it.info, limite: it.limite, personas: it.personas }, aj } } });
+  if (r.error || !r.data || !r.data.html) throw new Error((r.data && r.data.error) || (r.error && r.error.message) || "sin respuesta");
+  return r.data;
+}
+async function abrirVistaCorreo(op) {
+  let remoto = null;
+  if (!window.CORREO) {
+    try { await cargarPlantillaCorreo(); }
+    catch (e) {
+      if (sb.demo) { alert("No se ha podido cargar la plantilla del correo (" + ((e && e.message) || e) + ")."); return; }
+      try { toast("Preparando la vista previa…"); remoto = await vcPedir(op, op.aj || {}); }
+      catch (e2) { alert("No se ha podido preparar la vista previa del correo (" + ((e2 && e2.message) || e2) + "). Vuelve a intentarlo en un momento."); return; }
+    }
+  }
+  const def = remoto ? { firma: remoto.firma, cargo: remoto.cargo } : vcFirmaPorDefecto();
+  const it = vcItem(op);
+  const base = remoto ? remoto.base : CORREO.textosCorreo(it, def.firma, {});
   const aj = Object.assign({}, op.aj || {});
-  Object.assign(VC, { abierto: true, op, def, base, aj, ancho: "pc", ocupado: false,
+  Object.assign(VC, { abierto: true, op, def, base, aj, ancho: "pc", ocupado: false, remoto: !!remoto, m: remoto ? { asunto: remoto.asunto, html: remoto.html } : null,
     val: { asunto: aj.asunto || base.asunto, intro: aj.intro || (it.modo === "recordatorio" ? "" : base.intro), extra: aj.extra || "", firma: aj.firma || def.firma, cargo: aj.cargo || def.cargo } });
   vcPintar();
 }
@@ -75,6 +88,7 @@ function vcAjustes() {
   return out;
 }
 function vcHtml() {
+  if (VC.remoto) return VC.m;
   const it = vcItem(VC.op);
   return CORREO.prepararCorreo(it, VC.def.firma, VC.def.cargo, vcUrl(), vcAjustes());
 }
@@ -118,7 +132,14 @@ function vcPintar() {
     </div></div>`;
   vcRefrescar(m);
 }
-function vcRefrescar(m) {
+let vcPedido = 0;
+async function vcRefrescar(m) {
+  if (!m && VC.remoto) {
+    const n = ++vcPedido;
+    try { const r = await vcPedir(VC.op, vcAjustes()); if (n !== vcPedido || !VC.abierto) return; VC.m = { asunto: r.asunto, html: r.html }; }
+    catch (e) { return; }
+    m = VC.m;
+  }
   const f = document.getElementById("vcFrame"); if (!f) return;
   m = m || vcHtml();
   f.srcdoc = m.html;
@@ -128,7 +149,7 @@ let vcT = null;
 function vcEscribe(e) {
   const k = e.target.dataset && e.target.dataset.vcC; if (!k) return;
   VC.val[k] = e.target.value;
-  clearTimeout(vcT); vcT = setTimeout(() => vcRefrescar(), 150);
+  clearTimeout(vcT); vcT = setTimeout(() => vcRefrescar(), VC.remoto ? 500 : 150);
 }
 async function vcClic(e) {
   const b = e.target.closest("[data-vc]"); if (!b || b.disabled) return;
@@ -136,7 +157,7 @@ async function vcClic(e) {
   const a = b.dataset.vc, op = VC.op;
   if (a === "cerrar") return vcCerrar();
   if (a === "ancho") { VC.ancho = b.dataset.v; return vcPintar(); }
-  if (a === "restablecer") { VC.val = { asunto: VC.base.asunto, intro: op.modo === "recordatorio" ? "" : VC.base.intro, extra: "", firma: VC.def.firma, cargo: VC.def.cargo }; return vcPintar(); }
+  if (a === "restablecer") { VC.val = { asunto: VC.base.asunto, intro: op.modo === "recordatorio" ? "" : VC.base.intro, extra: "", firma: VC.def.firma, cargo: VC.def.cargo }; vcPintar(); if (VC.remoto) vcRefrescar(); return; }
   if (a === "guardar" || a === "enviar") {
     const aj = vcAjustes();
     VC.ocupado = true; vcPintar();
