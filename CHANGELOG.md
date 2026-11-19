@@ -417,3 +417,9 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - Cambio de textos o estilos: sube el tercer número (0.9.1).
 - Apartado nuevo o cambio de funcionamiento: el segundo (0.10.0).
 - Cuando entre en producción con datos reales: 1.0.0.
+
+## 0.36.2 · 19/11/2026 · **SQL: no**
+Scorecard más fácil de leer (opción A «Continuidad»). El cálculo no cambia.
+- Resultados de tienda: cada KPI con objetivo lleva una barra de consecución (del 90 % al 110 %, con una raya en el 100 %), en verde si el factor es 1 o más y en ámbar si es menor. Debajo, una línea explica desde qué consecución el factor llega a 1.
+- El factor se ve como etiqueta.
+- Valoración cualitativa: debajo de cada ítem valorado aparece su nivel en palabras («En línea», «Por encima»…), sin tener que abrir el detalle.

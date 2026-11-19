@@ -130,6 +130,14 @@ table.mini td{padding:5px 8px}
 .fac{display:inline-block;min-width:48px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 .f0{color:var(--l0)} .f05{color:var(--l05)} .f1{color:var(--l1)} .f15{color:var(--l15)} .f2{color:var(--l2)}
 .err{color:var(--l0);font-weight:600}
+table.kpi .fac{padding:3px 9px;border-radius:8px;background:var(--mist);border:1px solid var(--line)}
+.kbar{display:block;position:relative;height:6px;border-radius:3px;background:var(--line);margin-top:7px;max-width:320px}
+.kbar[hidden]{display:none}
+.kbar span{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--l2)}
+.kbar span.bajo{background:var(--warn)}
+.kbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--ink)}
+.kbar-ley{margin:10px 0 0}
+table.kpi td.n{white-space:nowrap}
 
 .pills{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 16px}
 .pill{border:1px solid var(--line);background:var(--paper);border-radius:22px;padding:7px 16px;cursor:pointer;font-weight:600;display:flex;gap:8px;align-items:baseline}
@@ -156,6 +164,7 @@ table.mini td{padding:5px 8px}
 .it-h b{font-weight:600;flex:1;min-width:0;line-height:1.3}
 .it-h .w{white-space:nowrap;font-size:12px;color:var(--muted);flex:none}
 .it.hecho .it-h b{color:var(--muted)}
+.it-h b .it-lv{display:block;font-size:12px;font-weight:500;margin-top:1px;color:var(--muted)}
 .it-mas{flex:none;width:30px;height:30px;border:1px solid var(--line);background:var(--paper);color:var(--muted);
   border-radius:6px;cursor:pointer;font-size:14px;line-height:1}
 .it-mas:hover{border-color:var(--ink);color:var(--ink)}
@@ -1527,40 +1536,40 @@ body.imp-on{overflow:hidden}
 <div id="app"><div class="loading">Cargando…</div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=0.36.1"></script>
-<script src="i18n.js?v=0.36.1"></script>
-<script src="marca.js?v=0.36.1"></script>
-<script src="marcas.js?v=0.36.1"></script>
-<script src="engine.js?v=0.36.1"></script>
-<script src="talent.js?v=0.36.1"></script>
-<script src="pruebas.js?v=0.36.1"></script>
-<script src="envios.js?v=0.36.1"></script>
-<script src="importar.js?v=0.36.1"></script>
-<script src="personas.js?v=0.36.1"></script>
-<script src="correo_vista.js?v=0.36.1"></script>
-<script src="resenas.js?v=0.36.1"></script>
-<script src="clima.js?v=0.36.1"></script>
-<script src="clima_inv.js?v=0.36.1"></script>
-<script src="pdc.js?v=0.36.1"></script>
-<script src="pdc_carga.js?v=0.36.1"></script>
-<script src="bajas.js?v=0.36.1"></script>
-<script src="prl.js?v=0.36.1"></script>
-<script src="curso_datos.js?v=0.36.1"></script>
-<script src="cursos.js?v=0.36.1"></script>
-<script src="formacion.js?v=0.36.1"></script>
-<script src="docs_base.js?v=0.36.1"></script>
-<script src="docs.js?v=0.36.1"></script>
-<script src="arcade.js?v=0.36.1"></script>
-<script src="escape.js?v=0.36.1"></script>
-<script src="ia_datos.js?v=0.36.1"></script>
-<script src="ia.js?v=0.36.1"></script>
-<script src="desarrollo_cat.js?v=0.36.1"></script>
-<script src="desarrollo_inf.js?v=0.36.1"></script>
-<script src="desarrollo_eval.js?v=0.36.1"></script>
-<script src="desarrollo.js?v=0.36.1"></script>
-<script src="hoy.js?v=0.36.1"></script>
-<script src="avisos.js?v=0.36.1"></script>
-<script src="demo.js?v=0.36.1"></script>
-<script src="app.js?v=0.36.1"></script>
+<script src="config.js?v=0.36.2"></script>
+<script src="i18n.js?v=0.36.2"></script>
+<script src="marca.js?v=0.36.2"></script>
+<script src="marcas.js?v=0.36.2"></script>
+<script src="engine.js?v=0.36.2"></script>
+<script src="talent.js?v=0.36.2"></script>
+<script src="pruebas.js?v=0.36.2"></script>
+<script src="envios.js?v=0.36.2"></script>
+<script src="importar.js?v=0.36.2"></script>
+<script src="personas.js?v=0.36.2"></script>
+<script src="correo_vista.js?v=0.36.2"></script>
+<script src="resenas.js?v=0.36.2"></script>
+<script src="clima.js?v=0.36.2"></script>
+<script src="clima_inv.js?v=0.36.2"></script>
+<script src="pdc.js?v=0.36.2"></script>
+<script src="pdc_carga.js?v=0.36.2"></script>
+<script src="bajas.js?v=0.36.2"></script>
+<script src="prl.js?v=0.36.2"></script>
+<script src="curso_datos.js?v=0.36.2"></script>
+<script src="cursos.js?v=0.36.2"></script>
+<script src="formacion.js?v=0.36.2"></script>
+<script src="docs_base.js?v=0.36.2"></script>
+<script src="docs.js?v=0.36.2"></script>
+<script src="arcade.js?v=0.36.2"></script>
+<script src="escape.js?v=0.36.2"></script>
+<script src="ia_datos.js?v=0.36.2"></script>
+<script src="ia.js?v=0.36.2"></script>
+<script src="desarrollo_cat.js?v=0.36.2"></script>
+<script src="desarrollo_inf.js?v=0.36.2"></script>
+<script src="desarrollo_eval.js?v=0.36.2"></script>
+<script src="desarrollo.js?v=0.36.2"></script>
+<script src="hoy.js?v=0.36.2"></script>
+<script src="avisos.js?v=0.36.2"></script>
+<script src="demo.js?v=0.36.2"></script>
+<script src="app.js?v=0.36.2"></script>
 </body>
 </html>

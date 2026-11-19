@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.36.1";
+const APP_VERSION = "0.36.2";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -735,12 +735,14 @@ function vistaPeriodo(t, per) {
       <td class="n inv"><label>Falta (€) ${inp("t", `resultados.${per}.invFalta`, getPath(t, `resultados.${per}.invFalta`), 'inputmode="decimal" class="numin"')}</label>
       <label>Venta (€) ${inp("t", `resultados.${per}.invVenta`, getPath(t, `resultados.${per}.invVenta`), 'inputmode="decimal" class="numin"')}</label></td>
       <td class="n" id="kc-${k.id}-p"></td><td class="n" id="kc-${k.id}-f"></td></tr>`;
-    else h += `<tr><td>${esc(k.nombre)}<small>${esc(k.ayuda)}</small></td><td class="n">${SC.pct(k.peso, 0)}</td>
+    else h += `<tr><td>${esc(k.nombre)}<small>${esc(k.ayuda)}</small><i class="kbar" id="kc-${k.id}-b" hidden aria-hidden="true"><span></span></i></td><td class="n">${SC.pct(k.peso, 0)}</td>
       <td class="n">${o == null || o === "" ? `<span class="muted">Sin objetivo</span>` : esc(o)}</td>
       <td class="n">${inp("t", `resultados.${per}.${k.id}`, getPath(t, `resultados.${per}.${k.id}`), 'inputmode="decimal" class="numin"')}</td>
       <td class="n" id="kc-${k.id}-p"></td><td class="n" id="kc-${k.id}-f"></td></tr>`;
   });
-  h += `</tbody></table></div></fieldset></section>` + selectorPersonas(t);
+  const desde1 = (C.escaladoKPI.find(([, f]) => f >= 1) || [1])[0];
+  h += `</tbody></table></div></fieldset>
+    <p class="hint kbar-ley">La barra compara lo conseguido con el objetivo; la raya marca el 100 %. Desde el ${SC.pct(desde1, 0)} el factor es 1 o más.</p></section>` + selectorPersonas(t);
   const p = persona(t); if (!p) return h;
   const e = ev(p, per), cerr = !!e.cerrado, sc = `e:${p.id}:${per}`;
   // Cada ítem es una fila: nombre, peso y la escala. La pregunta de ayuda y
@@ -766,7 +768,7 @@ function vistaPeriodo(t, per) {
       const abierto = TODO_ABIERTO || obliga || !!txt || ITEMS_ABIERTOS.has(i.id);
       h += `<div class="it ${typeof v === "number" ? "hecho" : ""} ${abierto ? "abierto" : ""}">
         <div class="it-h">
-          <b>${esc(i.nombre)}</b><span class="w num">${SC.pct(i.peso, 0)}</span>
+          <b>${esc(i.nombre)}${typeof v === "number" ? `<small class="it-lv lv${String(v).replace(".", "")}">${esc(nivelCorto(v))}</small>` : ""}</b><span class="w num">${SC.pct(i.peso, 0)}</span>
           <div class="scale" role="radiogroup" aria-label="${esc(i.nombre)}">${C.escala.map(s => `<button role="radio" aria-checked="${v === s.v}" class="lv lv${String(s.v).replace(".", "")} ${v === s.v ? "on" : ""}" data-action="valorar" data-i="${i.id}" data-v="${s.v}" title="${esc(s.t)}">${SC.fmt(s.v, s.v % 1 ? 1 : 0)}</button>`).join("")}</div>
           <button type="button" class="it-mas ${txt ? "lleno" : ""}" data-action="itemMas" data-i="${i.id}"
             title="${abierto ? "Ocultar" : "Ver"} la pregunta y las evidencias" aria-expanded="${abierto}">${txt ? "✎" : "＋"}</button>
@@ -804,12 +806,21 @@ function pintarTicket() {
   else h += `<button class="btn primary block" data-action="cerrar">Cerrar evaluación</button>`;
   el.innerHTML = h + `<button class="btn ghost block" data-action="imprimir">Imprimir informe</button>`;
 }
+// Nombre corto del nivel ("En línea", "Por encima"…) para verlo junto al ítem.
+function nivelCorto(v) { return String(SC.nivel(v) || "").replace(/ (de|con) las expectativas$/, ""); }
+// La barra va del 90 % al 110 % de consecución: la raya del 100 % queda en medio.
+function anchoBarra(pct) { return Math.max(0, Math.min(1, (pct - 0.9) / 0.2)) * 100; }
 function pintarKPIs() {
   const t = tienda(); if (!t || !C.periodos[S.ui.fase]) return;
   C.kpis.forEach(k => {
     const x = SC.calcKPI(k, (t.objetivos || {})[S.ui.fase], (t.resultados || {})[S.ui.fase]);
     const ep = $(`kc-${k.id}-p`), ef = $(`kc-${k.id}-f`); if (!ep) return;
     ep.textContent = x.completo ? SC.pct(x.pct, k.tipo === "inventario" ? 3 : 1) : "–";
+    const eb = $(`kc-${k.id}-b`);
+    if (eb && k.tipo !== "inventario") {
+      eb.hidden = !x.completo;
+      if (x.completo) { const sp = eb.firstChild; sp.style.width = anchoBarra(x.pct).toFixed(1) + "%"; sp.className = x.factor >= 1 ? "ok" : "bajo"; }
+    }
     ef.innerHTML = x.completo ? `<span class="fac f${String(nivelFactor(x.factor)).replace(".", "")}">${SC.fmt(x.factor, 3)}</span>` : (x.error ? `<span class="err">Revisar</span>` : "–");
   });
 }
