@@ -23,8 +23,31 @@ function vcUrl() { return (location.origin + location.pathname).replace(/index\.
 
 /* op = { titulo, modo, info, limite, personas, aj, n (destinatarios),
           ejemplo (nombre de ejemplo), alGuardar(aj), alEnviar(aj), txtEnviar } */
+/* La plantilla se carga como módulo cuando hace falta. Primero la copia que
+   publicar-pages.yml deja en la raíz del sitio; si no está (en local), la
+   del repositorio. */
+let vcCarga = null;
+function cargarPlantillaCorreo() {
+  if (window.CORREO) return Promise.resolve(window.CORREO);
+  if (!vcCarga) vcCarga = (async () => {
+    const v = typeof APP_VERSION !== "undefined" ? APP_VERSION : Date.now();
+    let err = null;
+    for (const u of ["correo_plantilla.js", "supabase/functions/_shared/correo.js"]) {
+      try { const m = await import(new URL(u + "?v=" + v, location.href).href); if (m && m.prepararCorreo) { window.CORREO = m; return m; } }
+      catch (e) { err = e; }
+    }
+    vcCarga = null;
+    throw err || new Error("plantilla vacía");
+  })();
+  return vcCarga;
+}
+window.addEventListener("load", () => { cargarPlantillaCorreo().catch(() => {}); });
 function abrirVistaCorreo(op) {
-  if (!window.CORREO) { alert("No se ha podido cargar la plantilla del correo. Vuelve a cargar la página (Ctrl+F5)."); return; }
+  if (!window.CORREO) {
+    cargarPlantillaCorreo().then(() => abrirVistaCorreo(op))
+      .catch(e => alert("No se ha podido cargar la plantilla del correo (" + ((e && e.message) || e) + "). Vuelve a cargar la página con Ctrl+F5; si sigue, avisa a quien mantiene Pippole con este mensaje."));
+    return;
+  }
   const def = vcFirmaPorDefecto();
   const it = vcItem(op);
   const base = CORREO.textosCorreo(it, def.firma, {});

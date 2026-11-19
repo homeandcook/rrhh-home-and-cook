@@ -37,6 +37,7 @@ jobs:
           # La plantilla del correo: la usa la vista previa antes de enviar
           # (misma ruta que en el repositorio; es solo texto y maqueta).
           mkdir -p _sitio/supabase/functions/_shared && cp supabase/functions/_shared/correo.js _sitio/supabase/functions/_shared/
+          cp supabase/functions/_shared/correo.js _sitio/correo_plantilla.js
           # Nada de SQL, documentación, flujos ni el resto de la función del correo:
           # ya están en el repositorio y no pintan nada en el servidor web.
           touch _sitio/.nojekyll

@@ -55,7 +55,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 
 ## Cómo está hecho
 - **HTML, CSS y JavaScript sin framework ni compilación.** `index.html` lleva todos los estilos y carga los scripts en este orden:
-  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, correo_vista (+ módulo `supabase/functions/_shared/correo.js` como `window.CORREO`), clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
+  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, correo_vista (carga la plantilla del correo como módulo al usarla: `cargarPlantillaCorreo()` → `window.CORREO`), clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
 - **`app.js`**:
   - Estado global `S`, pintado completo con `pintar()` y apartados en el array `MODULOS`.
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
@@ -86,7 +86,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `?codigo=XXXX&r=b0:3` abre directamente con la primera respuesta (correo).
   - Las campañas antiguas (plantillas `clima-*`) se siguen viendo con `pintarPruebas`.
 - **Correo**: Edge Function `supabase/functions/enviar-invitacion` (Deno) que envía con Resend.
-  - **Plantilla compartida** (0.34.0): `supabase/functions/_shared/correo.js` (JavaScript sin tipos: `textosCorreo`, `montarCorreo`, `prepararCorreo`). La importa la función y la web la carga como módulo para la vista previa; `publicar-pages.yml` la copia a la misma ruta del sitio. Cambiar el correo = cambiar ese fichero.
+  - **Plantilla compartida** (0.34.0): `supabase/functions/_shared/correo.js` (JavaScript sin tipos: `textosCorreo`, `montarCorreo`, `prepararCorreo`). La importa la función y la web la carga como módulo para la vista previa; `publicar-pages.yml` la copia a la raíz del sitio como `correo_plantilla.js` (y a su ruta). En local no existe esa copia: el 404 de `correo_plantilla.js` en la consola es normal. Cambiar el correo = cambiar ese fichero.
   - **Vista previa y edición** (0.34.0): `correo_vista.js`, `abrirVistaCorreo(op)` (overlay `#vcOv`, eventos `data-vc*`). Lo editado (`asunto, intro, extra, firma, cargo`) va a `campanas.config.correo` o `dr_ciclos.config.correo`; la función lo lee y lo aplica en todos los envíos.
   - Lee las invitaciones con el JWT del usuario, así que aplican las reglas por fila.
   - Modos (0.31.0): `{ids}` invitaciones con nombre, `{anonimos:[{id,email}]}` anónimas (la dirección no se guarda), `{recordatorio:{campana_id,emails}}` recordatorio general sin código, `{tipo:"desarrollo", ids}`. `info` lleva duración, preguntas y nota de la plantilla (que vive en el navegador). Texto y aspecto por tipo de campaña. Envía con la API por lotes de Resend, máximo 100 por llamada; el tope diario llega como motivo `LIMITE_DIARIO`.
@@ -110,7 +110,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.34.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.34.1**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.
