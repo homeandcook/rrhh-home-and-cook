@@ -161,7 +161,7 @@ function drRecepcion(amb) {
     return e.abierto ? `<span class="tr-tag">Abierto, sin empezar</span>` : e.enviado ? `<span class="tr-tag">Correo enviado · ${esc(new Date(e.enviado).toLocaleDateString("es-ES"))}</span>` : `<span class="tr-tag">Sin enviar</span>`;
   };
   const pend = D.ev.filter(e => !e.entregado);
-  let h = `<section class="tr-card tr-pad"><div class="tr-ch"><div><span class="tr-eyebrow">Responsables</span><h2>Entregas</h2></div><span class="hint">${D.ev.length - pend.length} recibidas · ${pend.length} pendientes</span></div>`;
+  let h = `<section class="tr-card tr-pad"><div class="tr-ch"><div><span class="tr-eyebrow">Responsables</span><h2>Entregas</h2></div><span class="hint">${D.ev.length - pend.length} recibidas · ${pend.length} pendientes ${envioDirecto() ? `<button class="btn small ghost" data-tra="correo">Ver y editar el correo</button>` : ""}</span></div>`;
   if (!D.ev.length) h += `<p class="empty">Todavía no hay responsables en este ciclo. Carga la plantilla aquí debajo${amb === "retail" ? " o genérala desde las tiendas" : ""}.</p>`;
   else h += `<div class="tablewrap"><table class="tr-t"><thead><tr><th>Responsable</th><th>${esc(A.unidad)}</th><th class="n">Personas</th><th>Estado</th><th>Código</th><th></th></tr></thead><tbody>
     ${D.ev.map(e => { const n = D.per.filter(p => p.evaluador_id === e.id && !TR.d(p).baja).length, sen = D.per.filter(p => p.evaluador_id === e.id);
@@ -175,13 +175,30 @@ function drRecepcion(amb) {
     <p class="hint">Es el mismo sistema de códigos que las encuestas de clima y las formaciones: cada responsable entra en www.pippole.es por «Entrar con un código de invitación» y escribe su código. ${envioDirecto() ? "El correo sale desde la plataforma." : "Sin envío desde la plataforma configurado, «Correo» abre tu programa de correo con el texto preparado."}</p>`;
   h += `</section>`;
   if (c.estado === "abierto") {
-    h += `<section class="tr-card tr-pad"><span class="tr-eyebrow">Preparar el ciclo</span><h2>Cargar la plantilla</h2>
-      <p class="hint">Pega desde Excel una fila por persona, con estas columnas en este orden (separadas por tabulador o punto y coma). La primera fila puede ser la cabecera:</p>
+    const pegar = `<p class="hint">Pega desde Excel una fila por persona, con estas columnas en este orden (separadas por tabulador o punto y coma). La primera fila puede ser la cabecera:</p>
       <p class="tr-cols-ej"><code>Nombre (APELLIDOS, NOMBRE)</code><code>Puesto</code><code>${esc(A.unidad)}</code><code>Categoría</code><code>Antigüedad en la compañía (años)</code><code>Antigüedad en el puesto (años)</code><code>ID de empleado</code><code>Responsable</code><code>Correo del responsable</code></p>
       <p class="hint">Categorías: ${A.categorias.map(esc).join(", ")}. Cada responsable recibe un código propio; si ya existe en el ciclo, sus personas se añaden a su equipo.</p>
       <textarea id="drPlantilla" class="tr-mono" rows="6" placeholder="GARCÍA LÓPEZ, ANA;Key Account Manager;Comercial;Técnico / Specialist;6;2;1001;PÉREZ RUIZ, LUIS;luis@empresa.com"></textarea>
-      <div class="tr-dlg-b"><button class="btn primary" data-tra="cargarPlantilla">Cargar</button>${amb === "retail" ? `<button class="btn" data-tra="desdeTiendas">Generar desde las tiendas</button>` : ""}</div>
-      ${amb === "retail" ? `<p class="hint">«Generar desde las tiendas» usa el equipo de cada tienda (Usuarios y tiendas → Tiendas y equipos de tienda): el Regional Manager de la tienda valora al Store Manager y el Store Manager valora al Assistant Store Manager.</p>` : ""}</section>`;
+      <div class="tr-dlg-b"><button class="btn${Array.isArray(S.emp) ? "" : " primary"}" data-tra="cargarPlantilla">Cargar</button></div>`;
+    if (Array.isArray(S.emp)) {
+      const k = "dr-" + amb, Q = selP(k, { tips: amb === "retail" ? ["tiendas"] : ["oficinas", "comerciales", "demostradores"] });
+      const resps = selPElegidos(k, drTieneEquipo), nP = resps.reduce((n, r) => n + drEquipo(r).length, 0);
+      const auto = A.categorias.includes("Manager") ? "Quien tiene equipo a su cargo entra como «Manager»." : "Store Manager o Assistant según el puesto.";
+      h += `<section class="tr-card tr-pad"><span class="tr-eyebrow">Preparar el ciclo</span><h2>Elegir de Personas</h2>
+        <p class="hint">Marca a los responsables que valoran en este ciclo. Cada uno entra con su equipo directo: las personas que lo tienen como «responsable directo» en Personas.</p>
+        ${selPHtml(k, { filtro: drTieneEquipo, etiqueta: "responsables", detalle: e => `${drEquipo(e).length} en su equipo · ${[e.puesto, empGrupo(e)].filter(Boolean).join(" · ")}${e.correo ? "" : " · sin correo"}` })}
+        ${A.categorias.includes("Manager") ? `<label class="dr-cat">Categoría de quien no tiene equipo<select id="drCat">${A.categorias.filter(x => x !== "Manager").map(x => `<option>${esc(x)}</option>`).join("")}</select></label>` : ""}
+        <p class="hint">${auto} La antigüedad sale de la fecha de alta. Lo que falte se completa en la ficha.</p>
+        <div class="tr-dlg-b"><button class="btn primary" data-tra="dePersonas" ${resps.length ? "" : "disabled"}>Añadir ${resps.length} ${resps.length === 1 ? "responsable" : "responsables"} con ${nP} ${nP === 1 ? "persona" : "personas"}</button>
+          ${amb === "retail" ? `<button class="btn" data-tra="desdeTiendas">Generar desde las tiendas</button>` : ""}</div>
+        ${amb === "retail" ? `<p class="hint">«Generar desde las tiendas» añade a cada Regional Manager con los Store Managers de sus tiendas, y a cada Store Manager con su Assistant (de Personas).</p>` : ""}
+        <details class="dr-pegar"><summary>O pegar la plantilla desde Excel</summary>${pegar}</details></section>`;
+      void Q;
+    } else {
+      h += `<section class="tr-card tr-pad"><span class="tr-eyebrow">Preparar el ciclo</span><h2>Cargar la plantilla</h2>${pegar}
+        ${amb === "retail" ? `<div class="tr-dlg-b"><button class="btn" data-tra="desdeTiendas">Generar desde las tiendas</button></div><p class="hint">«Generar desde las tiendas» usa el equipo de cada tienda: el Regional Manager de la tienda valora al Store Manager y el Store Manager valora al Assistant Store Manager.</p>` : ""}
+        <p class="hint">Con Personas en marcha (migración 0.33) podrás elegir a los responsables en lugar de pegar la plantilla.</p></section>`;
+    }
   }
   const voz = D.ev.filter(e => e.encuesta && (e.encuesta.sobra || e.encuesta.falta));
   if (voz.length) h += `<section class="tr-card tr-pad"><div class="tr-ch"><h2>Voz de los responsables</h2><span class="hint">${voz.length} ${voz.length === 1 ? "encuesta recibida" : "encuestas recibidas"}</span></div>
@@ -189,6 +206,16 @@ function drRecepcion(amb) {
     <div><span class="tr-eyebrow">Qué les faltó</span>${voz.filter(e => e.encuesta.falta).map(e => `<blockquote>«${esc(e.encuesta.falta)}» — ${esc(TR.apellidos(e.nombre))}</blockquote>`).join("") || `<p class="hint">—</p>`}</div></div></section>`;
   return h;
 }
+/* ---------- Desde Personas (0.34.0) ---------- */
+const drEquipo = r => empActivos().filter(p => p.responsable_id === r.id);
+const drTieneEquipo = e => empActivos().some(p => p.responsable_id === e.id);
+/* El Talent Review escribe los nombres como «APELLIDOS, NOMBRE» */
+const drNombre = e => (e.apellidos ? `${e.apellidos}, ${e.nombre}` : e.nombre).toLocaleUpperCase("es");
+function drCategoria(p, A, def) {
+  if (A.categorias.includes("Store Manager")) return clEsSM(p) ? "Store Manager" : "Assistant Store Manager";
+  return A.categorias.includes("Manager") && drTieneEquipo(p) ? "Manager" : def;
+}
+function drAnios(f) { if (!f) return null; const d = (Date.now() - Date.parse(f)) / (365.25 * 864e5); return d >= 0 ? Math.round(d * 10) / 10 : null; }
 const drEnlace = () => `${location.origin}${location.pathname}?codigo=`;
 function drMailto(e) {
   const c = drCiclo();
@@ -397,6 +424,14 @@ function drResumen() {
 · Desarrollo: ${pl.length} planes; ${pl.filter(x => x.bud === "Requiere presupuesto").length} requieren presupuesto; ${pl.filter(x => x.pri === "Alta").length} de prioridad alta.
 · Sucesión: ${crit.length} puestos críticos; ${crit.filter(p => TR.d(p).sucExiste !== "Sí").length} sin sucesor identificado.`;
 }
+/* Vista previa del correo del ciclo; lo que se cambia va a dr_ciclos.config.correo */
+function drVistaCorreo(n, alEnviar) {
+  const c = drCiclo(), D = drS(), e0 = D.ev.find(e => !e.entregado) || D.ev[0];
+  abrirVistaCorreo({ titulo: c.nombre, modo: "desarrollo", info: {}, limite: c.fecha_limite, ciclo: true,
+    personas: e0 ? D.per.filter(p => p.evaluador_id === e0.id).length : 0, ejemplo: e0 ? e0.nombre : "", aj: (c.config || {}).correo || {}, n,
+    alGuardar: async aj => { const cfg = Object.assign({}, c.config || {}, { correo: aj }); const r = await sb.from("dr_ciclos").update({ config: cfg }).eq("id", c.id); if (r.error) throw r.error; c.config = cfg; },
+    alEnviar });
+}
 async function drEnviar(ids) {
   if (!ids.length) return toast("Nadie con correo pendiente");
   const D = drS();
@@ -478,8 +513,23 @@ const ACCIONES_DR = {
     const fus = {}; g.forEach(x => { const k = norm(x.resp); if (fus[k]) fus[k].personas.push(...x.personas); else fus[k] = x; });
     await drCrearEquipos(Object.values(fus));
   },
-  async enviarCorreo(b) { await drEnviar([b.dataset.id]); },
-  async enviarTodos() { await drEnviar(drS().ev.filter(e => !e.entregado && e.email).map(e => e.id)); },
+  enviarCorreo(b) { const id = b.dataset.id; drVistaCorreo(1, async () => { await drEnviar([id]); pintar(); }); return false; },
+  enviarTodos() {
+    const D = drS(), ids = D.ev.filter(e => !e.entregado && e.email).map(e => e.id);
+    if (!ids.length) { toast("Nadie con correo pendiente"); return false; }
+    drVistaCorreo(ids.length, async () => { await drEnviar(ids); pintar(); });
+    return false;
+  },
+  correo() { drVistaCorreo(0, null); return false; },
+  async dePersonas() {
+    const D = drS(), amb = D.amb, A = TRC.AMBITO[amb], resps = selPElegidos("dr-" + amb, drTieneEquipo);
+    if (!resps.length) return toast("Marca al menos a un responsable");
+    const def = ($("drCat") || {}).value || A.categorias[A.categorias.length - 1];
+    await drCrearEquipos(resps.map(r => ({ resp: drNombre(r), email: r.correo || "", unidad: r.departamento || r.ubicacion || "", puesto: r.puesto || null,
+      personas: drEquipo(r).map(p => ({ nombre: drNombre(p), puesto: p.puesto || null, departamento: p.departamento || p.ubicacion || null,
+        categoria: drCategoria(p, A, def), ant_compania: drAnios(p.fecha_alta), ant_puesto: null, id_empleado: null })) })));
+    selP("dr-" + amb).pers = []; selP("dr-" + amb).grupos = [];
+  },
   async copiarEnlace(b) { const e = drS().ev.find(x => x.id === b.dataset.id); await drCopiar(`${drEnlace(e)}\nCódigo: ${e.codigo}`, "Enlace y código copiados"); return false; },
   async acuse(b) {
     const e = drS().ev.find(x => x.id === b.dataset.id), ps = drS().per.filter(p => p.evaluador_id === e.id), c = drCiclo();

@@ -293,7 +293,8 @@ function clNueva() {
       <div class="cl-cifras"><div><b>${D.length}</b><small>personas</small></div><div class="on"><b>${conMail}</b><small>por correo</small></div><div><b>${sinMail}</b><small>papeleta</small></div></div>
       ${conMail > 100 ? `<p class="hint">Más de 100 correos: con el plan gratuito del proveedor de correo salen 100 al día y el resto queda pendiente para el día siguiente.</p>` : ""}
       ${sb.demo ? `<p class="hint">Demostración: no sale ningún correo.</p>` : ""}
-      <button class="btn" data-action="clPrevia" data-pl="${pl.id}">Ver cómo la recibirán</button>
+      <button class="btn" data-action="clPrevia" data-pl="${pl.id}">Probar la encuesta</button>
+      <button class="btn" data-action="clCorreoNueva">Ver y editar el correo</button>
       <button class="btn primary" data-action="clCrear" data-enviar="1" ${D.length && envioDirecto() ? "" : "disabled"}>Crear y enviar ahora</button>
       <button class="btn ghost" data-action="clCrear" data-enviar="0" ${D.length ? "" : "disabled"}>Crear sin enviar</button>
       ${!D.length ? `<p class="hint">${N.usarB && N.modoB !== "todas" ? "Marca al menos una ubicación o una persona." : "No hay nadie todavía: elige de Personas o sube un archivo."}</p>` : ""}
@@ -371,7 +372,7 @@ function clDetalle(c) {
       ${Object.entries(unidades).sort((a, b) => a[0].localeCompare(b[0])).map(([u, x]) => `<tr><td>${esc(u)}</td><td class="num">${x.n}</td><td class="num">${x.r}</td>
         <td><span class="cl-barra mini"><i style="width:${Math.round(x.r / x.n * 100)}%"></i></span> ${Math.round(x.r / x.n * 100)} %</td></tr>`).join("")}</tbody></table></div>`
       : `<p class="muted">Todavía no hay códigos.${pend ? " Envía los pendientes para empezar." : ""}</p>`}</section>
-  ${esAdmin() ? `<div class="cl-pie"><button class="btn" data-action="clEstado">${c.estado === "abierta" ? "Cerrar la encuesta" : "Reabrir la encuesta"}</button>
+  ${esAdmin() ? `<div class="cl-pie"><button class="btn" data-action="clCorreo">Ver y editar el correo</button><button class="btn" data-action="clEstado">${c.estado === "abierta" ? "Cerrar la encuesta" : "Reabrir la encuesta"}</button>
     <button class="btn peligro-g" data-action="clBorrar">Borrar la encuesta</button></div>` : ""}`;
 }
 
@@ -460,6 +461,46 @@ function clModelos() {
 }
 
 /* ---------- Acciones ---------- */
+/* Datos para la vista previa del correo */
+function clOpCorreoNueva(N, titulo) {
+  const gptw = N.tipo === "gptw", plId = gptw ? "clima2-gptw" : "clima2-" + N.col;
+  const cfg = { version: 2, encuesta: gptw ? "gptw" : N.col, colectivo: gptw ? null : N.col, parte2: !!N.p2 };
+  return { titulo, modo: "anonima", info: infoCampana({ plantilla: plId, config: cfg, tipo: "clima" }), aj: N.correo || {} };
+}
+function clOpCorreo(c, recordatorio) {
+  return { titulo: c.titulo, modo: recordatorio ? "recordatorio" : "anonima", info: infoCampana(c), aj: (c.config || {}).correo || {} };
+}
+async function clRecordarYa(c, mails) {
+  toast("Enviando…");
+  const lotes = [];
+  for (let i = 0; i < mails.length; i += LOTE) { const t = mails.slice(i, i + LOTE); lotes.push(() => enviarPorLaPlataforma(null, null, { recordatorio: { campana_id: c.id, emails: t } })); }
+  const res = await enviarEnLotes(lotes, "Enviando recordatorios");
+  log(`${res.bien} recordatorios de ${c.titulo}`);
+  pintar(); clAvisoEnvio(Object.assign(res, { total: mails.length }));
+}
+async function clCrearYa(N, plId, titulo, D, enviar) {
+  const gptw = N.tipo === "gptw", conMail = D.filter(x => x.e), sinMail = D.filter(x => !x.e);
+  const cfg = { version: 2, encuesta: gptw ? "gptw" : N.col, colectivo: gptw ? null : N.col, parte2: !!N.p2, cierre: N.cierre || null,
+    pendientes: conMail.map(x => ({ e: x.e, t: x.t, g: x.g, r: x.r })), enviadosA: [], correo: N.correo || {} };
+  const ins = await sb.from("campanas").insert({ tipo: "clima", plantilla: plId, titulo, anio: SC.CONFIG.anio, estado: "abierta", creado_por: yoReal().id, config: cfg }).select().single();
+  if (ins.error) {
+    const falta = /config/.test(ins.error.message || "");
+    alert(falta ? "Falta un cambio en la base de datos: ejecuta supabase/migracion_0.32.sql en el SQL Editor de Supabase y vuelve a intentarlo." : "No se ha podido crear la encuesta: " + traducirError(ins.error));
+    await recargarPruebas(); pintar(); return;
+  }
+  const c = ins.data;
+  if (sinMail.length) {
+    const filas = sinMail.map(p => ({ campana_id: c.id, tienda_id: p.t || null, grupo: p.g || null, responsable: cfg.parte2 ? (p.r || null) : null, codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
+    const r2 = await sb.from("invitaciones").insert(filas);
+    if (r2.error) alert("La encuesta está creada, pero no se han podido generar las papeletas: " + traducirError(r2.error));
+  }
+  let res = null;
+  if (enviar && conMail.length) { toast("Enviando…"); res = await clEnviarPendientes(c); }
+  log(`Encuesta de clima creada: ${titulo}`);
+  S.cn = null; S.campana = c.id; S.tab = "clcurso";
+  await recargarPruebas(); pintar();
+  if (res) clAvisoEnvio(res); else toast("Encuesta creada");
+}
 const ACCIONES_CLIMA = {
   clAbrir(b) { S.campana = b.dataset.id; window.scrollTo(0, 0); },
   clVolver() { S.campana = null; },
@@ -488,52 +529,47 @@ const ACCIONES_CLIMA = {
     const titulo = (N.titulo || `Clima ${SC.CONFIG.anio} · ${gptw ? "Toda la empresa" : CL.COLECTIVOS[N.col].n}`).trim();
     if (!D.length) return false;
     const conMail = D.filter(x => x.e), sinMail = D.filter(x => !x.e);
-    const ok = await confirmar({ titulo: enviar ? `Crear y enviar «${titulo}»` : `Crear «${titulo}»`, ok: enviar ? "Crear y enviar" : "Crear",
-      texto: `${conMail.length} ${conMail.length === 1 ? "persona recibirá" : "personas recibirán"} su código por correo${enviar ? " ahora" : " cuando pulses «Enviar los pendientes»"}${sinMail.length ? ` y se generarán ${sinMail.length} ${sinMail.length === 1 ? "papeleta" : "papeletas"} para quien no tiene correo` : ""}. Es anónima.` });
+    if (enviar && conMail.length) {
+      // Primero el correo: se ve tal cual llegará y se puede retocar
+      abrirVistaCorreo(Object.assign(clOpCorreoNueva(N, titulo), { n: conMail.length,
+        txtEnviar: `Crear y enviar ${conMail.length} ${conMail.length === 1 ? "correo" : "correos"}${sinMail.length ? ` (+${sinMail.length} ${sinMail.length === 1 ? "papeleta" : "papeletas"})` : ""}`,
+        alGuardar: aj => { N.correo = aj; }, alEnviar: () => clCrearYa(N, plId, titulo, D, true) }));
+      return false;
+    }
+    const ok = await confirmar({ titulo: `Crear «${titulo}»`, ok: "Crear",
+      texto: `${conMail.length} ${conMail.length === 1 ? "persona recibirá" : "personas recibirán"} su código por correo cuando pulses «Enviar los pendientes»${sinMail.length ? ` y se generarán ${sinMail.length} ${sinMail.length === 1 ? "papeleta" : "papeletas"} para quien no tiene correo` : ""}. Es anónima.` });
     if (!ok) return false;
     b.disabled = true; b.textContent = "Creando…";
-    const cfg = { version: 2, encuesta: gptw ? "gptw" : N.col, colectivo: gptw ? null : N.col, parte2: !!N.p2, cierre: N.cierre || null,
-      pendientes: conMail.map(x => ({ e: x.e, t: x.t, g: x.g, r: x.r })), enviadosA: [] };
-    const ins = await sb.from("campanas").insert({ tipo: "clima", plantilla: plId, titulo, anio: SC.CONFIG.anio, estado: "abierta", creado_por: yoReal().id, config: cfg }).select().single();
-    if (ins.error) {
-      const falta = /config/.test(ins.error.message || "");
-      alert(falta ? "Falta un cambio en la base de datos: ejecuta supabase/migracion_0.32.sql en el SQL Editor de Supabase y vuelve a intentarlo." : "No se ha podido crear la encuesta: " + traducirError(ins.error));
-      await recargarPruebas(); pintar(); return false;
-    }
-    const c = ins.data;
-    if (sinMail.length) {
-      const filas = sinMail.map(p => ({ campana_id: c.id, tienda_id: p.t || null, grupo: p.g || null, responsable: cfg.parte2 ? (p.r || null) : null, codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
-      const r2 = await sb.from("invitaciones").insert(filas);
-      if (r2.error) alert("La encuesta está creada, pero no se han podido generar las papeletas: " + traducirError(r2.error));
-    }
-    let res = null;
-    if (enviar && conMail.length) res = await clEnviarPendientes(c);
-    log(`Encuesta de clima creada: ${titulo}`);
-    S.cn = null; S.campana = c.id; S.tab = "clcurso";
-    await recargarPruebas(); pintar();
-    if (res) clAvisoEnvio(res); else toast("Encuesta creada");
+    await clCrearYa(N, plId, titulo, D, false);
     return false;
   },
-  async clEnviarPend(b) {
-    const c = S.campanas.find(x => x.id === S.campana), n = (clCfg(c).pendientes || []).length;
-    const ok = await confirmar({ titulo: `Enviar ${n} ${n === 1 ? "correo" : "correos"}`, ok: "Enviar ahora", texto: "Cada persona recibe un código anónimo. El correo sale y no se puede deshacer." });
-    if (!ok) return false;
-    b.disabled = true; b.textContent = "Enviando…";
-    const res = await clEnviarPendientes(c);
-    log(`${res.bien} correos enviados de ${c.titulo}`);
-    await recargarPruebas(); pintar(); clAvisoEnvio(res); return false;
+  clCorreoNueva() {
+    const N = clN(), gptw = N.tipo === "gptw", titulo = (N.titulo || `Clima ${SC.CONFIG.anio} · ${gptw ? "Toda la empresa" : CL.COLECTIVOS[N.col].n}`).trim();
+    abrirVistaCorreo(Object.assign(clOpCorreoNueva(N, titulo), { n: clDestinatarios(N).filter(x => x.e).length, alGuardar: aj => { N.correo = aj; } }));
+    return false;
   },
-  async clRecordar(b) {
+  clCorreo() {
+    const c = S.campanas.find(x => x.id === S.campana); if (!c) return false;
+    abrirVistaCorreo(Object.assign(clOpCorreo(c), { alGuardar: aj => guardarCorreoCampana(c, aj) }));
+    return false;
+  },
+  async clEnviarPend() {
+    const c = S.campanas.find(x => x.id === S.campana), n = (clCfg(c).pendientes || []).length;
+    if (!n) return false;
+    abrirVistaCorreo(Object.assign(clOpCorreo(c), { n, alGuardar: aj => guardarCorreoCampana(c, aj), alEnviar: async () => {
+      toast("Enviando…");
+      const res = await clEnviarPendientes(c);
+      log(`${res.bien} correos enviados de ${c.titulo}`);
+      await recargarPruebas(); pintar(); clAvisoEnvio(res);
+    } }));
+    return false;
+  },
+  async clRecordar() {
     const c = S.campanas.find(x => x.id === S.campana), mails = clCfg(c).enviadosA || [];
-    const ok = await confirmar({ titulo: `Recordatorio a ${mails.length} ${mails.length === 1 ? "persona" : "personas"}`, ok: "Enviar recordatorio",
-      texto: "Como es anónima, no se sabe quién ha respondido: el recordatorio llega a todas las personas invitadas, sin código. Quien ya respondió puede ignorarlo." });
-    if (!ok) return false;
-    b.disabled = true; b.textContent = "Enviando…";
-    const lotes = [];
-    for (let i = 0; i < mails.length; i += LOTE) { const t = mails.slice(i, i + LOTE); lotes.push(() => enviarPorLaPlataforma(null, null, { recordatorio: { campana_id: c.id, emails: t } })); }
-    const res = await enviarEnLotes(lotes, "Enviando recordatorios");
-    log(`${res.bien} recordatorios de ${c.titulo}`);
-    pintar(); clAvisoEnvio(Object.assign(res, { total: mails.length })); return false;
+    if (!mails.length) return false;
+    abrirVistaCorreo(Object.assign(clOpCorreo(c, true), { n: mails.length, txtEnviar: `Enviar el recordatorio a ${mails.length}`,
+      alGuardar: aj => guardarCorreoCampana(c, aj), alEnviar: () => clRecordarYa(c, mails) }));
+    return false;
   },
   clPapeletas() {
     const c = S.campanas.find(x => x.id === S.campana), D = clDatos(c);

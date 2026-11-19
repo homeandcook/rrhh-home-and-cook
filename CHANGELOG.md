@@ -287,6 +287,20 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.34.0 · 19/11/2026 · **SQL: no** · se vuelve a desplegar la función de correo
+- **Personas reúne la plantilla, los usuarios y las tiendas.** Cuatro pestañas: Plantilla, Usuarios con acceso, Tiendas y Actividad (las tres últimas, solo RR.HH.). Desaparece el apartado «Usuarios y tiendas»; el menú del nombre lleva a Usuarios con acceso.
+- **Todo se elige de Personas**:
+  - **Desarrollo**: «Elegir de Personas» marca a los responsables, que entran con su equipo directo (quien los tiene como responsable). Nombre en formato «APELLIDOS, NOMBRE», categoría «Manager» para quien tiene equipo (en retail, Store Manager o Assistant según el puesto) y antigüedad desde la fecha de alta. Pegar desde Excel sigue disponible, plegado.
+  - **Formaciones y demás campañas** («Enviar a muchas personas a la vez»): por tipología, por ubicación o persona a persona, también oficinas, comerciales y demostradores. Antes, solo tiendas.
+  - **Scorecard**: «Traer de Personas» añade al Store Manager y al Assistant de la tienda.
+- **Ver y editar el correo antes de enviarlo**, en encuestas de clima, formaciones, campañas y Desarrollo:
+  - Vista previa exacta, en ordenador y en móvil, con un código de ejemplo.
+  - Se pueden cambiar el asunto, el texto principal, una nota destacada (por ejemplo, la fecha límite), la firma y el cargo. El código, el botón y «Cómo funciona», no.
+  - Los cambios se guardan en la campaña (`campanas.config.correo`) o en el ciclo (`dr_ciclos.config.correo`) y valen para todos sus envíos y recordatorios. Un Regional Manager ve el correo pero no lo cambia.
+  - La plantilla del correo pasa a `supabase/functions/_shared/correo.js`, que comparten la función de envío y la web. Sin cambios, el correo sale igual que antes.
+- **Scorecard vuelve a verse**, con sus pestañas Scorecard y Consolidado. Talent Matrix, Mapa 9-Box, Onboarding y Offboarding siguen en el código, sin pestaña (el talento va en Desarrollo).
+- Encuestas de clima: «Ver cómo la recibirán» pasa a llamarse «Probar la encuesta», junto a «Ver y editar el correo».
+
 ## 0.33.1 · 19/11/2026 · **SQL: no**
 - **Importar usuarios desde Excel o Word** (Usuarios y tiendas → «Importar desde Excel o Word»), con la misma pantalla de revisión que Personas.
   - Reconoce nombre (o nombre y apellidos juntos), usuario, rol («Regional Manager», «RR.HH.», «Administrador», «Marketing»…), zona, correo y contraseña.

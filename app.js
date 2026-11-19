@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.33.1";
+const APP_VERSION = "0.34.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -28,7 +28,7 @@ const MODULOS_MARKETING = ["pdc"];
 /* Pippole se centra de momento en tres bloques: Encuestas de clima, Formación
    de IA y Desarrollo. El resto de apartados sigue en el código, oculto: para
    recuperar uno basta con quitarlo de esta lista. */
-const MODULOS_OCULTOS = ["evaluacion", "prl", "pdc", "docs", "hometime"];
+const MODULOS_OCULTOS = ["prl", "pdc", "docs", "hometime"];
 const puedeVer = id => !MODULOS_OCULTOS.includes(id) && (!esMarketing() || MODULOS_MARKETING.includes(id));
 const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
 /* «Ver como»: RR.HH. puede ver la plataforma tal como la ve otro usuario.
@@ -330,10 +330,14 @@ const MODULOS = [
   { id: "desarrollo", t: "Desarrollo", grupo: "activo",
     d: "Talent Review y plan de desarrollo: cada responsable valora a su equipo y RR.HH. calibra.",
     tabs: [["oficina", "Oficina"], ["retail", "Retail"]] },
-  { id: "evaluacion", t: "Evaluación y Desarrollo", grupo: "activo",
-    d: "Objetivos y bonus del Store Manager, mapa de talento de la red, y las encuestas de incorporación y de salida.",
-    tabs: [["eval", "Scorecard"], ["consolidado", "Consolidado", true], ["talent", "Talent Matrix"],
-           ["mapa", "Mapa 9-Box", true], ["onboarding", "Onboarding"], ["offboarding", "Offboarding"]] },
+  /* Scorecard (visible desde la 0.34.0). Talent Matrix, Mapa 9-Box,
+     Onboarding y Offboarding siguen en el código, sin pestaña: el talento
+     se lleva ahora en Desarrollo. Para recuperarlas, añadirlas aquí:
+     ["talent", "Talent Matrix"], ["mapa", "Mapa 9-Box", true],
+     ["onboarding", "Onboarding"], ["offboarding", "Offboarding"] */
+  { id: "evaluacion", t: "Scorecard", grupo: "activo",
+    d: "Objetivos y bonus del Store Manager y del Assistant Store Manager: objetivos por tienda, resultados, cierre a 6 meses y anual, y consolidado de la red.",
+    tabs: [["eval", "Scorecard"], ["consolidado", "Consolidado", true]] },
   { id: "prl", t: "PRL", grupo: "activo",
     d: "Salud y seguridad de la red: bajas y absentismo, formación y revisiones de prevención, y el clima de las tiendas, que es donde se ven los riesgos psicosociales.",
     tabs: [["bajas", "Bajas y absentismo"], ["prevencion", "Prevención"], ["clima", "Clima"]] },
@@ -343,14 +347,15 @@ const MODULOS = [
     d: "Formación en inteligencia artificial: cursos, envío con código y seguimiento de quién la ha hecho.",
     tabs: [["cursos", "Cursos"], ["envios", "Enviar"], ["seguimiento", "Seguimiento"]] },
   { id: "personas", t: "Personas", grupo: "activo",
-    d: "La plantilla de la empresa: altas de una en una o importando un Excel, con tipología, ubicación y responsable. De aquí salen los destinatarios de las encuestas." },
+    d: "La plantilla, los usuarios con acceso y las tiendas, en un solo sitio. De aquí salen los destinatarios de encuestas, Desarrollo y formaciones.",
+    tabs: [["pplantilla", "Plantilla"], ["paccesos", "Usuarios con acceso", true], ["ptiendas", "Tiendas", true], ["pactividad", "Actividad", true]] },
   { id: "docs", t: "Process Book y Políticas", grupo: "activo",
     d: "Los procesos de tienda paso a paso y las normas que el equipo consulta a diario, en un solo sitio.",
     tabs: [["process", "Process Book"], ["politica", "Políticas"]] },
   { id: "hometime", t: "HomeTime", grupo: "externo", enlace: "hometime", d: "" }
 ];
 /* Qué apartado y qué pestaña corresponden a cada cuestionario con código */
-const TAB_TXT = { clnueva: "clnueva", clcurso: "clcurso", clanteriores: "clanteriores", clresultados: "clresultados", clmodelos: "clmodelos", envios: "envios", seguimiento: "seguimiento", eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
+const TAB_TXT = { pplantilla: "pplantilla", paccesos: "paccesos", ptiendas: "ptiendas", pactividad: "pactividad", clnueva: "clnueva", clcurso: "clcurso", clanteriores: "clanteriores", clresultados: "clresultados", clmodelos: "clmodelos", envios: "envios", seguimiento: "seguimiento", eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
   onboarding: "onboarding", offboarding: "offboarding", bajas: "bajas", prevencion: "prevencion",
   clima: "clima", cursos: "cursos", psico: "psico", process: "process", politica: "politica" };
 const TAB_PRUEBA = { onboarding: ["evaluacion", "onboarding"], offboarding: ["evaluacion", "offboarding"],
@@ -372,6 +377,8 @@ function tabActual() {
 function modActual() { return MODULOS.find(m => m.id === S.modulo); }
 function pintar() {
   if (!S.me) return;
+  // «Usuarios y tiendas» vive dentro de Personas desde la 0.34
+  if (S.modulo === "gestion") { S.modulo = "personas"; if (!["paccesos", "ptiendas", "pactividad"].includes(S.tab)) S.tab = "paccesos"; S.indice = false; }
   const m = modActual();
   const tabs = m && m.tabs ? m.tabs.filter(x => !x[2] || esAdmin()) : [];
   $("app").innerHTML = `<header class="top">
@@ -391,9 +398,8 @@ function pintar() {
     ${S.real ? `<div class="como-bar"><span>Estás viendo la plataforma como <b>${esc(S.me.nombre)}</b> (${esc(nombreRol())}). Lo que guardes queda a nombre de ${esc(S.real.nombre)}.</span><button class="btn sm" data-action="verComo" data-id="">Volver a mi usuario</button></div>` : ""}
     <div id="vista"></div><div id="print"></div>`;
   pintarEstado();
-  if (S.modulo === "gestion" && esAdmin()) return pintarGestion();
   if (S.modulo === "tienda") return pintarTiendaFoco();
-  if (S.modulo === "personas") return pintarPersonas();
+  if (S.modulo === "personas" && !(S.indice && tabs.length > 1)) { const tp = tabActual(); return tp === "pplantilla" || !esAdmin() ? pintarPersonas() : pintarGestion(tp); }
   if (S.modulo === "clima" && !(S.indice && tabs.length > 1)) return pintarClima(tabActual());
   if (S.modulo === "desarrollo" && !(S.indice && tabs.length > 1)) return pintarDesarrollo(tabActual());
   if (S.indice && tabs.length > 1) return pintarIndice(m, tabs);
@@ -422,7 +428,7 @@ function pintar() {
    ==================================================================== */
 function etiquetaAtras() {
   if (S.tiendaFoco && S.modulo !== "tienda" && S.modulo !== "inicio") { const x = S.tiendas.find(y => y.id === S.tiendaFoco); if (x) return x.nombre || "Tienda"; }
-  if (S.indice || S.modulo === "gestion") return t("inicio");
+  if (S.indice) return t("inicio");
   const m = modActual();
   const n = m && m.tabs ? m.tabs.filter(x => !x[2] || esAdmin()).length : 0;
   return n > 1 ? modTxt(m.id, 0) : t("inicio");
@@ -446,6 +452,10 @@ function resumenTab(id) {
   };
   const personas = () => S.tiendas.reduce((a, t2) => a + t2.personas.length, 0);
   try {
+    if (id === "pplantilla") return Array.isArray(S.emp) ? `${empActivos().length} personas activas` : "Falta la migración 0.33";
+    if (id === "paccesos") return `${S.perfiles.length} ${S.perfiles.length === 1 ? "usuario" : "usuarios"}`;
+    if (id === "ptiendas") return `${S.tiendas.length} ${S.tiendas.length === 1 ? "tienda" : "tiendas"}`;
+    if (id === "pactividad") return S.actividad.length ? "Último: " + new Date(S.actividad[0].fecha).toLocaleDateString("es-ES") : "Sin actividad";
     if (id === "eval") { const c = S.tiendas.reduce((a, t2) => a + t2.personas.filter(p => ((p.evals || {}).fy || {}).cerrado).length, 0); return `${c} de ${personas()} cierres anuales`; }
     if (id === "consolidado") return `${S.tiendas.length} ${S.tiendas.length === 1 ? "tienda" : "tiendas"} en una tabla`;
     if (id === "talent") { const f = S.tiendas.flatMap(t2 => t2.personas.map(p => SC.talent(t2, p))); return `${f.filter(x => x.cerrado).length} de ${f.length} fichas cerradas`; }
@@ -601,13 +611,15 @@ function pintarInicio() {
     ${bloqueMisTiendas()}
     ${bloqueHoy(AV)}
     <h2 class="grupo">${t("enMarcha")}</h2><div class="cards">${enMarcha.map(tarjeta).join("")}</div>
-    ${esAdmin() ? `<button class="adminbar" data-action="modulo" data-m="gestion">
-      <span class="adminbar-t"><b>${t("gestionUsuarios")}</b><small>${esc(modTxt("gestion", 1))}</small></span>
-      <span class="adminbar-f">${S.perfiles.length} ${S.perfiles.length === 1 ? "usuario" : "usuarios"} · ${S.tiendas.length} ${S.tiendas.length === 1 ? "tienda" : "tiendas"} →</span></button>` : ""}
     ${pendientes.length ? `<h2 class="grupo">${t("enPreparacion")}</h2><div class="cards">${pendientes.map(tarjeta).join("")}</div>` : ""}
     ${bandaMarcas()}</div>`;
 }
 /* =================== Evaluaciones =================== */
+/* Store Manager y Assistant de la tienda en Personas (0.34.0) */
+function scCandidatos(t) {
+  if (!Array.isArray(S.emp) || !t) return [];
+  return empActivos().filter(e => e.tienda_id === t.id && (clEsSM(e) || /assist|asistente|adjunt|segund/i.test(e.puesto || "")));
+}
 function estadoTienda(t) {
   const f = per => {
     if (!t.personas.length) return "vacio";
@@ -646,7 +658,7 @@ function pintarModulo(modulo, rotulo) {
   if (modulo === "scorecard" && S.ui.fase === "reglas") { m.innerHTML = cab + vistaReglas(); return; }
   if (!t) {
     m.innerHTML = cab + `<div class="empty big"><h1>${esc(rotulo || modActual().t)}</h1><p>${S.tiendas.length ? "Elige una tienda en la lista para trabajar en ella." : esAdmin() ? "Empieza creando los usuarios de los Regional Managers y sus tiendas." : "Cuando RR.HH. te asigne tiendas aparecerán aquí."}</p>
-      ${esAdmin() && !S.tiendas.length ? `<button class="btn primary" data-action="modulo" data-m="gestion">Ir a Usuarios y tiendas</button>` : ""}</div>`;
+      ${esAdmin() && !S.tiendas.length ? `<button class="btn primary" data-action="irPersonasTab" data-v="ptiendas">Ir a Personas → Tiendas</button>` : ""}</div>`;
     return;
   }
   // En pantallas estrechas el listado lateral de 21 tiendas tapaba el trabajo:
@@ -674,7 +686,8 @@ function vistaObjetivos(t) {
   h += `</tbody></table></div></fieldset><div class="actions">
     ${bloq ? `<button class="btn" data-action="editarObjetivos">Editar objetivos</button>`
            : `<button class="btn" data-action="copiarObjetivos">Copiar 6 meses a anual</button><button class="btn primary" data-action="validarObjetivos">Validar objetivos</button>`}</div></section>`;
-  h += `<section class="card"><div class="card-h"><h2>Equipo evaluado</h2><button class="btn small" data-action="nuevaPersona">Añadir persona</button></div>`;
+  const cand = scCandidatos(t).filter(e => !t.personas.some(p => p.emp_id === e.id || norm(p.nombre) === norm(empNombre(e))));
+  h += `<section class="card"><div class="card-h"><h2>Equipo evaluado</h2><div class="page-h-b">${cand.length ? `<button class="btn small primary" data-action="scDePersonas">Traer de Personas (${cand.length})</button>` : ""}<button class="btn small" data-action="nuevaPersona">Añadir a mano</button></div></div>`;
   if (!t.personas.length) h += `<p class="empty">Añade al Store Manager y, si lo hay, al Assistant Store Manager.</p>`;
   else {
     h += `<div class="tablewrap"><table class="people-t"><thead><tr><th>Nombre</th><th>Puesto</th><th class="n">% del año en el puesto</th><th class="n">Bonus máximo</th><th></th></tr></thead><tbody>`;
@@ -925,11 +938,15 @@ function csv() {
 }
 
 /* =================== Usuarios y tiendas (admin) =================== */
-function pintarGestion() {
+function pintarGestion(parte) {
+  parte = parte || "paccesos";
   const rms = S.perfiles.filter(p => p.rol === "rm");
   const nT = id => S.tiendas.filter(t => t.rm_id === id).length;
-  let h = `<div class="page"><h1>Usuarios y tiendas</h1>
-  <section class="card"><div class="card-h"><h2>Usuarios</h2><button class="btn primary small" data-action="impUsuarios">Importar desde Excel o Word</button></div>
+  const titulo = { paccesos: "Usuarios con acceso", ptiendas: "Tiendas", pactividad: "Actividad" }[parte];
+  const sub = { paccesos: "Quien entra en la plataforma con usuario y contraseña: RR.HH., Regional Managers y Marketing. El resto de la plantilla no tiene usuario: recibe sus códigos por correo.",
+    ptiendas: `Las tiendas de ${C.anio} y su Regional Manager. Las personas de cada tienda se llevan en la Plantilla.`, pactividad: "Lo último que se ha hecho en la plataforma y quién." }[parte];
+  let h = `<div class="page"><div class="page-h"><div><h1>${titulo}</h1><p class="muted">${sub}</p></div></div>
+  ${parte !== "paccesos" ? "" : `<section class="card"><div class="card-h"><h2>Usuarios</h2><button class="btn primary small" data-action="impUsuarios">Importar desde Excel o Word</button></div>
   <div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Zona</th><th class="n">Tiendas</th><th>Acceso</th><th></th></tr></thead><tbody>
   ${S.perfiles.map(p => {
     const yo = p.id === S.me.id;
@@ -947,9 +964,9 @@ function pintarGestion() {
     <label>Rol<select name="rol"><option value="rm">Regional Manager</option><option value="marketing">Retail Marketing (solo KPIs y mystery)</option><option value="admin">Administrador</option></select></label>
     <label>Zona<input name="zona" placeholder="Opcional"></label>
     <button class="btn" type="submit">Crear usuario</button></form>
-  <p class="hint">Para crear muchos a la vez, usa «Importar desde Excel o Word»: el usuario y la contraseña se generan si el archivo no los trae. Comunica a cada persona su usuario y contraseña inicial; puede cambiarla desde su nombre, arriba a la derecha. Desactivar un usuario le corta el acceso sin borrar sus datos.</p></section>
+  <p class="hint">Para crear muchos a la vez, usa «Importar desde Excel o Word»: el usuario y la contraseña se generan si el archivo no los trae. Comunica a cada persona su usuario y contraseña inicial; puede cambiarla desde su nombre, arriba a la derecha. Desactivar un usuario le corta el acceso sin borrar sus datos.</p></section>`}
 
-  <section class="card"><div class="card-h"><h2>Tiendas ${C.anio}</h2></div>
+  ${parte !== "ptiendas" ? "" : `<section class="card"><div class="card-h"><h2>Tiendas ${C.anio}</h2></div>
   <div class="tablewrap"><table><thead><tr><th>Tienda</th><th>Código</th><th>Regional Manager</th><th class="n">Personas</th><th>Objetivos</th><th></th></tr></thead><tbody>
   ${S.tiendas.map(t => `<tr><td>${esc(t.nombre || "Sin nombre")}</td><td>${esc(t.codigo)}</td>
     <td><select data-asignar="${t.id}"><option value="">Sin asignar</option>${rms.map(r => `<option value="${r.id}" ${t.rm_id === r.id ? "selected" : ""}>${esc(r.nombre)}${r.activo ? "" : " (desactivado)"}</option>`).join("")}</select></td>
@@ -965,14 +982,14 @@ function pintarGestion() {
     <button class="btn small" data-action="cargarRed">Crear las que faltan</button>
     Se crean sin asignar; después repartes con el desplegable de cada una.</p>` : ""}</section>
 
-  ${bloqueEquipos()}
+  ${Array.isArray(S.emp) ? "" : bloqueEquipos()}`}
 
-  <section class="card"><h2>Actividad reciente</h2><div class="tablewrap act"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th></tr></thead><tbody>
+  ${parte !== "pactividad" ? "" : `<section class="card"><h2>Actividad reciente</h2><div class="tablewrap act"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th></tr></thead><tbody>
   ${S.actividad.length ? S.actividad.map(a => `<tr><td class="num">${new Date(a.fecha).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc((perfil(a.usuario_id) || {}).nombre || "–")}</td><td>${esc(a.accion)}</td></tr>`).join("") : `<tr><td colspan="3" class="muted">Sin actividad todavía.</td></tr>`}
-  </tbody></table></div></section></div>`;
+  </tbody></table></div></section>`}</div>`;
   $("vista").innerHTML = h;
-  $("formUsuario").addEventListener("submit", crearUsuario);
-  $("formTienda").addEventListener("submit", crearTienda);
+  if ($("formUsuario")) $("formUsuario").addEventListener("submit", crearUsuario);
+  if ($("formTienda")) $("formTienda").addEventListener("submit", crearTienda);
   const fe = $("formEquipo"); if (fe) fe.addEventListener("submit", anadirAEquipo);
 }
 async function crearUsuario(ev) {
@@ -1120,6 +1137,13 @@ document.addEventListener("click", async e => {
     abrirEval() { S.modulo = "evaluacion"; S.tab = "eval"; S.ui.t = b.dataset.t; S.ui.p = b.dataset.p; S.ui.fase = S.f.per; },
     fase() { S.ui.fase = b.dataset.f; },
     selPersona() { S.ui.p = b.dataset.id; },
+    scDePersonas() {
+      const ya = new Set(t.personas.map(p => p.emp_id).filter(Boolean)), nom = new Set(t.personas.map(p => norm(p.nombre)));
+      const nuevos = scCandidatos(t).filter(e => !ya.has(e.id) && !nom.has(norm(empNombre(e))));
+      if (!nuevos.length) { toast("Ya están todos los de Personas"); return false; }
+      nuevos.forEach(e => t.personas.push({ id: SC.uid(), emp_id: e.id, nombre: empNombre(e), puesto: clEsSM(e) ? "SM" : "ASM", prorrata: 100, evals: {}, pdi: {} }));
+      log(`${nuevos.length} ${nuevos.length === 1 ? "persona traída" : "personas traídas"} de Personas al Scorecard de ${t.nombre}`, t); guardar(t);
+    },
     nuevaPersona() { const np = { id: SC.uid(), nombre: "", puesto: t.personas.some(p => p.puesto === "SM") ? "ASM" : "SM", prorrata: 100, evals: {}, pdi: {} }; t.personas.push(np); S.ui.p = np.id; guardar(t); },
     borrarPersona() { const p = t.personas.find(x => x.id === b.dataset.id); if (!confirm(`¿Eliminar a ${p.nombre || "esta persona"} y sus evaluaciones?`)) return false; t.personas = t.personas.filter(x => x !== p); log(`Baja de una persona en ${t.nombre}`, t); guardar(t); },
     copiarObjetivos() { t.objetivos.fy = Object.assign({}, t.objetivos.fy, t.objetivos.s1); guardar(t); toast("Objetivos anuales copiados del seguimiento de 6 meses"); },
@@ -1157,6 +1181,7 @@ document.addEventListener("click", async e => {
     orden() { if (S.f.orden === b.dataset.k) S.f.dir *= -1; else { S.f.orden = b.dataset.k; S.f.dir = ["bonus", "nota", "cual", "cuant"].includes(b.dataset.k) ? -1 : 1; } },
     csv() { csv(); return false; },
     impUsuarios() { if (!esAdmin()) return false; abrirImportador("usuarios"); return false; },
+    irPersonasTab() { S.modulo = "personas"; S.tab = b.dataset.v; S.indice = false; window.scrollTo(0, 0); },
     async toggleActivo() {
       const p = perfil(b.dataset.id);
       if (p.activo && !confirm(`¿Desactivar a ${p.nombre}? No podrá entrar hasta que lo reactives. Sus tiendas y datos se conservan.`)) return false;

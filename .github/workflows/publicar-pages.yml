@@ -34,7 +34,10 @@ jobs:
           cp *.png favicon.svg _sitio/
           mkdir -p _sitio/img && cp img/*.jpg _sitio/img/
           mkdir -p _sitio/fonts && cp fonts/*.woff2 _sitio/fonts/
-          # Nada de SQL, documentación, flujos ni la función del correo:
+          # La plantilla del correo: la usa la vista previa antes de enviar
+          # (misma ruta que en el repositorio; es solo texto y maqueta).
+          mkdir -p _sitio/supabase/functions/_shared && cp supabase/functions/_shared/correo.js _sitio/supabase/functions/_shared/
+          # Nada de SQL, documentación, flujos ni el resto de la función del correo:
           # ya están en el repositorio y no pintan nada en el servidor web.
           touch _sitio/.nojekyll
           ls -1 _sitio | head -40

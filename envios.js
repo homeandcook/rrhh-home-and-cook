@@ -73,22 +73,32 @@ const claveAnon = id => "pp-anon-" + id;
 function anonEnviados(id) { try { return JSON.parse(localStorage.getItem(claveAnon(id)) || "[]"); } catch (e) { return []; } }
 function anonGuardar(id, mails) { try { localStorage.setItem(claveAnon(id), JSON.stringify([...new Set(anonEnviados(id).concat(mails))])); } catch (e) {} }
 
+/* Quién entra: desde la 0.34, de Personas (tipología, ubicación o persona);
+   sin la migración 0.33, de los equipos de tienda como antes. */
+const masivoDePersonas = () => Array.isArray(S.emp);
+function personasMasivo() {
+  if (masivoDePersonas()) {
+    const tiendas = new Map((S.todas && S.todas.length ? S.todas : S.tiendas).map(t => [t.id, t]));
+    return selPElegidos("env").map(e => ({ t: tiendas.get(e.tienda_id) || null, x: { nombre: empNombre(e), puesto: e.puesto, email: e.correo || "" } }));
+  }
+  return tiendasMasivo().flatMap(t => equipoDe(t).map(x => ({ t, x })));
+}
 function planMasivo(c, pl) {
-  const invs = invitacionesDe(c.id), ts = tiendasMasivo();
-  const p = { tiendas: ts.length, personas: 0, sinCorreo: 0, nuevos: [], enviar: [], yaEnviados: 0, respondidos: 0 };
+  const invs = invitacionesDe(c.id), lista = personasMasivo();
+  const p = { tiendas: new Set(lista.map(n => n.t && n.t.id)).size, personas: 0, sinCorreo: 0, nuevos: [], enviar: [], yaEnviados: 0, respondidos: 0 };
   if (pl.anonima) {
     const ya = new Set(anonEnviados(c.id));
-    ts.forEach(t => equipoDe(t).forEach(x => {
+    lista.forEach(({ t, x }) => {
       p.personas++;
       if (!mailOk(x.email)) { p.sinCorreo++; return; }
       if (ya.has(normMail(x.email))) { p.yaEnviados++; return; }
       p.nuevos.push({ t, email: normMail(x.email) });
-    }));
+    });
     return p;
   }
-  ts.forEach(t => equipoDe(t).forEach(x => {
+  lista.forEach(({ t, x }) => {
     p.personas++;
-    const inv = invs.find(i => i.tienda_id === t.id && ((x.email && normMail(i.email) === normMail(x.email)) || (i.destinatario || "").trim().toLowerCase() === (x.nombre || "").trim().toLowerCase()));
+    const inv = invs.find(i => (!t || i.tienda_id === t.id) && ((x.email && normMail(i.email) === normMail(x.email)) || (i.destinatario || "").trim().toLowerCase() === (x.nombre || "").trim().toLowerCase()));
     if (inv) {
       if (inv.estado === "respondida") p.respondidos++;
       else if (!inv.email) p.sinCorreo++;
@@ -98,34 +108,34 @@ function planMasivo(c, pl) {
     }
     if (!mailOk(x.email)) { p.sinCorreo++; return; }
     p.nuevos.push({ t, x });
-  }));
+  });
   return p;
 }
 
 /* ---------- Bloque de la campaña ---------- */
 function bloqueMasivo(c, pl) {
   if (c.estado !== "abierta") return "";
-  const M = masivo(), ts = misTiendasEnvio();
-  if (!ts.length) return "";
+  const M = masivo(), ts = misTiendasEnvio(), dePer = masivoDePersonas();
+  if (!ts.length && !dePer) return "";
   M.sel = M.sel.filter(id => ts.some(t => t.id === id));
   const p = planMasivo(c, pl), total = pl.anonima ? p.nuevos.length : p.nuevos.length + p.enviar.length;
   const directo = envioDirecto();
   const cuentaT = t => { const eq = equipoDe(t); return `${eq.filter(x => mailOk(x.email)).length}/${eq.length}`; };
   const recAnon = pl.anonima ? anonEnviados(c.id).length : 0;
-  return `<section class="card env-m"><div class="card-h"><h2>Enviar a muchas personas a la vez</h2><span class="muted">por correo, a quien tenga correo en su ficha de equipo</span></div>
-    <div class="env-alc" role="radiogroup" aria-label="A quién se envía">
+  return `<section class="card env-m"><div class="card-h"><h2>Enviar a muchas personas a la vez</h2><button class="btn small" data-action="masivoCorreo">Ver${esAdmin() ? " y editar" : ""} el correo</button></div>
+    ${dePer ? `<p class="hint" style="margin-top:0">Elige de Personas: por tipología, por ubicación o persona a persona. Solo reciben correo quienes lo tienen en su ficha.</p>${selPHtml("env")}` : `<div class="env-alc" role="radiogroup" aria-label="A quién se envía">
       <button class="env-op ${M.modo === "todas" ? "on" : ""}" data-action="masivoModo" data-v="todas" role="radio" aria-checked="${M.modo === "todas"}"><b>${esAdmin() ? "Todas las tiendas" : "Todas mis tiendas"}</b><small>${ts.length} tiendas</small></button>
       <button class="env-op ${M.modo === "elegir" ? "on" : ""}" data-action="masivoModo" data-v="elegir" role="radio" aria-checked="${M.modo === "elegir"}"><b>Elegir tiendas</b><small>${M.sel.length ? `${M.sel.length} marcadas` : "una o varias"}</small></button>
       <a class="env-op" href="#envPersona" data-action="masivoPersona"><b>Persona a persona</b><small>más abajo, como hasta ahora</small></a>
     </div>
     ${M.modo === "elegir" ? `<div class="env-ts">${ts.map(t => `<label class="env-t"><input type="checkbox" class="chk" data-action="masivoTienda" data-id="${t.id}" ${M.sel.includes(t.id) ? "checked" : ""}><span>${esc(t.nombre)}</span><small title="con correo / en el equipo">${cuentaT(t)}</small></label>`).join("")}</div>
-      <div class="env-ts-b"><button class="btn small ghost" data-action="masivoMarcar" data-v="1">Marcar todas</button><button class="btn small ghost" data-action="masivoMarcar" data-v="0">Ninguna</button></div>` : ""}
+      <div class="env-ts-b"><button class="btn small ghost" data-action="masivoMarcar" data-v="1">Marcar todas</button><button class="btn small ghost" data-action="masivoMarcar" data-v="0">Ninguna</button></div>` : ""}`}
     <div class="env-res">
-      <div><b>${p.personas}</b><small>personas en ${p.tiendas} ${p.tiendas === 1 ? "tienda" : "tiendas"}</small></div>
+      <div><b>${p.personas}</b><small>${dePer ? (p.personas === 1 ? "persona elegida" : "personas elegidas") : `personas en ${p.tiendas} ${p.tiendas === 1 ? "tienda" : "tiendas"}`}</small></div>
       <div class="ok"><b>${total}</b><small>${pl.anonima ? "recibirán un código anónimo" : "recibirán su código"}</small></div>
       <div><b>${p.yaEnviados}</b><small>ya lo recibieron</small></div>
       ${pl.anonima ? "" : `<div><b>${p.respondidos}</b><small>ya han respondido</small></div>`}
-      <div class="${p.sinCorreo ? "warn" : ""}"><b>${p.sinCorreo}</b><small>sin correo: papeleta en tienda</small></div>
+      <div class="${p.sinCorreo ? "warn" : ""}"><b>${p.sinCorreo}</b><small>sin correo${dePer ? "" : ": papeleta en tienda"}</small></div>
     </div>
     ${total > LIMITE_GRATIS ? `<p class="env-aviso">Son más de ${LIMITE_GRATIS} correos. Con el plan gratuito del proveedor de correo solo salen ${LIMITE_GRATIS} al día: los demás quedarán pendientes y podrás enviarlos mañana con este mismo botón. Con un plan de pago no hay límite diario.</p>` : ""}
     ${pl.anonima ? `<p class="hint">Anónima: cada persona recibe un código sin su nombre. Pippole no guarda qué dirección recibió cada código, así que nadie puede saber quién ha respondido qué. Este navegador recuerda a qué direcciones ya se ha enviado, para no repetir.</p>` : ""}
@@ -143,24 +153,36 @@ const ACCIONES_ENVIOS = {
   masivoTienda(b) { const M = masivo(), id = b.dataset.id; M.sel = b.checked ? [...new Set(M.sel.concat(id))] : M.sel.filter(x => x !== id); },
   masivoMarcar(b) { masivo().sel = b.dataset.v === "1" ? misTiendasEnvio().map(t => t.id) : []; },
   masivoPersona() { const e = $("envPersona"); if (e) e.scrollIntoView({ behavior: "smooth", block: "start" }); return false; },
-  async masivoEnviar(b) {
+  masivoEnviar() {
     const c = S.campanas.find(x => x.id === S.campana), pl = SC.plantilla(c.plantilla), p = planMasivo(c, pl);
     const total = pl.anonima ? p.nuevos.length : p.nuevos.length + p.enviar.length;
     if (!total) return false;
-    const ok = await confirmar({ titulo: `Enviar ${total} ${total === 1 ? "correo" : "correos"}`, ok: "Enviar ahora",
-      texto: `${pl.anonima ? "Cada persona recibe un código anónimo de" : "Cada persona recibe su código de"} «${c.titulo}» desde no-responder@pippole.es. ${total > LIMITE_GRATIS ? `Con el plan gratuito solo salen ${LIMITE_GRATIS} hoy; el resto quedará pendiente. ` : ""}El correo sale y no se puede deshacer.` });
-    if (!ok) return false;
-    b.disabled = true; b.textContent = "Enviando…";
+    const x0 = p.nuevos[0] && p.nuevos[0].x;
+    abrirVistaCorreo({ titulo: c.titulo, modo: modoCorreo(c, pl), info: infoCampana(c), aj: (c.config || {}).correo || {}, n: total, ejemplo: x0 && x0.nombre,
+      soloVer: !esAdmin(), alGuardar: esAdmin() ? aj => guardarCorreoCampana(c, aj) : null,
+      txtEnviar: `Enviar ${total} ${total === 1 ? "correo" : "correos"}${total > LIMITE_GRATIS ? ` (hoy salen ${LIMITE_GRATIS})` : ""}`,
+      alEnviar: () => masivoEjecutar(c, pl, p, total) });
+    return false;
+  },
+  masivoCorreo() {
+    const c = S.campanas.find(x => x.id === S.campana), pl = SC.plantilla(c.plantilla);
+    abrirVistaCorreo({ titulo: c.titulo, modo: modoCorreo(c, pl), info: infoCampana(c), aj: (c.config || {}).correo || {},
+      soloVer: !esAdmin(), alGuardar: esAdmin() ? aj => guardarCorreoCampana(c, aj) : null });
+    return false;
+  }
+};
+async function masivoEjecutar(c, pl, p, total) {
+    toast("Enviando…");
     const info = { [c.id]: infoCampana(c) };
     let res;
     if (pl.anonima) {
       // Códigos sin nombre, uno por dirección; la pareja solo vive aquí.
-      const filas = p.nuevos.map(n => ({ campana_id: c.id, tienda_id: n.t.id, codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
+      const filas = p.nuevos.map(n => ({ campana_id: c.id, tienda_id: n.t ? n.t.id : null, codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
       const ins = await sb.from("invitaciones").insert(filas).select();
       if (ins.error) { alert("No se han podido crear los códigos: " + traducirError(ins.error)); await recargarPruebas(); pintar(); return false; }
-      const libres = {}; (ins.data || []).forEach(r => (libres[r.tienda_id] = libres[r.tienda_id] || []).push(r.id));
+      const clave = id => id || "-", libres = {}; (ins.data || []).forEach(r => (libres[clave(r.tienda_id)] = libres[clave(r.tienda_id)] || []).push(r.id));
       Object.values(libres).forEach(a => a.sort(() => Math.random() - 0.5));
-      const pares = p.nuevos.map(n => ({ id: libres[n.t.id].pop(), email: n.email })).sort(() => Math.random() - 0.5);
+      const pares = p.nuevos.map(n => ({ id: libres[clave(n.t && n.t.id)].pop(), email: n.email })).sort(() => Math.random() - 0.5);
       const sinSalir = new Set(pares.map(x => x.id));
       const lotes = [];
       for (let i = 0; i < pares.length; i += LOTE) {
@@ -180,7 +202,7 @@ const ACCIONES_ENVIOS = {
     } else {
       let ids = p.enviar.slice();
       if (p.nuevos.length) {
-        const filas = p.nuevos.map(n => ({ campana_id: c.id, tienda_id: n.t.id, destinatario: n.x.nombre, puesto: n.x.puesto || null,
+        const filas = p.nuevos.map(n => ({ campana_id: c.id, tienda_id: n.t ? n.t.id : null, destinatario: n.x.nombre, puesto: n.x.puesto || null,
           email: normMail(n.x.email), codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
         const ins = await sb.from("invitaciones").insert(filas).select();
         if (ins.error) { alert("No se han podido crear los códigos: " + traducirError(ins.error)); await recargarPruebas(); pintar(); return false; }
@@ -197,8 +219,8 @@ const ACCIONES_ENVIOS = {
     if (res.tope) alert(`Enviados ${res.bien} de ${total}.\n\nSe ha llegado al límite diario de correos del proveedor (${LIMITE_GRATIS} al día en el plan gratuito). ${pendientes} quedan pendientes: vuelve a pulsar «Enviar» mañana.`);
     else if (res.fallos.length) alert(`Enviados ${res.bien} de ${total}.\n\nNo han salido:\n` + res.fallos.slice(0, 12).map(x => motivoLegible(x.motivo)).join("\n"));
     else toast(res.bien === 1 ? "1 correo enviado" : res.bien + " correos enviados");
-    return false;
-  },
+}
+Object.assign(ACCIONES_ENVIOS, {
   async masivoRecordar(b) {
     const c = S.campanas.find(x => x.id === S.campana), mails = anonEnviados(c.id);
     if (!mails.length) return false;
@@ -216,5 +238,5 @@ const ACCIONES_ENVIOS = {
     else toast(res.bien === 1 ? "1 recordatorio enviado" : res.bien + " recordatorios enviados");
     return false;
   }
-};
+});
 if (typeof ACCIONES_PRUEBAS !== "undefined") Object.assign(ACCIONES_PRUEBAS, ACCIONES_ENVIOS);

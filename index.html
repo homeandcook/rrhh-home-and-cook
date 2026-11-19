@@ -1467,44 +1467,70 @@ body.imp-on{overflow:hidden}
 .cl-per small{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cl-arch{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .cl-arch span{flex:1 1 220px;display:flex;flex-direction:column;min-width:0}.cl-arch small{font-size:12.5px}
+/* ===== 0.34 · Correo antes de enviar ===== */
+.vc{max-width:1240px}
+.vc-g{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:22px;align-items:start}
+.vc-f{display:flex;flex-direction:column;gap:12px}
+.vc-fs{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;min-width:0}
+.vc-f textarea{font:inherit;font-size:14px;line-height:1.5;resize:vertical}
+.vc-f label small{font-size:12px}
+.vc-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vc-p{min-width:0;display:flex;flex-direction:column;gap:10px}
+.vc-p-h{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.vc-asunto{flex:1 1 240px;min-width:0;font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vc-asunto small{font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px;margin-right:6px}
+.vc-marco{border:1px solid var(--line);border-radius:12px;background:#FBF7FF;overflow:hidden;display:flex;justify-content:center}
+.vc-marco iframe{border:0;width:100%;height:68vh;min-height:420px;background:#FBF7FF;display:block}
+.vc-marco.movil iframe{width:375px;max-width:100%}
+@media (max-width:900px){.vc-g{grid-template-columns:1fr}.vc-marco iframe{height:60vh}}
+@media (max-width:640px){.vc .imp-pie{flex-direction:column-reverse}.vc .imp-pie .spacer{display:none}.vc .imp-pie .btn{width:100%}.vc-2{grid-template-columns:1fr}}
+.imp-pie .spacer{flex:1}
+/* ===== 0.34 · Selector de Personas y Desarrollo ===== */
+.sp{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.cl-tip:disabled{opacity:.45;cursor:default}
+.dr-cat{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0}.dr-cat select{width:auto}
+.dr-pegar{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.dr-pegar summary{cursor:pointer;font-weight:600;color:var(--ink)}
 </style>
 </head>
 <body>
 <div id="app"><div class="loading">Cargando…</div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=0.33.1"></script>
-<script src="i18n.js?v=0.33.1"></script>
-<script src="marca.js?v=0.33.1"></script>
-<script src="marcas.js?v=0.33.1"></script>
-<script src="engine.js?v=0.33.1"></script>
-<script src="talent.js?v=0.33.1"></script>
-<script src="pruebas.js?v=0.33.1"></script>
-<script src="envios.js?v=0.33.1"></script>
-<script src="importar.js?v=0.33.1"></script>
-<script src="personas.js?v=0.33.1"></script>
-<script src="clima.js?v=0.33.1"></script>
-<script src="clima_inv.js?v=0.33.1"></script>
-<script src="pdc.js?v=0.33.1"></script>
-<script src="pdc_carga.js?v=0.33.1"></script>
-<script src="bajas.js?v=0.33.1"></script>
-<script src="prl.js?v=0.33.1"></script>
-<script src="curso_datos.js?v=0.33.1"></script>
-<script src="cursos.js?v=0.33.1"></script>
-<script src="formacion.js?v=0.33.1"></script>
-<script src="docs_base.js?v=0.33.1"></script>
-<script src="docs.js?v=0.33.1"></script>
-<script src="arcade.js?v=0.33.1"></script>
-<script src="escape.js?v=0.33.1"></script>
-<script src="ia_datos.js?v=0.33.1"></script>
-<script src="ia.js?v=0.33.1"></script>
-<script src="desarrollo_cat.js?v=0.33.1"></script>
-<script src="desarrollo_inf.js?v=0.33.1"></script>
-<script src="desarrollo_eval.js?v=0.33.1"></script>
-<script src="desarrollo.js?v=0.33.1"></script>
-<script src="hoy.js?v=0.33.1"></script>
-<script src="avisos.js?v=0.33.1"></script>
-<script src="demo.js?v=0.33.1"></script>
-<script src="app.js?v=0.33.1"></script>
+<script src="config.js?v=0.34.0"></script>
+<script src="i18n.js?v=0.34.0"></script>
+<script src="marca.js?v=0.34.0"></script>
+<script src="marcas.js?v=0.34.0"></script>
+<script src="engine.js?v=0.34.0"></script>
+<script src="talent.js?v=0.34.0"></script>
+<script src="pruebas.js?v=0.34.0"></script>
+<script src="envios.js?v=0.34.0"></script>
+<script src="importar.js?v=0.34.0"></script>
+<script src="personas.js?v=0.34.0"></script>
+<script src="correo_vista.js?v=0.34.0"></script>
+<script type="module">import * as C from "./supabase/functions/_shared/correo.js?v=0.34.0"; window.CORREO = C;</script>
+<script src="clima.js?v=0.34.0"></script>
+<script src="clima_inv.js?v=0.34.0"></script>
+<script src="pdc.js?v=0.34.0"></script>
+<script src="pdc_carga.js?v=0.34.0"></script>
+<script src="bajas.js?v=0.34.0"></script>
+<script src="prl.js?v=0.34.0"></script>
+<script src="curso_datos.js?v=0.34.0"></script>
+<script src="cursos.js?v=0.34.0"></script>
+<script src="formacion.js?v=0.34.0"></script>
+<script src="docs_base.js?v=0.34.0"></script>
+<script src="docs.js?v=0.34.0"></script>
+<script src="arcade.js?v=0.34.0"></script>
+<script src="escape.js?v=0.34.0"></script>
+<script src="ia_datos.js?v=0.34.0"></script>
+<script src="ia.js?v=0.34.0"></script>
+<script src="desarrollo_cat.js?v=0.34.0"></script>
+<script src="desarrollo_inf.js?v=0.34.0"></script>
+<script src="desarrollo_eval.js?v=0.34.0"></script>
+<script src="desarrollo.js?v=0.34.0"></script>
+<script src="hoy.js?v=0.34.0"></script>
+<script src="avisos.js?v=0.34.0"></script>
+<script src="demo.js?v=0.34.0"></script>
+<script src="app.js?v=0.34.0"></script>
 </body>
 </html>

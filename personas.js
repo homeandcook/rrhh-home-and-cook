@@ -47,7 +47,7 @@ function pintarPersonas() {
   const sinMail = act.filter(e => !e.correo).length;
   const cifra = (k, n, t) => `<button class="pp-cifra ${F.tip === k ? "on" : ""}" data-action="pTip" data-v="${k}" aria-pressed="${F.tip === k}"><b>${n}</b><small>${t}</small></button>`;
   $("vista").innerHTML = `<div class="page pp">
-    <div class="page-h"><div><h1>Personas</h1><p class="muted">${admin ? "La plantilla de la empresa. No entran en la plataforma: reciben encuestas, Talent Review y formaciones por correo, con un código." : "Las personas de tus tiendas. Las altas y los cambios los hace RR.HH."}</p></div>
+    <div class="page-h"><div><h1>${admin ? "Plantilla" : "Personas"}</h1><p class="muted">${admin ? "La plantilla de la empresa. No entran en la plataforma: reciben encuestas, Talent Review y formaciones por correo, con un código." : "Las personas de tus tiendas. Las altas y los cambios los hace RR.HH."}</p></div>
       ${admin ? `<div class="page-h-b"><button class="btn" data-action="pCsv" ${todos.length ? "" : "disabled"}>Descargar CSV</button><button class="btn" data-action="pAnadir">Añadir persona</button><button class="btn primary" data-action="pImportar">Importar archivo</button></div>` : ""}</div>
     ${S.pe ? empFormulario() : ""}
     ${todos.length ? `<div class="pp-cifras">${cifra("", act.length, act.length === 1 ? "activa" : "activas")}${Object.entries(IMP_TIPOS).map(([k, n]) => cifra(k, cuenta(k), n)).join("")}
@@ -196,4 +196,60 @@ document.addEventListener("input", e => {
   const q = impNorm(e.target.value); let n = 0;
   document.querySelectorAll(".pp-tabla tbody tr").forEach(tr => { const si = !q || tr.dataset.q.includes(q); tr.hidden = !si; if (si) n++; });
   const c = $("pCuenta"); if (c) c.textContent = `${n} ${n === 1 ? "persona" : "personas"}`;
+});
+
+/* ---------- Selector de destinatarios desde Personas (0.34.0) ----------
+   Común a los envíos de campañas (formaciones, pruebas…) y a Desarrollo.
+   Estado en S.selP[k]: tipologías, modo (todas | grupos | personas),
+   grupos marcados (tienda, departamento, zona o córner) y personas. */
+const empGrupo = e => (e.tipologia === "oficinas" ? (e.departamento || e.ubicacion || "Sin departamento") : (e.ubicacion || "Sin ubicación"));
+function selP(k, ini) {
+  S.selP = S.selP || {};
+  if (!S.selP[k]) S.selP[k] = Object.assign({ tips: Object.keys(IMP_TIPOS), modo: "todas", grupos: [], pers: [], busca: "" }, ini || {});
+  return S.selP[k];
+}
+function selPBase(k, filtro) { const Q = selP(k); return empActivos().filter(e => Q.tips.includes(e.tipologia) && (!filtro || filtro(e))); }
+function selPElegidos(k, filtro) {
+  const Q = selP(k); let ps = selPBase(k, filtro);
+  if (Q.modo === "grupos") ps = ps.filter(e => Q.grupos.includes(empGrupo(e)));
+  if (Q.modo === "personas") ps = ps.filter(e => Q.pers.includes(e.id));
+  return ps;
+}
+/* op = { filtro(e), detalle(e): texto bajo el nombre, etiqueta: "personas" } */
+function selPHtml(k, op) {
+  op = op || {};
+  const Q = selP(k), base = selPBase(k, op.filtro), et = op.etiqueta || "personas";
+  const todas = empActivos().filter(e => !op.filtro || op.filtro(e));
+  const grupos = [...base.reduce((m, e) => m.set(empGrupo(e), (m.get(empGrupo(e)) || 0) + 1), new Map())].sort((a, b) => a[0].localeCompare(b[0], "es"));
+  const nG = base.filter(e => Q.grupos.includes(empGrupo(e))).length, nP = base.filter(e => Q.pers.includes(e.id)).length;
+  const q = impNorm(Q.busca || "");
+  const radio = (v, tit, des) => `<button type="button" class="cl-op ${Q.modo === v ? "on" : ""}" data-action="spModo" data-k="${k}" data-v="${v}" aria-pressed="${Q.modo === v}"><b>${tit}</b><small>${des}</small></button>`;
+  let h = `<div class="sp" data-sp="${k}"><div class="cl-tips" role="group" aria-label="Tipologías">${Object.entries(IMP_TIPOS).map(([t, n]) => {
+    const c = todas.filter(e => e.tipologia === t).length;
+    return `<button type="button" class="cl-tip ${Q.tips.includes(t) ? "on" : ""}" data-action="spTip" data-k="${k}" data-v="${t}" aria-pressed="${Q.tips.includes(t)}" ${c ? "" : "disabled"}>${n} <small>${c}</small></button>`; }).join("")}</div>
+    <div class="cl-ops tres">${radio("todas", "Todas", `${base.length} ${base.length === 1 ? et.replace(/s$/, "") : et}`)}${radio("grupos", "Elegir ubicaciones", Q.grupos.length ? `${Q.grupos.length} marcadas · ${nG}` : "tiendas, departamentos, zonas…")}${radio("personas", "Persona a persona", Q.pers.length ? `${nP} marcadas` : "buscar y marcar")}</div>`;
+  if (Q.modo === "grupos") h += grupos.length ? `<div class="env-ts">${grupos.map(([g, n]) => `<label class="env-t"><input type="checkbox" class="chk" data-action="spGrupo" data-k="${k}" data-v="${esc(g)}" ${Q.grupos.includes(g) ? "checked" : ""}><span>${esc(g)}</span><small>${n}</small></label>`).join("")}</div>` : "";
+  if (Q.modo === "personas") h += `<div class="cl-pers"><input type="search" class="sp-busca" data-k="${k}" value="${esc(Q.busca || "")}" placeholder="Buscar por nombre, puesto o ubicación" autocomplete="off" aria-label="Buscar personas">
+    <div class="cl-pers-l">${base.map(e => { const dq = impNorm([empNombre(e), e.puesto, e.ubicacion, e.departamento].join(" "));
+      return `<label class="cl-per" data-q="${esc(dq)}" ${q && !dq.includes(q) ? "hidden" : ""}><input type="checkbox" class="chk" data-action="spPers" data-k="${k}" data-id="${e.id}" ${Q.pers.includes(e.id) ? "checked" : ""}><span><b>${esc(empNombre(e))}</b><small>${esc(op.detalle ? op.detalle(e) : [e.puesto, empGrupo(e)].filter(Boolean).join(" · ") + (e.correo ? "" : " · sin correo"))}</small></span></label>`; }).join("")}</div></div>`;
+  if (!base.length) h += `<p class="hint">No hay nadie con las tipologías marcadas en Personas.</p>`;
+  return h + `</div>`;
+}
+/* Repinta sin perder el desplazamiento de la lista de personas */
+function spRepintar() {
+  const l = document.querySelector(".sp .cl-pers-l"), y = l ? l.scrollTop : 0, wy = window.scrollY;
+  pintar(); window.scrollTo(0, wy);
+  const l2 = document.querySelector(".sp .cl-pers-l"); if (l2) l2.scrollTop = y;
+}
+Object.assign(ACCIONES_PERSONAS, {
+  spTip(b) { const Q = selP(b.dataset.k), t = b.dataset.v; Q.tips = Q.tips.includes(t) ? Q.tips.filter(x => x !== t) : Q.tips.concat(t); Q.grupos = []; Q.pers = []; },
+  spModo(b) { selP(b.dataset.k).modo = b.dataset.v; },
+  spGrupo(b) { const Q = selP(b.dataset.k), v = b.dataset.v; Q.grupos = b.checked ? [...new Set(Q.grupos.concat(v))] : Q.grupos.filter(x => x !== v); spRepintar(); return false; },
+  spPers(b) { const Q = selP(b.dataset.k), id = b.dataset.id; Q.pers = b.checked ? [...new Set(Q.pers.concat(id))] : Q.pers.filter(x => x !== id); spRepintar(); return false; }
+});
+document.addEventListener("input", e => {
+  if (!e.target.classList || !e.target.classList.contains("sp-busca")) return;
+  const Q = selP(e.target.dataset.k); Q.busca = e.target.value;
+  const q = impNorm(Q.busca), caja = e.target.closest(".sp");
+  caja.querySelectorAll(".cl-per").forEach(l => { l.hidden = !!q && !l.dataset.q.includes(q); });
 });

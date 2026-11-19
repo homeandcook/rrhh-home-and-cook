@@ -17,8 +17,8 @@ Este repositorio es **público**: aquí no van datos de personas, claves secreta
   - Logotipo «pippole» en minúsculas (`marca.js`) y símbolo de la **π**: dos personas que sostienen juntas una barra (`simboloPippole()` en `marcas.js`, `favicon.svg`; desde 0.27.1). `logoSEB()` y `bandaMarcas()` son nombres heredados: el primero devuelve el símbolo y el segundo nada.
 - El lienzo con las cuatro direcciones de marca estudiadas está en claude.ai (artefacto «Pippole · Direcciones de marca»). La elegida es la 2, «Cercana».
 
-## Foco actual (desde 0.28.0): tres bloques
-Decidido el 16/11/2026: de momento solo se ven **Encuestas de clima**, **Desarrollo** y **Formación de IA**. El resto de apartados está oculto con `MODULOS_OCULTOS` en `app.js` (no borrado).
+## Foco actual (desde 0.28.0)
+Decidido el 16/11/2026: de momento solo se ven **Encuestas de clima**, **Desarrollo** y **Formación de IA**; desde la 0.34.0 también **Scorecard** (apartado `evaluacion`, pestañas Scorecard y Consolidado) y **Personas**. El resto de apartados está oculto con `MODULOS_OCULTOS` en `app.js` (no borrado).
 - **Desarrollo** = Talent Review v1.0 en web. Archivos: `desarrollo_cat.js` (escalas, 13 competencias, 9-Box, textos; objeto `TRC` y reglas `TR`), `desarrollo_eval.js` (ficha del responsable que entra con su código; estado `TRE`, acciones `data-tr`), `desarrollo.js` (panel de RR.HH.; estado `S.dr`, acciones `data-tra`), `desarrollo_inf.js` (objeto `TRI`: informe por equipo y por persona, compartidos por los dos lados; desde 0.30.0). Tablas `dr_*` y RPC `dr_abrir/dr_guardar/dr_alta/dr_entregar` (migración 0.28).
   - Oficina: manager → su equipo. Retail: Regional Manager → Store Managers; Store Manager → Assistant.
   - **Regla (16/11/2026): todo lo que rellenan terceros usa el mismo sistema de códigos que la encuesta de clima**: misma puerta («Entrar con un código de invitación»), mismo formato `XXXX-XXXX` (`SC.codigoInvitacion()`), envío por correo con la función `enviar-invitacion`. `abrirInvitacion()` prueba primero `invitacion_abrir` y, si no existe, `dr_abrir`.
@@ -55,7 +55,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 
 ## Cómo está hecho
 - **HTML, CSS y JavaScript sin framework ni compilación.** `index.html` lleva todos los estilos y carga los scripts en este orden:
-  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
+  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, correo_vista (+ módulo `supabase/functions/_shared/correo.js` como `window.CORREO`), clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
 - **`app.js`**:
   - Estado global `S`, pintado completo con `pintar()` y apartados en el array `MODULOS`.
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
@@ -74,6 +74,8 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `equipoDe(t)` (app.js) devuelve las personas activas de esa tienda desde `S.emp`; si `S.emp` es null, el equipo antiguo de `tiendas.datos.equipo`.
   - Lectores cargados al usarlos: `read-excel-file@9.3.17` (global `readXlsxFile`; no lee .xls) y `mammoth@1.13.0` (Word). No se usa SheetJS: la versión de npm (0.18.5) tiene fallos de seguridad conocidos y la corregida no está en npm.
   - La lectura con IA está como botón desactivado: no activarla sin el visto bueno del DPO del cliente.
+  - **Desde 0.34.0 Personas tiene pestañas** `pplantilla` (pintarPersonas), `paccesos`, `ptiendas`, `pactividad` (las tres con `pintarGestion(parte)`). `S.modulo = "gestion"` redirige a Personas → Usuarios con acceso.
+  - **Selector común** (0.34.0, personas.js): `selPHtml(k, op)`, `selPElegidos(k, filtro)`, estado `S.selP[k]`, acciones `spTip/spModo/spGrupo/spPers`. Lo usan envíos de campañas (`k = "env"`, envios.js) y Desarrollo (`k = "dr-oficina|dr-retail"`, acción `data-tra="dePersonas"`). Scorecard: `scCandidatos(t)` y acción `scDePersonas`.
   - Modo "usuarios" (0.33.1): alta masiva de cuentas desde Usuarios y tiendas (acción `impUsuarios`). `impCrearUsuarios` usa `signUp` con un cliente aparte, de uno en uno, y se para si Supabase devuelve límite de altas.
 - **Clima** (0.32.0): `clima.js` (banco de preguntas `CL`, plantillas `clima2-tiendas|campo|oficinas|demo|gptw`, pestañas `clnueva/clcurso/clanteriores/clresultados/clmodelos`, acciones `ACCIONES_CLIMA`) y `clima_inv.js` (pantalla de quien responde, estado `CI`, acciones `cli*`, vista previa `clPrevia`).
   - «A quién» (0.33): `N.usarB` (de Personas: `modoB` todas|grupos|personas, `tips` en GPTW) y `N.usarL` (archivo con el importador, `N.imp`). `clRespEmp(e)` decide a quién evalúa en la parte 2.
@@ -84,6 +86,8 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `?codigo=XXXX&r=b0:3` abre directamente con la primera respuesta (correo).
   - Las campañas antiguas (plantillas `clima-*`) se siguen viendo con `pintarPruebas`.
 - **Correo**: Edge Function `supabase/functions/enviar-invitacion` (Deno) que envía con Resend.
+  - **Plantilla compartida** (0.34.0): `supabase/functions/_shared/correo.js` (JavaScript sin tipos: `textosCorreo`, `montarCorreo`, `prepararCorreo`). La importa la función y la web la carga como módulo para la vista previa; `publicar-pages.yml` la copia a la misma ruta del sitio. Cambiar el correo = cambiar ese fichero.
+  - **Vista previa y edición** (0.34.0): `correo_vista.js`, `abrirVistaCorreo(op)` (overlay `#vcOv`, eventos `data-vc*`). Lo editado (`asunto, intro, extra, firma, cargo`) va a `campanas.config.correo` o `dr_ciclos.config.correo`; la función lo lee y lo aplica en todos los envíos.
   - Lee las invitaciones con el JWT del usuario, así que aplican las reglas por fila.
   - Modos (0.31.0): `{ids}` invitaciones con nombre, `{anonimos:[{id,email}]}` anónimas (la dirección no se guarda), `{recordatorio:{campana_id,emails}}` recordatorio general sin código, `{tipo:"desarrollo", ids}`. `info` lleva duración, preguntas y nota de la plantilla (que vive en el navegador). Texto y aspecto por tipo de campaña. Envía con la API por lotes de Resend, máximo 100 por llamada; el tope diario llega como motivo `LIMITE_DIARIO`.
   - Plan gratuito de Resend: 100 correos al día y 3.000 al mes. Para enviar a toda la red de una vez hace falta un plan de pago.
@@ -106,7 +110,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.33.1**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.34.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.
