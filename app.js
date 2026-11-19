@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.33.0";
+const APP_VERSION = "0.33.1";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -929,7 +929,7 @@ function pintarGestion() {
   const rms = S.perfiles.filter(p => p.rol === "rm");
   const nT = id => S.tiendas.filter(t => t.rm_id === id).length;
   let h = `<div class="page"><h1>Usuarios y tiendas</h1>
-  <section class="card"><div class="card-h"><h2>Usuarios</h2></div>
+  <section class="card"><div class="card-h"><h2>Usuarios</h2><button class="btn primary small" data-action="impUsuarios">Importar desde Excel o Word</button></div>
   <div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Zona</th><th class="n">Tiendas</th><th>Acceso</th><th></th></tr></thead><tbody>
   ${S.perfiles.map(p => {
     const yo = p.id === S.me.id;
@@ -946,8 +946,8 @@ function pintarGestion() {
     <label>Contraseña inicial<input name="password" required minlength="8" autocomplete="new-password"></label>
     <label>Rol<select name="rol"><option value="rm">Regional Manager</option><option value="marketing">Retail Marketing (solo KPIs y mystery)</option><option value="admin">Administrador</option></select></label>
     <label>Zona<input name="zona" placeholder="Opcional"></label>
-    <button class="btn primary" type="submit">Crear usuario</button></form>
-  <p class="hint">Comunica a cada persona su usuario y contraseña inicial; puede cambiarla desde su nombre, arriba a la derecha. Desactivar un usuario le corta el acceso sin borrar sus datos.</p></section>
+    <button class="btn" type="submit">Crear usuario</button></form>
+  <p class="hint">Para crear muchos a la vez, usa «Importar desde Excel o Word»: el usuario y la contraseña se generan si el archivo no los trae. Comunica a cada persona su usuario y contraseña inicial; puede cambiarla desde su nombre, arriba a la derecha. Desactivar un usuario le corta el acceso sin borrar sus datos.</p></section>
 
   <section class="card"><div class="card-h"><h2>Tiendas ${C.anio}</h2></div>
   <div class="tablewrap"><table><thead><tr><th>Tienda</th><th>Código</th><th>Regional Manager</th><th class="n">Personas</th><th>Objetivos</th><th></th></tr></thead><tbody>
@@ -1156,6 +1156,7 @@ document.addEventListener("click", async e => {
     per() { S.f.per = b.dataset.v; },
     orden() { if (S.f.orden === b.dataset.k) S.f.dir *= -1; else { S.f.orden = b.dataset.k; S.f.dir = ["bonus", "nota", "cual", "cuant"].includes(b.dataset.k) ? -1 : 1; } },
     csv() { csv(); return false; },
+    impUsuarios() { if (!esAdmin()) return false; abrirImportador("usuarios"); return false; },
     async toggleActivo() {
       const p = perfil(b.dataset.id);
       if (p.activo && !confirm(`¿Desactivar a ${p.nombre}? No podrá entrar hasta que lo reactives. Sus tiendas y datos se conservan.`)) return false;

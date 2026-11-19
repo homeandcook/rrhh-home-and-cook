@@ -287,6 +287,15 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.33.1 · 19/11/2026 · **SQL: no**
+- **Importar usuarios desde Excel o Word** (Usuarios y tiendas → «Importar desde Excel o Word»), con la misma pantalla de revisión que Personas.
+  - Reconoce nombre (o nombre y apellidos juntos), usuario, rol («Regional Manager», «RR.HH.», «Administrador», «Marketing»…), zona, correo y contraseña.
+  - Si no viene el usuario, se forma con el nombre y el primer apellido (o con el correo) sin repetir ninguno; si no viene la contraseña o tiene menos de 8 caracteres, se genera una de 12.
+  - Avisa de usuarios que ya existen o se repiten en el archivo y del rol que se pone por defecto.
+  - Se crean de uno en uno. Si el sistema de acceso pone un límite de altas seguidas, se para y dice cuántos faltan.
+  - Al terminar se enseñan las contraseñas una sola vez, con descarga en CSV para comunicarlas.
+- Las tiendas de cada Regional Manager se siguen asignando en la tabla de tiendas.
+
 ## 0.33.0 · 18/11/2026 · **SQL: sí** (`supabase/migracion_0.33.sql`, después de la 0.32)
 - **Personas**, apartado nuevo: la plantilla de la empresa (nombre, apellidos, correo, puesto, tipología, ubicación, departamento, responsable directo, fechas de alta y baja).
   - Tipologías: tiendas, oficinas, comerciales y demostradores. Si la ubicación coincide con una tienda, la persona queda en esa tienda.

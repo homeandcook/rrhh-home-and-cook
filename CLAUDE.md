@@ -74,6 +74,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `equipoDe(t)` (app.js) devuelve las personas activas de esa tienda desde `S.emp`; si `S.emp` es null, el equipo antiguo de `tiendas.datos.equipo`.
   - Lectores cargados al usarlos: `read-excel-file@9.3.17` (global `readXlsxFile`; no lee .xls) y `mammoth@1.13.0` (Word). No se usa SheetJS: la versión de npm (0.18.5) tiene fallos de seguridad conocidos y la corregida no está en npm.
   - La lectura con IA está como botón desactivado: no activarla sin el visto bueno del DPO del cliente.
+  - Modo "usuarios" (0.33.1): alta masiva de cuentas desde Usuarios y tiendas (acción `impUsuarios`). `impCrearUsuarios` usa `signUp` con un cliente aparte, de uno en uno, y se para si Supabase devuelve límite de altas.
 - **Clima** (0.32.0): `clima.js` (banco de preguntas `CL`, plantillas `clima2-tiendas|campo|oficinas|demo|gptw`, pestañas `clnueva/clcurso/clanteriores/clresultados/clmodelos`, acciones `ACCIONES_CLIMA`) y `clima_inv.js` (pantalla de quien responde, estado `CI`, acciones `cli*`, vista previa `clPrevia`).
   - «A quién» (0.33): `N.usarB` (de Personas: `modoB` todas|grupos|personas, `tips` en GPTW) y `N.usarL` (archivo con el importador, `N.imp`). `clRespEmp(e)` decide a quién evalúa en la parte 2.
   - Siempre anónimas. `campanas.config` = {version 2, encuesta, colectivo, parte2, cierre, pendientes [{e,t,g,r}], enviadosA}. `invitaciones.responsable` (a quién evalúa la parte 2) y `grupo` (listas pegadas). Migración 0.32.
@@ -105,7 +106,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.33.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.33.1**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.

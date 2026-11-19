@@ -5,9 +5,11 @@
    pegada. Todo se lee en el navegador: el archivo no sale a ningún sitio.
    Reconoce las columnas por su título y enseña una pantalla de revisión
    antes de guardar nada.
-   Dos usos:
+   Tres usos:
    - "base": altas en Personas (tabla empleados).
    - "encuesta": lista solo para una encuesta; no se guarda en la base.
+   - "usuarios": cuentas con acceso a la plataforma (0.33.1), con
+     usuario y contraseña inicial generados si no vienen.
    La lectura con IA (PDF, fotos, texto libre) queda preparada pero
    apagada hasta que lo apruebe el responsable de protección de datos.
    ===================================================================== */
@@ -18,8 +20,11 @@ const IMP_LIB = {
 const IMP_TIPOS = { tiendas: "Tiendas", oficinas: "Oficinas", comerciales: "Comerciales", demostradores: "Demostradores" };
 const IMP_CAMPOS = {
   completo: "Nombre y apellidos", nombre: "Nombre", apellidos: "Apellidos", correo: "Correo", puesto: "Puesto",
-  tipologia: "Tipología", ubicacion: "Ubicación", departamento: "Departamento", responsable: "Responsable", fecha_alta: "Fecha de alta"
+  tipologia: "Tipología", ubicacion: "Ubicación", departamento: "Departamento", responsable: "Responsable", fecha_alta: "Fecha de alta",
+  usuario: "Usuario", rol: "Rol", zona: "Zona", password: "Contraseña inicial"
 };
+const IMP_CAMPOS_USU = ["completo", "nombre", "apellidos", "correo", "usuario", "rol", "zona", "password"];
+const IMP_ROLES = { admin: "Administrador", rm: "Regional Manager", marketing: "Retail Marketing" };
 const IMP_CAMPOS_ENC = ["completo", "nombre", "apellidos", "correo", "ubicacion", "departamento", "responsable"];
 /* Títulos de columna habituales (sin tildes ni mayúsculas). El orden importa:
    «nombre del responsable» es responsable, no nombre. */
@@ -32,7 +37,10 @@ const IMP_SIN = [
   ["departamento", ["departamento", "depto", "dpto", "dept", "area", "department", "seccion", "servicio", "direccion"]],
   ["ubicacion", ["ubicacion", "centro", "centro de trabajo", "tienda", "oficina", "sede", "zona", "localizacion", "location", "site", "punto de venta", "corner", "delegacion", "store", "loja", "magasin", "pdv"]],
   ["tipologia", ["tipologia", "tipo", "colectivo", "canal", "segmento", "tipo de empleado", "tipo de centro"]],
-  ["puesto", ["puesto", "cargo", "posicion", "position", "job title", "job", "categoria", "categoria profesional", "rol", "funcion", "poste", "funcao"]],
+  ["usuario", ["usuario", "user", "username", "login", "nombre de usuario", "id de usuario"]],
+  ["password", ["contrasena", "contrasena inicial", "password", "clave", "clave inicial"]],
+  ["rol", ["rol", "role", "perfil", "perfil de acceso", "acceso", "tipo de usuario"]],
+  ["puesto", ["puesto", "cargo", "posicion", "position", "job title", "job", "categoria", "categoria profesional", "funcion", "poste", "funcao"]],
   ["nombre", ["nombre", "name", "first name", "nom", "nome", "prenom", "nombre de pila"]]
 ];
 const impNorm = x => String(x == null ? "" : x).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9@.+]+/g, " ").trim();
@@ -175,12 +183,14 @@ function impValoresFila(i) {
     nombre: (v.nombre || "").trim(), apellidos: (v.apellidos || "").trim(),
     correo: (v.correo || "").replace(/^mailto:/i, "").replace(/[<>]/g, "").trim().toLowerCase(),
     puesto: (v.puesto || "").trim(), tipologia: impTipologia(v.tipologia), ubicacion: (v.ubicacion || "").trim(),
-    departamento: (v.departamento || "").trim(), responsable: (v.responsable || "").trim(), fecha_alta: impFecha(v.fecha_alta)
+    departamento: (v.departamento || "").trim(), responsable: (v.responsable || "").trim(), fecha_alta: impFecha(v.fecha_alta),
+    usuario: (v.usuario || "").trim().toLowerCase(), rol: v.rol || "", zona: (v.zona || "").trim(), password: (v.password || "").trim()
   };
   return Object.assign(out, IMP.edit[i] || {});
 }
 /* Lo que se va a guardar y los avisos de cada fila */
 function impFilas() {
+  if (IMP.modo === "usuarios") return impFilasUsu();
   const T = IMP.tabla; if (!T) return [];
   const base = Array.isArray(S.emp) ? S.emp : [];
   const porMail = new Map(base.filter(e => e.correo).map(e => [e.correo, e]));
@@ -219,10 +229,136 @@ function impFilas() {
   return out;
 }
 
+/* ---------- Usuarios ---------- */
+function impRol(v) {
+  const n = impNorm(v).replace(/[.+@]/g, " ").replace(/\s+/g, " ").trim(); if (!n) return "";
+  if (IMP_ROLES[n]) return n;
+  if (/admin|rr ?hh|r r h h|recursos humanos|^hr\b|people|talento/.test(n)) return "admin";
+  if (/regional|^rm$|area manager|jefe de zona|zona/.test(n)) return "rm";
+  if (/marketing/.test(n)) return "marketing";
+  return "";
+}
+const impUsuarioOk = u => /^[a-z0-9._-]{3,}$/.test(u || "");
+function impUsuarioDe(v) {
+  const base = v.correo && v.correo.includes("@") ? v.correo.split("@")[0] : [v.nombre, (v.apellidos || "").split(/\s+/)[0]].filter(Boolean).join(".");
+  return impNorm(base).replace(/[^a-z0-9._-]+/g, ".").replace(/\.+/g, ".").replace(/^\.|\.$/g, "");
+}
+function impClave() {
+  const A = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", b = new Uint32Array(12);
+  crypto.getRandomValues(b);
+  return [...b].map(x => A[x % A.length]).join("");
+}
+function impFilasUsu() {
+  const T = IMP.tabla; if (!T) return [];
+  const hay = new Set((S.perfiles || []).map(p => p.usuario)), usados = new Set(), out = [];
+  for (let i = T.h + 1; i < T.filas.length; i++) {
+    const v = impValoresFila(i), avisos = [];
+    if (!v.nombre && !v.apellidos && !v.usuario && !v.correo) continue;
+    let error = "";
+    if (!v.nombre) error = "Falta el nombre";
+    const rolLeido = impRol(v.rol);
+    v.rol = rolLeido || IMP.rolDef;
+    if (v.rol !== "rm") v.zona = v.zona || "";
+    if (!rolLeido && !(IMP.edit[i] || {}).rol) avisos.push(`Rol ${v.rol ? "por defecto" : "sin indicar"}: ${IMP_ROLES[v.rol]}`);
+    let u = v.usuario || impUsuarioDe(v), auto = !v.usuario;
+    if (auto && u) { let k = 2, b = u; while (hay.has(u) || usados.has(u)) u = b + k++; }
+    v.usuario = u;
+    if (!impUsuarioOk(u)) error = error || "Usuario no válido (minúsculas, números, punto o guion; 3 o más)";
+    else if (hay.has(u)) error = error || "Ya existe ese usuario";
+    else if (usados.has(u)) error = error || "Usuario repetido en el archivo";
+    usados.add(u);
+    if (v.password && v.password.length < 8) avisos.push("Contraseña de menos de 8: se genera otra");
+    if (!v.password || v.password.length < 8) { IMP.pw[i] = IMP.pw[i] || impClave(); v.password = IMP.pw[i]; v.pwAuto = true; }
+    out.push({ i, v, avisos, error, auto });
+  }
+  return out;
+}
+function impRevisionUsu() {
+  const F = impFilas(), van = F.filter(f => !f.error && !IMP.fuera.has(f.i)), conAviso = F.filter(f => f.error || f.avisos.length).length;
+  const ver = IMP.ver === "avisos" ? F.filter(f => f.error || f.avisos.length) : F;
+  const celda = (f, k, w) => `<input data-imp-e="${f.i}:${k}" value="${esc(f.v[k] || "")}" style="min-width:${w}px" aria-label="${IMP_CAMPOS[k]}">`;
+  return `<div class="imp-h"><div><h2>Revisa los usuarios antes de crearlos</h2>
+      <p class="muted">${esc(IMP.nombre || "Lista pegada")} · ${F.length} ${F.length === 1 ? "usuario" : "usuarios"}${conAviso ? ` · ${conAviso} con avisos` : ""}</p></div>
+    <button class="btn ghost" data-imp="cerrar">Cerrar</button></div>
+  ${impMapa(IMP_CAMPOS_USU)}
+  <label class="imp-def">Si no viene el rol o no se entiende:
+    <select data-imp-roldef>${Object.entries(IMP_ROLES).map(([k, n]) => `<option value="${k}" ${IMP.rolDef === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+  <div class="imp-barra"><div class="imp-filtro">
+      <button class="${IMP.ver === "todas" ? "on" : ""}" data-imp="ver" data-v="todas">Todos · ${F.length}</button>
+      <button class="${IMP.ver === "avisos" ? "on" : ""}" data-imp="ver" data-v="avisos">Con avisos · ${conAviso}</button></div>
+    <span class="muted">Si no viene, el usuario se forma con el nombre y el primer apellido (o con el correo) y la contraseña se genera.</span></div>
+  ${F.length ? `<div class="tablewrap imp-tabla"><table><thead><tr><th><span class="sr">Incluir</span></th><th>Estado</th><th>Nombre</th><th>Apellidos</th><th>Usuario</th><th>Rol</th><th>Zona</th></tr></thead><tbody>
+    ${ver.map(f => `<tr class="${!f.error && !IMP.fuera.has(f.i) ? "" : "fila-off"}">
+      <td><input type="checkbox" class="chk" data-imp-inc="${f.i}" ${!f.error && !IMP.fuera.has(f.i) ? "checked" : ""} ${f.error ? "disabled" : ""} aria-label="Incluir"></td>
+      <td class="imp-est">${f.error ? `<span class="badge err">${esc(f.error)}</span>` : `<span class="badge ok">Nuevo</span>`}${f.avisos.map(a => `<small class="imp-av">${esc(a)}</small>`).join("")}</td>
+      <td>${celda(f, "nombre", 90)}</td><td>${celda(f, "apellidos", 120)}</td><td>${celda(f, "usuario", 130)}</td>
+      <td><select data-imp-e="${f.i}:rol" aria-label="Rol" style="min-width:150px">${Object.entries(IMP_ROLES).map(([k, n]) => `<option value="${k}" ${f.v.rol === k ? "selected" : ""}>${n}</option>`).join("")}</select></td>
+      <td>${celda(f, "zona", 110)}</td></tr>`).join("")}
+  </tbody></table></div>` : `<p class="cl-vacio"><b>No se ha encontrado a nadie</b><span class="muted">Elige en «Qué hay en cada columna» dónde está el nombre.</span></p>`}
+  <p class="hint">Las tiendas de cada Regional Manager se asignan después, en la tabla de tiendas. Las contraseñas se enseñan una sola vez, al terminar.</p>
+  <div class="imp-pie"><button class="btn" data-imp="volver">Elegir otro archivo</button>
+    <button class="btn primary" data-imp="usar" ${van.length && !IMP.guardando ? "" : "disabled"}>${IMP.guardando ? `Creando ${IMP.hechos || 0} de ${van.length}…` : `Crear ${van.length} ${van.length === 1 ? "usuario" : "usuarios"}`}</button></div>`;
+}
+/* Se crean de uno en uno: el sistema de acceso de Supabase limita las altas
+   seguidas. Si salta el límite, se para y se dice cuántos faltan. */
+async function impCrearUsuarios(F) {
+  const cli = sb.demo ? sb : window.supabase.createClient(K.supabaseUrl, K.supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "sc-alta-lote-" + Date.now() } });
+  const res = []; let parado = "";
+  IMP.hechos = 0;
+  for (const f of F) {
+    const v = f.v, nombre = `${v.nombre} ${v.apellidos}`.trim();
+    if (parado) { res.push({ v, nombre, estado: "Sin crear: " + parado }); continue; }
+    try {
+      const { data, error } = await cli.auth.signUp({ email: emailDe(v.usuario), password: v.password });
+      if (error) throw error;
+      if (!data.user || (data.user.identities && !data.user.identities.length)) throw new Error("Ese usuario ya existe en el sistema de acceso.");
+      const r = await sb.from("perfiles").insert({ id: data.user.id, usuario: v.usuario, nombre, rol: v.rol, zona: v.rol === "rm" ? v.zona || null : null });
+      if (r.error) throw r.error;
+      res.push({ v, nombre, ok: true, estado: "Creado" });
+    } catch (e) {
+      const m = (e && (e.message || e)) + "";
+      if (/rate limit|too many|429/i.test(m) || (e && e.status === 429)) { parado = "el sistema de acceso ha puesto un límite de altas seguidas. Espera una hora y vuelve a importar el archivo: los ya creados saldrán como existentes."; res.push({ v, nombre, estado: "Sin crear: " + parado }); }
+      else res.push({ v, nombre, estado: "Error: " + traducirError(e) });
+    }
+    IMP.hechos++; impPintar();
+  }
+  const n = res.filter(r => r.ok).length;
+  if (n) log(`Alta de ${n} usuarios desde un archivo`);
+  return res;
+}
+function impResultadoUsu() {
+  const R = IMP.res || [], ok = R.filter(r => r.ok);
+  return `<div class="imp-h"><div><h2>${ok.length} ${ok.length === 1 ? "usuario creado" : "usuarios creados"}${R.length > ok.length ? ` · ${R.length - ok.length} sin crear` : ""}</h2>
+      <p class="muted">Las contraseñas solo se ven ahora. Descárgalas, comunícalas a cada persona por un canal privado y borra el archivo. Cada uno puede cambiar la suya desde su nombre, arriba a la derecha.</p></div></div>
+  <div class="tablewrap imp-tabla"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Contraseña inicial</th><th>Estado</th></tr></thead><tbody>
+    ${R.map(r => `<tr class="${r.ok ? "" : "fila-off"}"><td>${esc(r.nombre)}</td><td><code>${esc(r.v.usuario)}</code></td><td>${esc(IMP_ROLES[r.v.rol])}</td>
+      <td>${r.ok ? `<code>${esc(r.v.password)}</code>` : "–"}</td><td>${r.ok ? `<span class="badge ok">Creado</span>` : `<small class="imp-av">${esc(r.estado)}</small>`}</td></tr>`).join("")}
+  </tbody></table></div>
+  <div class="imp-pie"><button class="btn" data-imp="descUsu" ${ok.length ? "" : "disabled"}>Descargar usuarios y contraseñas</button>
+    <button class="btn primary" data-imp="terminar">Terminar</button></div>`;
+}
+function impDescargarUsu() {
+  const filas = [["Nombre", "Usuario", "Rol", "Contraseña inicial"]].concat((IMP.res || []).filter(r => r.ok).map(r => [r.nombre, r.v.usuario, IMP_ROLES[r.v.rol], r.v.password]));
+  const csv = "\uFEFF" + filas.map(f => f.map(x => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = "usuarios-pippole.csv"; document.body.appendChild(a); a.click(); a.remove();
+}
+
 /* ---------- Pantalla ---------- */
+function impMapa(campos) {
+  const T = IMP.tabla;
+  return `<section class="imp-map"><h3>Qué hay en cada columna</h3>
+    <div class="imp-cols">${T.titulos.map((t, c) => {
+      const ej = T.filas.slice(T.h + 1).map(r => r[c]).find(Boolean) || "";
+      const ocultar = IMP.modo === "usuarios" && IMP.map[c] === "password";
+      return `<label><span>${esc(t || "Columna " + (c + 1))}</span><small>${ocultar ? "••••••" : esc(ej.slice(0, 32))}</small>
+        <select data-imp-col="${c}"><option value="">No usar</option>${campos.map(k => `<option value="${k}" ${IMP.map[c] === k ? "selected" : ""}>${IMP_CAMPOS[k]}</option>`).join("")}</select></label>`;
+    }).join("")}</div></section>`;
+}
 function abrirImportador(modo, op) {
   Object.assign(IMP, { abierto: true, modo, op: op || {}, paso: "origen", tabla: null, map: [], edit: {}, fuera: new Set(),
-    tipDef: (op && op.tipDef) || "tiendas", ver: "todas", nombre: "", error: "", leyendo: false, guardando: false, pegado: "" });
+    tipDef: (op && op.tipDef) || "tiendas", rolDef: "rm", pw: {}, res: null, hechos: 0, ver: "todas", nombre: "", error: "", leyendo: false, guardando: false, pegado: "" });
   impPintar();
 }
 function impCerrar() { IMP.abierto = false; const o = document.getElementById("impOv"); if (o) o.remove(); document.body.classList.remove("imp-on"); }
@@ -239,15 +375,15 @@ function impPintar() {
   }
   const y = o.scrollTop, act = document.activeElement, k = act && act.dataset && (act.dataset.impE || act.dataset.impInc || act.dataset.impCol);
   const tw = o.querySelector(".imp-tabla"), x = tw ? tw.scrollLeft : 0;
-  o.innerHTML = `<div class="imp">${IMP.paso === "origen" ? impOrigen() : impRevision()}</div>`;
+  o.innerHTML = `<div class="imp">${IMP.paso === "origen" ? impOrigen() : IMP.paso === "hecho" ? impResultadoUsu() : IMP.modo === "usuarios" ? impRevisionUsu() : impRevision()}</div>`;
   o.scrollTop = y;
   const tw2 = o.querySelector(".imp-tabla"); if (tw2) tw2.scrollLeft = x;
   if (k) { const n = o.querySelector(`[data-imp-e="${k}"],[data-imp-inc="${k}"],[data-imp-col="${k}"]`); if (n) n.focus({ preventScroll: true }); }
 }
 function impOrigen() {
-  const base = IMP.modo === "base";
-  return `<div class="imp-h"><div><h2>${base ? "Importar personas" : "Lista para esta encuesta"}</h2>
-      <p class="muted">${base ? "Se añaden a Personas. Antes de guardar verás lo que se ha entendido de cada columna y podrás corregirlo." : "Solo se usa para esta encuesta: no se guarda en Personas. Del correo se guarda que se le ha invitado, nunca qué código recibió."}</p></div>
+  const base = IMP.modo === "base", usu = IMP.modo === "usuarios";
+  return `<div class="imp-h"><div><h2>${usu ? "Importar usuarios" : base ? "Importar personas" : "Lista para esta encuesta"}</h2>
+      <p class="muted">${usu ? "Crea de una vez las cuentas de quienes entran en la plataforma: nombre, usuario, rol y zona. Si el archivo no trae usuario o contraseña, se generan. Antes de crear nada verás la lista y podrás corregirla." : base ? "Se añaden a Personas. Antes de guardar verás lo que se ha entendido de cada columna y podrás corregirlo." : "Solo se usa para esta encuesta: no se guarda en Personas. Del correo se guarda que se le ha invitado, nunca qué código recibió."}</p></div>
     <button class="btn ghost" data-imp="cerrar" aria-label="Cerrar">Cerrar</button></div>
   <label class="imp-zona${IMP.leyendo ? " leyendo" : ""}">
     <input type="file" id="impFile" accept=".xlsx,.xlsm,.xls,.csv,.txt,.tsv,.docx,.doc,.pdf,image/*" hidden>
@@ -256,18 +392,18 @@ function impOrigen() {
   </label>
   ${IMP.error ? `<p class="hint aviso" role="alert">${esc(IMP.error)}</p>` : ""}
   <div class="imp-pegar"><label>O pega la lista copiada desde Excel
-    <textarea id="impPega" rows="5" placeholder="Nombre;Apellidos;Correo;Puesto;Ubicación\nAna;Ortega Lozano;ana.ortega@empresa.com;Store Manager;Tienda Málaga">${esc(IMP.pegado)}</textarea></label>
+    <textarea id="impPega" rows="5" placeholder="${usu ? "Nombre;Apellidos;Rol;Zona\nAna;Ortega Lozano;Regional Manager;Norte" : "Nombre;Apellidos;Correo;Puesto;Ubicación\nAna;Ortega Lozano;ana.ortega@empresa.com;Store Manager;Tienda Málaga"}">${esc(IMP.pegado)}</textarea></label>
     <button class="btn" data-imp="pegado">Leer lo pegado</button></div>
   <div class="imp-ia"><button class="btn" disabled aria-describedby="impIaT">Leer cualquier documento con IA</button>
     <small id="impIaT">PDF, fotos o texto sin tabla. Se activará cuando el responsable de protección de datos lo apruebe: el documento tendría que salir a un servicio externo.</small></div>
-  ${base ? `<p class="hint">¿No tienes plantilla? <a href="#" data-imp="modelo">Descarga el modelo</a> con las columnas que reconoce Pippole.</p>` : ""}`;
+  ${base || usu ? `<p class="hint">¿No tienes plantilla? <a href="#" data-imp="modelo">Descarga el modelo</a> con las columnas que reconoce Pippole.</p>` : ""}`;
 }
 function impRevision() {
   const base = IMP.modo === "base", T = IMP.tabla, F = impFilas();
   const incluida = f => !f.error && !IMP.fuera.has(f.i);
   const van = F.filter(incluida), nuevos = van.filter(f => !f.ya).length, act = van.length - nuevos;
   const conAviso = F.filter(f => f.error || f.avisos.length).length;
-  const campos = base ? Object.keys(IMP_CAMPOS) : IMP_CAMPOS_ENC;
+  const campos = base ? Object.keys(IMP_CAMPOS).filter(k => !IMP_CAMPOS_USU.includes(k) || ["completo", "nombre", "apellidos", "correo"].includes(k)) : IMP_CAMPOS_ENC;
   const ver = IMP.ver === "avisos" ? F.filter(f => f.error || f.avisos.length) : F;
   const max = 300, vistas = ver.slice(0, max);
   const sinTip = !IMP.map.includes("tipologia");
@@ -275,15 +411,9 @@ function impRevision() {
   return `<div class="imp-h"><div><h2>Revisa antes de ${base ? "guardar" : "usarla"}</h2>
       <p class="muted">${esc(IMP.nombre || "Lista pegada")} · ${F.length} ${F.length === 1 ? "persona" : "personas"}${conAviso ? ` · ${conAviso} con avisos` : ""}</p></div>
     <button class="btn ghost" data-imp="cerrar">Cerrar</button></div>
-  <section class="imp-map"><h3>Qué hay en cada columna</h3>
-    <div class="imp-cols">${T.titulos.map((t, c) => {
-      const ej = T.filas.slice(T.h + 1).map(r => r[c]).find(Boolean) || "";
-      return `<label><span>${esc(t || "Columna " + (c + 1))}</span><small>${esc(ej.slice(0, 32))}</small>
-        <select data-imp-col="${c}"><option value="">No usar</option>${campos.map(k => `<option value="${k}" ${IMP.map[c] === k ? "selected" : ""}>${IMP_CAMPOS[k]}</option>`).join("")}</select></label>`;
-    }).join("")}</div>
-    ${base && sinTip ? `<label class="imp-def">Si no viene la tipología, la ubicación no es una tienda y no hay departamento:
-      <select data-imp-tipdef>${Object.entries(IMP_TIPOS).map(([k, n]) => `<option value="${k}" ${IMP.tipDef === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>` : ""}
-  </section>
+  ${impMapa(campos)}
+  ${base && sinTip ? `<section class="imp-map"><label class="imp-def">Si no viene la tipología, la ubicación no es una tienda y no hay departamento:
+      <select data-imp-tipdef>${Object.entries(IMP_TIPOS).map(([k, n]) => `<option value="${k}" ${IMP.tipDef === k ? "selected" : ""}>${n}</option>`).join("")}</select></label></section>` : ""}
   <div class="imp-barra"><div class="imp-filtro">
       <button class="${IMP.ver === "todas" ? "on" : ""}" data-imp="ver" data-v="todas">Todas · ${F.length}</button>
       <button class="${IMP.ver === "avisos" ? "on" : ""}" data-imp="ver" data-v="avisos">Con avisos · ${conAviso}</button></div>
@@ -315,7 +445,16 @@ function impConTabla(filas, nombre) {
   IMP.leyendo = false;
   const T = impPrepararTabla(filas || []);
   if (!T.filas.length || T.filas.length <= T.h + 1) { IMP.error = "El archivo está vacío o solo tiene títulos."; impPintar(); return; }
-  Object.assign(IMP, { tabla: T, map: T.map.slice(), edit: {}, fuera: new Set(), nombre: nombre || "", paso: "revisar", ver: "todas", error: "" });
+  const map = T.map.map(c => {
+    if (IMP.modo === "usuarios") {
+      if (c === "puesto") return T.map.includes("rol") ? "" : "rol";
+      if (c === "ubicacion") return T.map.includes("zona") ? "" : "zona";
+      return IMP_CAMPOS_USU.includes(c) ? c : "";
+    }
+    if (c === "rol") return T.map.includes("puesto") ? "" : "puesto";
+    return ["usuario", "password", "zona"].includes(c) ? "" : c;
+  });
+  Object.assign(IMP, { tabla: T, map, edit: {}, fuera: new Set(), pw: {}, nombre: nombre || "", paso: "revisar", ver: "todas", error: "" });
   impPintar();
 }
 function impClic(e) {
@@ -328,12 +467,15 @@ function impClic(e) {
   if (a === "ver") { IMP.ver = b.dataset.v; return impPintar(); }
   if (a === "modelo") return impModelo();
   if (a === "usar") return impUsar();
+  if (a === "descUsu") return impDescargarUsu();
+  if (a === "terminar") { impCerrar(); if (typeof recargar === "function") recargar(); return; }
 }
 function impCambio(e) {
   const el = e.target;
   if (el.id === "impFile") { const f = el.files && el.files[0]; if (f) impDesdeArchivo(f); return; }
   if (el.dataset.impCol !== undefined) { IMP.map[Number(el.dataset.impCol)] = el.value; IMP.edit = {}; return impPintar(); }
   if (el.dataset.impTipdef !== undefined) { IMP.tipDef = el.value; return impPintar(); }
+  if (el.dataset.impRoldef !== undefined) { IMP.rolDef = el.value; return impPintar(); }
   if (el.dataset.impInc !== undefined) {
     const i = Number(el.dataset.impInc);
     if (el.checked) IMP.fuera.delete(i); else IMP.fuera.add(i);
@@ -347,18 +489,25 @@ function impCambio(e) {
 }
 function impEscribe(e) { if (e.target.id === "impPega") IMP.pegado = e.target.value; }
 function impModelo() {
-  const filas = [["Nombre", "Apellidos", "Correo", "Puesto", "Tipología", "Ubicación", "Departamento", "Responsable", "Fecha de alta"],
+  const filas = IMP.modo === "usuarios" ? [["Nombre", "Apellidos", "Usuario", "Rol", "Zona"],
+    ["Ana", "Ortega Lozano", "", "Regional Manager", "Norte"], ["Marta", "Ruiz Pastor", "marta.ruiz", "Administrador", ""], ["Hugo", "Vidal Campos", "", "Retail Marketing", ""]] : [["Nombre", "Apellidos", "Correo", "Puesto", "Tipología", "Ubicación", "Departamento", "Responsable", "Fecha de alta"],
     ["Ana", "Ortega Lozano", "ana.ortega@empresa.com", "Store Manager", "Tiendas", "Tienda Málaga", "", "", "01/03/2024"],
     ["Hugo", "Vidal Campos", "hugo.vidal@empresa.com", "Vendedor", "Tiendas", "Tienda Málaga", "", "Ana Ortega Lozano", "15/09/2025"],
     ["Marta", "Ruiz Pastor", "marta.ruiz@empresa.com", "Controller", "Oficinas", "Oficina Barcelona", "Finanzas", "", "10/01/2022"]];
   const csv = "﻿" + filas.map(f => f.map(x => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  a.download = "modelo-personas-pippole.csv"; document.body.appendChild(a); a.click(); a.remove();
+  a.download = IMP.modo === "usuarios" ? "modelo-usuarios-pippole.csv" : "modelo-personas-pippole.csv"; document.body.appendChild(a); a.click(); a.remove();
 }
 async function impUsar() {
   const F = impFilas().filter(f => !f.error && !IMP.fuera.has(f.i));
   if (!F.length) return;
+  if (IMP.modo === "usuarios") {
+    IMP.guardando = true; IMP.hechos = 0; impPintar();
+    IMP.res = await impCrearUsuarios(F);
+    IMP.guardando = false; IMP.paso = "hecho"; impPintar();
+    return;
+  }
   if (IMP.modo === "encuesta") {
     const lista = F.map(f => ({ nombre: (f.v.nombre + " " + f.v.apellidos).trim(), e: impMail(f.v.correo) ? f.v.correo : "", t: f.v.tienda_id || (impTiendaDe(f.v.ubicacion) || {}).id || null,
       g: f.v.departamento || f.v.ubicacion || null, r: f.v.responsable || null }));
@@ -373,4 +522,4 @@ async function impUsar() {
     if (IMP.op.alUsar) IMP.op.alUsar(r);
   } catch (e) { IMP.guardando = false; IMP.error = ""; impPintar(); alert("No se ha podido guardar: " + traducirError(e)); }
 }
-document.addEventListener("keydown", e => { if (e.key === "Escape" && IMP.abierto && !IMP.guardando) impCerrar(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && IMP.abierto && !IMP.guardando && IMP.paso !== "hecho") impCerrar(); });
