@@ -185,6 +185,11 @@ window.crearClienteDemo = function () {
     functions: {
       invoke(nombre, { body }) {
         if (nombre === "resenas") return new Promise(r => setTimeout(() => r({ data: demoResenas(body), error: null }), 400));
+        if (nombre === "crear-cuenta") return new Promise(r => setTimeout(() => {
+          const e = String(body.email || "").replace(/@.*/, "@demo");
+          if (db.auth.some(x => x.email === e)) return r({ data: { error: "EXISTE" }, error: null });
+          const id = uid(); db.auth.push({ id, email: e, password: body.password }); save(); r({ data: { id }, error: null });
+        }, 200));
         return new Promise(r => setTimeout(() => {
           const ahora = new Date().toISOString(), res = [];
           const tabla = body.tipo === "desarrollo" ? db.dr_evaluadores : db.invitaciones;

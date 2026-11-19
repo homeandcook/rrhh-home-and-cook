@@ -148,7 +148,7 @@ function altaBaja(ev) {
   const t = S.tiendas.find(x => x.id === filtroBajas().tienda);
   if (!t) return;
   const f = Object.fromEntries(new FormData(ev.target));
-  if (f.fin && f.fin < f.inicio) return alert("La fecha de alta no puede ser anterior al inicio de la baja.");
+  if (f.fin && f.fin < f.inicio) return avisar("La fecha de alta no puede ser anterior al inicio de la baja.");
   t.bajas = t.bajas || [];
   t.bajas.push({ id: "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     nombre: (f.nombre || "").trim(), puesto: f.puesto, tipo: f.tipo, inicio: f.inicio, fin: f.fin || null });
@@ -172,7 +172,7 @@ function cerrarBaja(id, fecha) {
   const t = S.tiendas.find(x => x.id === filtroBajas().tienda);
   const b = t && (t.bajas || []).find(y => y.id === id);
   if (!t || !b) return;
-  if (fecha < b.inicio) { alert("El alta no puede ser anterior al inicio de la baja."); pintarBajas(); return; }
+  if (fecha < b.inicio) { avisar("El alta no puede ser anterior al inicio de la baja."); pintarBajas(); return; }
   b.fin = fecha;
   log(`Alta médica registrada en ${t.nombre}`, t);
   guardar(t); toast("Alta registrada"); pintarBajas();
@@ -182,9 +182,9 @@ const ACCIONES_BAJAS = {
   bajasReset() { S.bajas = { zona: "", tienda: "", periodo: "todo", alta: "" }; },
   bajasVer(b) { filtroBajas().tienda = b.dataset.id; },
   bajasCsv() { bajasCsv(); return false; },
-  bajaBorrar(b) {
+  async bajaBorrar(b) {
     const t = S.tiendas.find(x => x.id === filtroBajas().tienda); if (!t) return false;
-    if (!confirm("¿Eliminar este registro de baja?")) return false;
+    if (!(await confirmar({ titulo: "Eliminar la baja", texto: "Se borra este registro de baja.", ok: "Eliminar", peligro: true }))) return false;
     t.bajas = (t.bajas || []).filter(y => y.id !== b.dataset.id);
     log(`Baja eliminada del registro en ${t.nombre}`, t); guardar(t);
   }

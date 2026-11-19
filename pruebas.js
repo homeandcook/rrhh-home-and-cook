@@ -93,7 +93,7 @@ const ACCIONES_INVITADO = {
   invResp(b) { const v = Number(b.dataset.v); INV.respuestas[b.dataset.q] = INV.respuestas[b.dataset.q] === v ? undefined : v; if (INV.respuestas[b.dataset.q] === undefined) delete INV.respuestas[b.dataset.q]; pintarInvitado(); },
   async invEnviar() {
     const { error } = await sb.rpc("invitacion_responder", { p_codigo: INV.codigo, p_respuestas: INV.respuestas });
-    if (error) { alert("No se han podido enviar las respuestas: " + traducirError(error)); return; }
+    if (error) { avisar("No se han podido enviar las respuestas: " + traducirError(error)); return; }
     INV.enviado = true; pintarInvitado();
   },
   irLogin() { history.replaceState(null, "", location.pathname); location.reload(); }
@@ -301,7 +301,7 @@ async function generarInvitaciones(ev) {
     email: pl.anonima ? null : ((f.email || "").trim().toLowerCase() || null),
     codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} });
   const { error } = await sb.from("invitaciones").insert(filas);
-  if (error) { alert("No se han podido generar los códigos: " + traducirError(error)); return; }
+  if (error) { avisar("No se han podido generar los códigos: " + traducirError(error)); return; }
   log(`${n} código(s) de ${c.titulo} para ${(tiendaDe(f.tienda_id) || {}).nombre || ""}`);
   toast(n === 1 ? "Código generado" : n + " códigos generados");
   await recargarPruebas(); pintar();
@@ -367,7 +367,7 @@ const ACCIONES_PRUEBAS = {
     const titulo = prompt(`Título de la campaña:`, `${nom} ${SC.CONFIG.anio}`);
     if (!titulo) return false;
     const { error } = await sb.from("campanas").insert({ anio: SC.CONFIG.anio, tipo, plantilla, titulo: titulo.trim(), estado: "abierta", creado_por: (S.real || S.me).id });
-    if (error) { alert("No se ha podido crear: " + traducirError(error)); return false; }
+    if (error) { avisar("No se ha podido crear: " + traducirError(error)); return false; }
     log(`Campaña creada: ${titulo}`); await recargarPruebas();
     S.campana = (S.campanas.filter(c => c.tipo === tipo).slice(-1)[0] || {}).id;
     toast("Campaña creada");
@@ -378,7 +378,7 @@ const ACCIONES_PRUEBAS = {
     if (nuevo === "cerrada" && !await confirmar({ titulo: "Cerrar la campaña", ok: "Cerrar campaña",
       texto: "Los códigos que nadie haya contestado dejarán de funcionar. Puedes reabrirla después." })) return false;
     const { error } = await sb.from("campanas").update({ estado: nuevo }).eq("id", c.id);
-    if (error) { alert(traducirError(error)); return false; }
+    if (error) { avisar(traducirError(error)); return false; }
     log(`Campaña ${nuevo}: ${c.titulo}`); await recargarPruebas();
   },
   async borrarInv(b) {
@@ -389,7 +389,7 @@ const ACCIONES_PRUEBAS = {
                   : "El código dejará de funcionar. Si ya lo has repartido, quien lo tenga no podrá entrar. No se puede deshacer." });
     if (!ok) return false;
     const { error } = await sb.from("invitaciones").delete().eq("id", inv.id);
-    if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
+    if (error) { avisar("No se ha podido borrar: " + traducirError(error)); return false; }
     log(`Código borrado: ${inv.codigo}`); await recargarPruebas(); toast("Código borrado");
   },
   async vaciarCodigos() {
@@ -401,7 +401,7 @@ const ACCIONES_PRUEBAS = {
     if (!ok) return false;
     for (const est of ["pendiente", "abierta"]) {
       const { error } = await sb.from("invitaciones").delete().eq("campana_id", c.id).eq("estado", est);
-      if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
+      if (error) { avisar("No se ha podido borrar: " + traducirError(error)); return false; }
     }
     log(`Códigos sin responder borrados: ${c.titulo}`); await recargarPruebas(); toast("Códigos borrados");
   },
@@ -412,9 +412,9 @@ const ACCIONES_PRUEBAS = {
       texto: `Se borra la campaña entera con sus ${inv.length} ${inv.length === 1 ? "código" : "códigos"}${r ? ` y las ${r} ${r === 1 ? "respuesta recibida" : "respuestas recibidas"}` : ""}. No se puede deshacer.` });
     if (!ok) return false;
     const e1 = (await sb.from("invitaciones").delete().eq("campana_id", c.id)).error;
-    if (e1) { alert("No se ha podido borrar: " + traducirError(e1)); return false; }
+    if (e1) { avisar("No se ha podido borrar: " + traducirError(e1)); return false; }
     const { error } = await sb.from("campanas").delete().eq("id", c.id);
-    if (error) { alert("No se ha podido borrar: " + traducirError(error)); return false; }
+    if (error) { avisar("No se ha podido borrar: " + traducirError(error)); return false; }
     log(`Campaña borrada: ${c.titulo}`); S.campana = null; await recargarPruebas(); toast("Campaña borrada");
   },
   /* La pantalla se pinta con lo que había al entrar. Quien está esperando
@@ -441,7 +441,7 @@ const ACCIONES_PRUEBAS = {
       puesto: x.puesto || null, email: (x.email || "").toLowerCase() || null,
       codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
     const { error } = await sb.from("invitaciones").insert(filas);
-    if (error) { alert("No se han podido generar los códigos: " + traducirError(error)); return false; }
+    if (error) { avisar("No se han podido generar los códigos: " + traducirError(error)); return false; }
     log(`${filas.length} código(s) de ${c.titulo} para ${t2.nombre}`);
     await recargarPruebas(); pintar();
     toast(filas.length === 1 ? "1 código generado" : filas.length + " códigos generados");
@@ -456,9 +456,9 @@ const ACCIONES_PRUEBAS = {
     try {
       const r = await enviarPorLaPlataforma([inv.id]);
       const mal = (r.resultados || []).find(x => !x.ok);
-      if (mal) { alert("No se ha enviado: " + (motivoLegible(mal.motivo) || "motivo desconocido")); }
+      if (mal) { avisar("No se ha enviado: " + (motivoLegible(mal.motivo) || "motivo desconocido")); }
       else { log(`Código enviado a ${inv.email}`); toast("Correo enviado"); }
-    } catch (e) { alert("No se ha podido enviar: " + e.message); }
+    } catch (e) { avisar("No se ha podido enviar: " + e.message); }
     await recargarPruebas(); pintar();
     return false;
   },
@@ -485,7 +485,7 @@ const ACCIONES_PRUEBAS = {
     }
     log(`${bien} códigos enviados de ${c.titulo}`);
     await recargarPruebas(); pintar();
-    if (fallos.length) alert(`Enviados ${bien} de ${pend.length}.\n\nNo han salido:\n` + fallos.slice(0, 12).join("\n"));
+    if (fallos.length) avisar(`Enviados ${bien} de ${pend.length}.\n\nNo han salido:\n` + fallos.slice(0, 12).join("\n"));
     else toast(bien === 1 ? "1 correo enviado" : bien + " correos enviados");
     return false;
   },

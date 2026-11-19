@@ -179,7 +179,7 @@ async function masivoEjecutar(c, pl, p, total) {
       // Códigos sin nombre, uno por dirección; la pareja solo vive aquí.
       const filas = p.nuevos.map(n => ({ campana_id: c.id, tienda_id: n.t ? n.t.id : null, codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
       const ins = await sb.from("invitaciones").insert(filas).select();
-      if (ins.error) { alert("No se han podido crear los códigos: " + traducirError(ins.error)); await recargarPruebas(); pintar(); return false; }
+      if (ins.error) { avisar("No se han podido crear los códigos: " + traducirError(ins.error)); await recargarPruebas(); pintar(); return false; }
       const clave = id => id || "-", libres = {}; (ins.data || []).forEach(r => (libres[clave(r.tienda_id)] = libres[clave(r.tienda_id)] || []).push(r.id));
       Object.values(libres).forEach(a => a.sort(() => Math.random() - 0.5));
       const pares = p.nuevos.map(n => ({ id: libres[clave(n.t && n.t.id)].pop(), email: n.email })).sort(() => Math.random() - 0.5);
@@ -205,7 +205,7 @@ async function masivoEjecutar(c, pl, p, total) {
         const filas = p.nuevos.map(n => ({ campana_id: c.id, tienda_id: n.t ? n.t.id : null, destinatario: n.x.nombre, puesto: n.x.puesto || null,
           email: normMail(n.x.email), codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
         const ins = await sb.from("invitaciones").insert(filas).select();
-        if (ins.error) { alert("No se han podido crear los códigos: " + traducirError(ins.error)); await recargarPruebas(); pintar(); return false; }
+        if (ins.error) { avisar("No se han podido crear los códigos: " + traducirError(ins.error)); await recargarPruebas(); pintar(); return false; }
         ids = ids.concat((ins.data || []).map(r => r.id));
         await recargarPruebas();
       }
@@ -216,8 +216,8 @@ async function masivoEjecutar(c, pl, p, total) {
     log(`${res.bien} correos enviados de ${c.titulo} (envío masivo)`);
     await recargarPruebas(); pintar();
     const pendientes = total - res.bien;
-    if (res.tope) alert(`Enviados ${res.bien} de ${total}.\n\nSe ha llegado al límite diario de correos del proveedor (${LIMITE_GRATIS} al día en el plan gratuito). ${pendientes} quedan pendientes: vuelve a pulsar «Enviar» mañana.`);
-    else if (res.fallos.length) alert(`Enviados ${res.bien} de ${total}.\n\nNo han salido:\n` + res.fallos.slice(0, 12).map(x => motivoLegible(x.motivo)).join("\n"));
+    if (res.tope) avisar(`Enviados ${res.bien} de ${total}.\n\nSe ha llegado al límite diario de correos del proveedor (${LIMITE_GRATIS} al día en el plan gratuito). ${pendientes} quedan pendientes: vuelve a pulsar «Enviar» mañana.`);
+    else if (res.fallos.length) avisar(`Enviados ${res.bien} de ${total}.\n\nNo han salido:\n` + res.fallos.slice(0, 12).map(x => motivoLegible(x.motivo)).join("\n"));
     else toast(res.bien === 1 ? "1 correo enviado" : res.bien + " correos enviados");
 }
 Object.assign(ACCIONES_ENVIOS, {
@@ -233,8 +233,8 @@ Object.assign(ACCIONES_ENVIOS, {
     const res = await enviarEnLotes(lotes, "Enviando recordatorios");
     log(`${res.bien} recordatorios de ${c.titulo}`);
     pintar();
-    if (res.tope) alert(`Enviados ${res.bien} de ${mails.length}. Se ha llegado al límite diario del proveedor; el resto, mañana.`);
-    else if (res.fallos.length) alert(`Enviados ${res.bien} de ${mails.length}.\n\n` + res.fallos.slice(0, 8).map(x => motivoLegible(x.motivo)).join("\n"));
+    if (res.tope) avisar(`Enviados ${res.bien} de ${mails.length}. Se ha llegado al límite diario del proveedor; el resto, mañana.`);
+    else if (res.fallos.length) avisar(`Enviados ${res.bien} de ${mails.length}.\n\n` + res.fallos.slice(0, 8).map(x => motivoLegible(x.motivo)).join("\n"));
     else toast(res.bien === 1 ? "1 recordatorio enviado" : res.bien + " recordatorios enviados");
     return false;
   }

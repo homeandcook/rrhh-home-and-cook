@@ -19,7 +19,7 @@ function drS() {
 }
 function resumenDesarrollo() {
   const D = drS();
-  if (!D.ciclo) return "Talent Review por código, para oficina y retail";
+  if (!D.ciclo) return "Ningún ciclo abierto todavía";
   const ev = D.ev, ent = ev.filter(e => e.entregado).length;
   return `${ent} de ${ev.length} responsables han enviado`;
 }
@@ -547,6 +547,7 @@ const ACCIONES_DR = {
   },
   csv() {
     const D = drS(), ent = new Set(D.ev.filter(e => e.entregado).map(e => e.id));
+    log(`Exportación del maestro de Talent Review: ${drCiclo().nombre}`);
     trCsv(D.per.filter(p => ent.has(p.evaluador_id)), `${drCiclo().nombre.replace(/\W+/g, "_")}_MAESTRO.csv`,
       [["Responsable", p => drMgr(p)], ["IDEmpleado", p => p.id_empleado], ["FechaEnvio", p => { const e = D.ev.find(x => x.id === p.evaluador_id); return e && e.entregado ? new Date(e.entregado).toLocaleDateString("es-ES") : ""; }]]);
     return false;

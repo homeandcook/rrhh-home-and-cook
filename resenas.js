@@ -163,7 +163,7 @@ const ACCIONES_EB = {
     const t = para === "otro" ? null : ((S.todas && S.todas.length ? S.todas : S.tiendas) || []).find(x => x.id === para);
     const fila = { nombre: t ? t.nombre : (b.dataset.n || "Sitio"), tipo: t ? "tienda" : /oficina|sede|central/i.test(b.dataset.n || "") ? "oficina" : "otro", tienda_id: t ? t.id : null, place_id: b.dataset.pid, direccion: b.dataset.d || "" };
     const r = await sb.from("resenas_sitios").insert(fila).select().single();
-    if (r.error) { alert(/duplicate|unique/i.test(r.error.message || "") ? "Esa ficha de Google ya está vinculada." : "No se ha podido vincular: " + traducirError(r.error)); return false; }
+    if (r.error) { avisar(/duplicate|unique/i.test(r.error.message || "") ? "Esa ficha de Google ya está vinculada." : "No se ha podido vincular: " + traducirError(r.error)); return false; }
     E.sitios.push(r.data); E.busca = null; log(`Ficha de Google vinculada: ${fila.nombre} (Employer Branding)`);
     toast("Vinculada"); ebActualizarUno(r.data.place_id);
   },
@@ -172,7 +172,7 @@ const ACCIONES_EB = {
     const ok = await confirmar({ titulo: `Quitar ${s.nombre}`, ok: "Quitar", texto: "Deja de consultarse en Google. Se puede volver a vincular cuando quieras." });
     if (!ok) return false;
     const r = await sb.from("resenas_sitios").delete().eq("id", s.id);
-    if (r.error) { alert(traducirError(r.error)); return false; }
+    if (r.error) { avisar(traducirError(r.error)); return false; }
     E.sitios = E.sitios.filter(x => x.id !== s.id); delete E.datos[s.place_id];
   }
 };

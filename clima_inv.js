@@ -170,7 +170,7 @@ async function clInvEnviar() {
   CI.enviando = true; clInvPintar();
   const { error } = await sb.rpc("invitacion_responder", { p_codigo: INV.codigo, p_respuestas: resp });
   CI.enviando = false;
-  if (error) { alert("No se han podido enviar las respuestas: " + traducirError(error) + "\n\nTus respuestas siguen guardadas en este dispositivo: inténtalo de nuevo."); clInvPintar(); return; }
+  if (error) { avisar("No se han podido enviar las respuestas: " + traducirError(error) + "\n\nTus respuestas siguen guardadas en este dispositivo: inténtalo de nuevo."); clInvPintar(); return; }
   INV.enviado = true; CI.fin = true;
   try { localStorage.removeItem(clClave()); } catch (e) {}
   clInvPintar(); window.scrollTo(0, 0);

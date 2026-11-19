@@ -455,7 +455,7 @@ const ACCIONES_FORMACION = {
   arcade() { S.vista = "arcade"; S.chuleta = false; window.scrollTo(0, 0); },
   volverRecorrido() { S.vista = "recorrido"; },
   chuletaNo() { S.chuleta = false; },
-  reiniciarCurso() { if (!confirm("Se borra tu progreso de esta formación. ¿Seguro?")) return false; const p = progreso(); delete p[S.curso]; guardarProgreso(p); S.paso = (pasosDe(S.curso)[0] || {}).id; },
+  async reiniciarCurso() { if (!(await confirmar({ titulo: "Empezar de nuevo", texto: "Se borra tu progreso de esta formación.", ok: "Empezar de nuevo", peligro: true }))) return false; const p = progreso(); delete p[S.curso]; guardarProgreso(p); S.paso = (pasosDe(S.curso)[0] || {}).id; },
   famSel(b) { S.fam = Number(b.dataset.k); },
   prodSel(b) { S.prod = b.dataset.t; },
   copiarFrase(b) {
@@ -669,6 +669,7 @@ const ACCIONES_SEG = {
     const csv = "﻿" + filas.map(f => f.map(v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    log(`Exportación del seguimiento de formaciones (${R.length} registros)`);
     a.download = `formaciones-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     return false;
@@ -701,7 +702,7 @@ const ACCIONES_SEG = {
     }
     log(`${bien} recordatorios de formación enviados`);
     await recargarPruebas(); pintar();
-    if (fallos.length) alert(`Enviados ${bien} de ${pend.length}.\n\nNo han salido:\n` + fallos.slice(0, 12).join("\n"));
+    if (fallos.length) avisar(`Enviados ${bien} de ${pend.length}.\n\nNo han salido:\n` + fallos.slice(0, 12).join("\n"));
     else toast(bien === 1 ? "1 recordatorio enviado" : bien + " recordatorios enviados");
     return false;
   }

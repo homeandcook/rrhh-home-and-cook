@@ -60,9 +60,9 @@ async function abrirVistaCorreo(op) {
   if (!window.CORREO) {
     try { await cargarPlantillaCorreo(); }
     catch (e) {
-      if (sb.demo) { alert("No se ha podido cargar la plantilla del correo (" + ((e && e.message) || e) + ")."); return; }
+      if (sb.demo) { avisar("No se ha podido cargar la plantilla del correo (" + ((e && e.message) || e) + ")."); return; }
       try { toast("Preparando la vista previa…"); remoto = await vcPedir(op, op.aj || {}); }
-      catch (e2) { alert("No se ha podido preparar la vista previa del correo (" + ((e2 && e2.message) || e2) + "). Vuelve a intentarlo en un momento."); return; }
+      catch (e2) { avisar("No se ha podido preparar la vista previa del correo (" + ((e2 && e2.message) || e2) + "). Vuelve a intentarlo en un momento."); return; }
     }
   }
   const def = remoto ? { firma: remoto.firma, cargo: remoto.cargo } : vcFirmaPorDefecto();
@@ -106,7 +106,7 @@ function vcPintar() {
       <p class="muted">${op.n ? `Lo recibirán ${op.n} ${op.n === 1 ? "persona" : "personas"}. ` : ""}Los cambios valen para todos los envíos${rec ? "" : " y recordatorios"} de ${op.ciclo ? "este ciclo" : "esta campaña"}.</p></div>
       <button class="btn ghost" data-vc="cerrar" ${VC.ocupado ? "disabled" : ""}>Cerrar</button></div>
     <div class="vc-g">
-      <form class="vc-f" onsubmit="return false">
+      <div class="vc-f">
         ${op.soloVer ? `<p class="hint warn">El texto del correo lo decide RR.HH. Aquí puedes ver cómo llegará.</p>` : ""}
         <fieldset class="vc-fs" ${op.soloVer ? "disabled" : ""}>
         <label>Asunto<input data-vc-c="asunto" value="${esc(v.asunto)}" maxlength="150"></label>
@@ -116,7 +116,7 @@ function vcPintar() {
         <p class="hint">El código, el botón y «Cómo funciona» no se pueden cambiar: son los que permiten entrar. ${op.modo === "anonima" ? "Tampoco el saludo: en las anónimas no lleva nombre." : "El saludo lleva el nombre de cada persona."}</p>
         ${op.soloVer ? "" : `<button type="button" class="btn small ghost" data-vc="restablecer">Volver al texto de siempre</button>`}
         </fieldset>
-      </form>
+      </div>
       <div class="vc-p">
         <div class="vc-p-h"><div class="imp-filtro"><button class="${VC.ancho === "pc" ? "on" : ""}" data-vc="ancho" data-v="pc">Ordenador</button><button class="${VC.ancho === "movil" ? "on" : ""}" data-vc="ancho" data-v="movil">Móvil</button></div>
           <span class="vc-asunto"><small>Asunto</small> ${esc(m.asunto)}</span></div>
@@ -165,7 +165,7 @@ async function vcClic(e) {
       if (op.alGuardar) await op.alGuardar(aj);
       if (a === "enviar" && op.alEnviar) { vcCerrar(); await op.alEnviar(aj); return; }
       vcCerrar(); toast("Texto del correo guardado");
-    } catch (err) { VC.ocupado = false; vcPintar(); alert("No se ha podido guardar: " + traducirError(err)); }
+    } catch (err) { VC.ocupado = false; vcPintar(); avisar("No se ha podido guardar: " + traducirError(err)); }
   }
 }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && VC.abierto && !VC.ocupado) vcCerrar(); });

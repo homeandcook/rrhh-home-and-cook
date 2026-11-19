@@ -18,7 +18,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Antes de publicar: sintaxis de cada fichero y prueba de humo en la demo
+  # (pruebas/humo.py). Si algo falla, no se publica y la web sigue como estaba.
+  comprobar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Sintaxis de los ficheros JavaScript
+        run: |
+          for f in *.js supabase/functions/_shared/correo.js; do node --check "$f"; done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar Playwright
+        run: |
+          pip install playwright==1.48.0
+          python -m playwright install --with-deps chromium
+      - name: Prueba de humo en la demo
+        run: |
+          python3 -m http.server 8765 >/dev/null 2>&1 &
+          sleep 2
+          python3 pruebas/humo.py http://localhost:8765
+
   publicar:
+    needs: comprobar
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -29,10 +55,11 @@ jobs:
       - name: Preparar solo los ficheros del sitio
         run: |
           mkdir -p _sitio
-          cp index.html manifest.json _sitio/
+          cp index.html privacidad.html manifest.json _sitio/
           cp *.js _sitio/
           cp *.png favicon.svg _sitio/
-          mkdir -p _sitio/img && cp img/*.jpg _sitio/img/
+          # Las fotos de img/ (escape room de PRL, apartado oculto) no se publican:
+          # son de tiendas reales y se ven marcas. Volver a copiarlas solo con fotos neutras.
           mkdir -p _sitio/fonts && cp fonts/*.woff2 _sitio/fonts/
           # La plantilla del correo: la usa la vista previa antes de enviar
           # (misma ruta que en el repositorio; es solo texto y maqueta).

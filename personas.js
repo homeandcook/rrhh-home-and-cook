@@ -102,12 +102,12 @@ async function empGuardarForm(ev) {
   ev.preventDefault();
   const f = Object.fromEntries(new FormData(ev.target)), p = S.pe;
   const fila = Object.assign(empFilaDesde(f), { responsable_id: f.responsable_id || null });
-  if (fila.correo && !impMail(fila.correo)) return alert("El correo no es válido.");
-  if (fila.correo && S.emp.some(e => e.correo === fila.correo && e.id !== p.id)) return alert("Ya hay otra persona con ese correo.");
+  if (fila.correo && !impMail(fila.correo)) return avisar("El correo no es válido.");
+  if (fila.correo && S.emp.some(e => e.correo === fila.correo && e.id !== p.id)) return avisar("Ya hay otra persona con ese correo.");
   if (p.id) { fila.fecha_baja = f.fecha_baja || null; fila.activo = !f.fecha_baja; }
   const btn = ev.target.querySelector("[type=submit]"); btn.disabled = true;
   const r = p.id ? await sb.from("empleados").update(fila).eq("id", p.id).select() : await sb.from("empleados").insert(fila).select();
-  if (r.error) { btn.disabled = false; return alert("No se ha podido guardar: " + traducirError(r.error)); }
+  if (r.error) { btn.disabled = false; return avisar("No se ha podido guardar: " + traducirError(r.error)); }
   log(`${p.id ? "Cambios en" : "Alta de"} ${fila.nombre} ${fila.apellidos} (Personas)`);
   S.pe = null; await cargarEmpleados(); pintar(); toast(p.id ? "Cambios guardados" : "Persona añadida");
 }
@@ -161,7 +161,7 @@ const ACCIONES_PERSONAS = {
     const e = empPorId(b.dataset.id); if (!e) return false;
     const c = e.activo ? { activo: false, fecha_baja: new Date().toISOString().slice(0, 10) } : { activo: true, fecha_baja: null };
     const r = await sb.from("empleados").update(c).eq("id", e.id);
-    if (r.error) { alert(traducirError(r.error)); return false; }
+    if (r.error) { avisar(traducirError(r.error)); return false; }
     log(`${e.activo ? "Baja" : "Reactivación"} de ${empNombre(e)} (Personas)`);
     S.pe = null; await cargarEmpleados(); toast(e.activo ? "Dada de baja" : "Reactivada");
   },
@@ -171,7 +171,7 @@ const ACCIONES_PERSONAS = {
       texto: "Se borra de Personas. Las encuestas que ya ha recibido no cambian. Si solo deja la empresa, mejor «Dar de baja»: se conserva el historial." });
     if (!ok) return false;
     const r = await sb.from("empleados").delete().eq("id", e.id);
-    if (r.error) { alert(traducirError(r.error)); return false; }
+    if (r.error) { avisar(traducirError(r.error)); return false; }
     log(`Borrado de ${empNombre(e)} (Personas)`);
     S.pe = null; await cargarEmpleados(); toast("Borrada");
   },
@@ -181,6 +181,7 @@ const ACCIONES_PERSONAS = {
     const csv = "﻿" + filas.map(f => f.map(x => `"${String(x == null ? "" : x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    log(`Exportación de la plantilla (${S.emp.length} personas)`);
     a.download = "personas.csv"; document.body.appendChild(a); a.click(); a.remove();
     return false;
   }

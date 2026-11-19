@@ -35,7 +35,7 @@ async function guardarDocumento(tipo, cuerpo) {
   const r = existe
     ? await sb.from("documentos").update({ cuerpo }).eq("clave", tipo).select()
     : await sb.from("documentos").insert({ clave: tipo, cuerpo }).select();
-  if (r.error) { alert("No se ha podido guardar: " + traducirError(r.error)); return false; }
+  if (r.error) { avisar("No se ha podido guardar: " + traducirError(r.error)); return false; }
   S.documentos = S.documentos || {};
   S.documentos[tipo] = cuerpo ? Object.assign({}, cuerpo, { actualizado: new Date().toISOString() }) : null;
   if (!cuerpo) delete S.documentos[tipo];
@@ -184,7 +184,7 @@ const ACCIONES_DOCS = {
   docEditCancelar() { docsEstado().edit = null; },
   async docBorrar() {
     const st = docsEstado(), cuerpo = cuerpoEditable(docTipo()), x = cuerpo.items.find(y => y.id === st.edit.id);
-    if (!confirm(`¿Eliminar la ficha «${x.t}»? Se puede recuperar restaurando la versión base.`)) return false;
+    if (!(await confirmar({ titulo: "Eliminar la ficha", texto: `Se elimina «${x.t}». Se puede recuperar restaurando la versión base.`, ok: "Eliminar", peligro: true }))) return false;
     cuerpo.items = cuerpo.items.filter(y => y.id !== x.id);
     if (!(await guardarDocumento(docTipo(), cuerpo))) return false;
     log(`${DOCS_BASE[docTipo()].titulo}: ficha «${x.t}» eliminada`); st.edit = null; st.sel = null;
@@ -198,9 +198,9 @@ const ACCIONES_DOCS = {
     toast("Orden guardado"); return false;
   },
   async docRestaurar() {
-    if (!confirm("Se descartan todas las ediciones de RR.HH. y vuelve el contenido base de la plataforma. ¿Seguimos?")) return false;
+    if (!(await confirmar({ titulo: "Restaurar el contenido base", texto: "Se descartan todas las ediciones de RR.HH. y vuelve el contenido base de la plataforma.", ok: "Restaurar", peligro: true }))) return false;
     const r = await sb.from("documentos").delete().eq("clave", docTipo());
-    if (r.error) { alert(traducirError(r.error)); return false; }
+    if (r.error) { avisar(traducirError(r.error)); return false; }
     delete S.documentos[docTipo()]; log(`${DOCS_BASE[docTipo()].titulo}: restaurada la versión base`); toast("Versión base restaurada");
   }
 };

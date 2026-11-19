@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.36.2";
+const APP_VERSION = "0.37.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -70,18 +70,21 @@ function confirmar(o) {
     document.body.insertAdjacentHTML("beforeend", `<div class="modal" id="modalConf"><div class="modal-c estrecho">
       <h2>${esc(o.titulo)}</h2><p class="conf-t">${esc(o.texto)}</p>
       ${o.escribe ? `<label class="conf-e"><span>Escribe <b>${esc(o.escribe)}</b> para confirmar</span><input id="confTxt" autocomplete="off" spellcheck="false"></label>` : ""}
-      <div class="actions"><button class="btn" id="confNo">Cancelar</button>
+      <div class="actions">${o.solo ? "" : `<button class="btn" id="confNo">Cancelar</button>`}
       <button class="btn ${o.peligro ? "peligro" : "primary"}" id="confSi"${o.escribe ? " disabled" : ""}>${esc(o.ok || "Confirmar")}</button></div></div></div>`);
     const cerrar = x => { const m = $("modalConf"); if (m) m.remove(); document.removeEventListener("keydown", tecla, true); res(x); };
     const tecla = e => { if (e.key === "Escape") { e.stopPropagation(); cerrar(false); } };
     document.addEventListener("keydown", tecla, true);
-    $("confNo").onclick = () => cerrar(false);
+    if ($("confNo")) $("confNo").onclick = () => cerrar(false);
     $("confSi").onclick = () => cerrar(true);
     const c = $("confTxt");
     if (c) { c.oninput = () => { $("confSi").disabled = c.value.trim().toUpperCase() !== o.escribe.toUpperCase(); }; c.focus(); }
     else $("confSi").focus();
   });
 }
+/* Aviso en la propia página, en lugar de avisar(): sigue la marca y el tema
+   oscuro, y funciona donde el navegador bloquea sus ventanas. */
+function avisar(texto, titulo) { return confirmar({ titulo: titulo || "Aviso", texto, ok: "Entendido", solo: true }); }
 function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove("on"), 2800); }
 function fechaES(iso) { return iso ? new Date(iso).toLocaleDateString("es-ES") : ""; }
 function traducirError(e) {
@@ -94,6 +97,17 @@ function traducirError(e) {
 }
 
 /* =================== Arranque y acceso =================== */
+/* Pie de privacidad fuera de #app: lo ven quien entra con código (con el
+   aviso completo) y la pantalla de acceso (solo el enlace). Dentro de la
+   plataforma no se muestra. */
+function pintarPieLegal(modo) {
+  const el = $("pieLegal"); if (!el) return;
+  if (modo) pintarPieLegal.modo = modo;
+  const m = pintarPieLegal.modo || "oculto";
+  el.hidden = m === "oculto";
+  el.innerHTML = m === "invitado" ? `${esc(t("privInv"))} <a href="privacidad.html" target="_blank" rel="noopener">${esc(t("privLink"))}</a>`
+    : m === "acceso" ? `<a href="privacidad.html" target="_blank" rel="noopener">${esc(t("privLink"))}</a>` : "";
+}
 function arrancar() {
   const par = new URLSearchParams(location.search);
   const modoDemo = window.FORZAR_DEMO || par.has("demo");
@@ -114,7 +128,7 @@ function arrancar() {
      que un enlace reenviado abra la prueba de otra persona. */
   /* ?codigo=XXXX-XXXX abre directamente; &r=b0:3 trae la primera respuesta
      pulsada en el correo de las encuestas de clima */
-  if (par.has("codigo")) { INV.pre = par.get("r") || null; return abrirInvitacion(par.get("codigo") || ""); }
+  if (par.has("codigo")) { INV.pre = par.get("r") || null; pintarPieLegal("invitado"); return abrirInvitacion(par.get("codigo") || ""); }
   sb.auth.getSession().then(({ data }) => (data && data.session ? entrar() : pantallaLogin()));
 }
 function pantallaSinLibreria() {
@@ -126,7 +140,7 @@ function pantallaSinLibreria() {
         <h1>${t("bienvenida")}</h1>
         <p class="demo-note">No se ha podido cargar una pieza necesaria de la plataforma desde internet.
           Suele ser la red o un bloqueador del navegador. Vuelve a cargar la página; si sigue igual, prueba con otra red o avisa a RR.HH.</p>
-        <button class="btn primary block" onclick="location.reload()">Volver a cargar</button>
+        <button class="btn primary block" data-action="volverACargar">Volver a cargar</button>
         <p class="hint acc-pie"><a href="#" data-action="irDemo">Entrar con datos de ejemplo</a></p>
       </div>
       <p class="login-pie">Pippole · v${APP_VERSION}</p>
@@ -162,6 +176,7 @@ function panelMarca() {
   </div>`;
 }
 function pantallaLogin(msg) {
+  pintarPieLegal("acceso");
   let recordado = "";
   try { recordado = localStorage.getItem("sc-usuario") || ""; } catch (e) {}
   $("app").innerHTML = `<div class="login">
@@ -231,6 +246,10 @@ async function entrar() {
   const { data: me, error } = await sb.from("perfiles").select("*").eq("id", ses.session.user.id).maybeSingle();
   if (error) return pantallaLogin(traducirError(error));
   if (!me || !me.activo) { await sb.auth.signOut(); return pantallaLogin("Tu usuario no tiene acceso a la plataforma. Contacta con RR.HH."); }
+  // Dentro de la plataforma todo está en español: el idioma solo se elige
+  // en el acceso y en las pantallas de quien entra con código.
+  LANG = "es";
+  pintarPieLegal("oculto");
   S.me = me; S.real = null; S.tiendaFoco = null; S.modulo = "inicio"; S.tab = "eval"; S.vista = "recorrido"; S.ui = { t: null, p: null, fase: "obj" };
   await recargar();
 }
@@ -271,8 +290,10 @@ async function recargarMarketing() {
 }
 async function salir() {
   if (S.sucios.size) await volcar();
-  if (S.sucios.size && !confirm("Hay cambios sin guardar. ¿Salir igualmente?")) return;
-  await sb.auth.signOut(); S.me = null; S.real = null; S.tiendas = S.todas = []; pantallaLogin();
+  if (S.sucios.size && !(await confirmar({ titulo: "Hay cambios sin guardar", texto: "Si sales ahora, se pierden. ¿Salir igualmente?", ok: "Salir", peligro: true }))) return;
+  await sb.auth.signOut(); S.me = null; S.real = null; S.tiendas = S.todas = [];
+  try { LANG = localStorage.getItem("sc-lang") || "es"; } catch (e) {}
+  pantallaLogin();
 }
 
 /* =================== Datos y guardado =================== */
@@ -295,7 +316,7 @@ async function volcar() {
     if (error) { S.sucios.add(id); S.errorGuardado = traducirError(error); break; }
     if (!data || !data.length) {
       S.errorGuardado = null;
-      alert(`Otra persona ha guardado cambios en ${t.nombre || "esta tienda"} mientras editabas. Se carga su versión; repite tu último cambio.`);
+      avisar(`Otra persona ha guardado cambios en ${t.nombre || "esta tienda"} mientras editabas. Se carga su versión; repite tu último cambio.`);
       const r = await sb.from("tiendas").select("*").eq("id", t.id).maybeSingle();
       if (r.data) Object.assign(t, desdeFila(r.data)); pintar(); continue;
     }
@@ -328,7 +349,7 @@ function autoGrow(el) { el.style.height = "auto"; el.style.height = el.scrollHei
 /* =================== Estructura =================== */
 const MODULOS = [
   { id: "clima", t: "Encuestas de clima", grupo: "activo",
-    d: "Encuestas anónimas por colectivo o tipo Great Place To Work: se envían por correo, se responden en 3 minutos y los resultados salen por dimensión.",
+    d: "Encuestas por colectivo o de cultura y confianza, anónimas o con nombre: se envían por correo, se responden en pocos minutos y los resultados salen por dimensión.",
     tabs: [["clnueva", "Nueva encuesta", true], ["clcurso", "En curso"], ["clanteriores", "Anteriores"], ["clresultados", "Resultados"], ["clmodelos", "Modelos", true]] },
   { id: "desarrollo", t: "Desarrollo", grupo: "activo",
     d: "Talent Review y plan de desarrollo: cada responsable valora a su equipo y RR.HH. calibra.",
@@ -395,7 +416,6 @@ function pintar() {
       <div class="busca-g"><input id="buscaGlobal" type="search" placeholder="Buscar tienda, persona o apartado" autocomplete="off" aria-label="Búsqueda rápida"><div id="buscaRes" hidden></div></div>
       <span id="estadoGuardado" class="saved"></span>
       ${typeof campanaAvisos === "function" ? campanaAvisos() : ""}
-      ${selectorIdioma()}
       <details class="user${S.real ? " como" : ""}"><summary>${S.real ? `<span class="como-ojo" aria-hidden="true">${ICO_OJO}</span>` : ""}${esc(S.me.nombre)} <small>${nombreRol()}</small></summary>
         <div class="menu"><button data-action="inicio">${t("inicio")}</button>${esAdmin() ? `<button data-action="modulo" data-m="gestion">${t("gestionUsuarios")}</button>` : ""}${S.real ? "" : `<button data-action="miPassword">${t("cambiarPass")}</button>`}${menuVerComo()}<button data-action="salir">${t("salir")}</button></div></details>
     </header>
@@ -520,10 +540,10 @@ function tarjetaTienda(x) {
 function bloqueMisTiendas() {
   if (esAdmin() || esMarketing()) return "";
   if (!S.tiendas.length) return `<h2 class="grupo">Mis tiendas</h2><p class="muted">Todavía no tienes tiendas asignadas. RR.HH. te las asignará.</p>`;
-  return `<h2 class="grupo">Mis tiendas <em class="cuenta">${S.tiendas.length}</em></h2><div class="cards">${S.tiendas.map(tarjetaTienda).join("")}</div>`;
+  return `<h2 class="grupo">Mis tiendas <em class="cuenta">${S.tiendas.length}</em></h2><p class="hint tda-ley">Las tres marcas de cada tienda son, por orden: objetivos validados, seguimiento a 6 meses y cierre anual.</p><div class="cards">${S.tiendas.map(tarjetaTienda).join("")}</div>`;
 }
 const APARTADOS_TIENDA = [
-  ["Evaluación y Desarrollo", [["evaluacion", "eval", "Scorecard", "Objetivos, seguimiento a 6 meses y cierre anual con bonus"], ["evaluacion", "talent", "Talent Matrix", "Desempeño, potencial, riesgo y sucesión del equipo"], ["evaluacion", "onboarding", "Onboarding", "Encuesta de incorporación"], ["evaluacion", "offboarding", "Offboarding", "Encuesta de salida"]]],
+  ["Scorecard", [["evaluacion", "eval", "Scorecard", "Objetivos, seguimiento a 6 meses y cierre anual con bonus"], ["evaluacion", "talent", "Talent Matrix", "Desempeño, potencial, riesgo y sucesión del equipo"], ["evaluacion", "onboarding", "Onboarding", "Encuesta de incorporación"], ["evaluacion", "offboarding", "Offboarding", "Encuesta de salida"]]],
   ["PRL", [["prl", "bajas", "Bajas y absentismo", "Procesos abiertos y cerrados"], ["prl", "prevencion", "Prevención", "Formación PRL y revisiones del local"]]],
   ["Encuestas de clima", [["clima", "", "Encuestas de clima", "Encuestas de clima del equipo de la tienda"]]],
   ["Desarrollo", [["desarrollo", "retail", "Talent Review de la tienda", "Valoración del Store Manager y de su equipo"]]],
@@ -548,12 +568,18 @@ function resumenEnTienda(x, m, tab) {
   } catch (e) {}
   return "";
 }
+/* Una pestaña está visible si el apartado la tiene en MODULOS (las que se
+   quitaron de ahí, como Talent Matrix, siguen en el código pero no se ven). */
+function tabVisible(m, tab) {
+  const mod = MODULOS.find(x => x.id === m);
+  return !!mod && !MODULOS_OCULTOS.includes(m) && (!tab || !mod.tabs || mod.tabs.some(x => x[0] === tab));
+}
 function pintarTiendaFoco() {
   const x = S.tiendas.find(y => y.id === S.tiendaFoco);
   if (!x) { S.modulo = "inicio"; S.tiendaFoco = null; return pintarInicio(); }
   $("vista").innerHTML = `<div class="home idx">
     <div class="idx-h"><h1>${esc(x.nombre || "Tienda sin nombre")}</h1><p>${esc(x.codigo || "")}${x.codigo ? " · " : ""}Regional Manager: ${esc(rmNombre(x))}. Todos los apartados, filtrados por esta tienda.</p></div>
-    ${APARTADOS_TIENDA.filter(([, items]) => puedeVer(items[0][0]) && items[0][0] !== "desarrollo").map(([tit, items]) => `<h2 class="grupo">${esc(tit)}</h2><div class="cards">${items.map(([m, tab, et, des]) => `<button class="mod" data-action="apartadoTienda" data-m="${m}" data-tab="${tab}">
+    ${APARTADOS_TIENDA.map(([tit, items]) => [tit, items.filter(([m, tab]) => tabVisible(m, tab))]).filter(([, items]) => items.length && puedeVer(items[0][0]) && items[0][0] !== "desarrollo").map(([tit, items]) => `<h2 class="grupo">${esc(tit)}</h2><div class="cards">${items.map(([m, tab, et, des]) => `<button class="mod" data-action="apartadoTienda" data-m="${m}" data-tab="${tab}">
       <span class="mod-t">${esc(et)}</span><span class="mod-d">${esc(des)}</span><span class="mod-f">${esc(resumenEnTienda(x, m, tab))}</span></button>`).join("")}</div>`).join("")}
   </div>`;
 }
@@ -600,8 +626,8 @@ function pintarInicio() {
     if (m.id === "evaluacion") {
       const cierres = S.tiendas.reduce((s2, t2) => s2 + t2.personas.filter(p => (p.evals || {}).fy && p.evals.fy.cerrado).length, 0);
       const total = S.tiendas.reduce((s2, t2) => s2 + t2.personas.length, 0);
-      const fichas = S.tiendas.flatMap(t2 => t2.personas.map(p => SC.talent(t2, p)));
-      return `${cierres} de ${total} cierres anuales · ${fichas.filter(x => x.cerrado).length} de ${fichas.length} fichas de talento`;
+      const seg = S.tiendas.reduce((s2, t2) => s2 + t2.personas.filter(p => (p.evals || {}).s1 && p.evals.s1.cerrado).length, 0);
+      return total ? `${seg} de ${total} seguimientos a 6 meses · ${cierres} de ${total} cierres anuales` : "Nadie evaluado todavía";
     }
     return "";
   };
@@ -614,7 +640,7 @@ function pintarInicio() {
         <span class="mod-f">${t("abrirEnPestana")} ↗</span></a>`
     : `<button class="mod ${m.grupo} m-${m.id}" data-action="modulo" data-m="${m.id}" ${m.grupo === "pendiente" ? "disabled" : ""}>
       <span class="mod-t">${esc(modTxt(m.id, 0))}${pend[m.id] ? `<span class="mod-n" title="${pend[m.id] === 1 ? "1 cosa pide atención" : pend[m.id] + " cosas piden atención"}">${pend[m.id]}</span>` : ""}${m.grupo === "destacado" ? `<span class="badge oro">${t("enDiseno")}</span>` : m.grupo === "pendiente" ? `<span class="badge">${t("pendiente")}</span>` : ""}</span>
-      <span class="mod-d">${esc(modTxt(m.id, 1))}</span>
+      <span class="mod-d">${esc(m.id === "personas" && !esAdmin() ? "La plantilla de tus tiendas. De aquí salen los destinatarios de encuestas, Desarrollo y formaciones." : modTxt(m.id, 1))}</span>
       ${m.kpis ? `<span class="mod-k">${m.kpis.map(k => `<i>${esc(k.t)}</i>`).join("")}</span>` : ""}
       <span class="mod-f">${esc(resumen(m))}</span></button>`;
   const visibles = MODULOS.filter(m => puedeVer(m.id));
@@ -622,8 +648,8 @@ function pintarInicio() {
   $("vista").innerHTML = `<div class="home">
     <div class="home-h">${logo(76)}<div class="home-txt">${marcaSVG("grande", 34)}
       <p>${t("homeIntro")} ${esAdmin() ? t("homeAdmin") : esMarketing() ? t("homeMk") : t("homeRM")}</p></div></div>
-    ${bloqueMisTiendas()}
     ${bloqueHoy(AV)}
+    ${bloqueMisTiendas()}
     <h2 class="grupo">${t("enMarcha")}</h2><div class="cards">${enMarcha.map(tarjeta).join("")}</div>
     ${pendientes.length ? `<h2 class="grupo">${t("enPreparacion")}</h2><div class="cards">${pendientes.map(tarjeta).join("")}</div>` : ""}
     ${bandaMarcas()}</div>`;
@@ -959,6 +985,7 @@ function csv() {
   const q = v => { v = String(v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
   const txt = "\ufeff" + [cab, ...lin].map(r => r.map(q).join(";")).join("\r\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], { type: "text/csv;charset=utf-8" }));
+  log(`Exportación del consolidado del Scorecard (${C.periodos[S.f.per].nombre}, ${rows.length} personas)`);
   a.download = `scorecard_${C.anio}_${S.f.per === "fy" ? "anual" : "6meses"}_${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(a); a.click(); a.remove();
 }
 
@@ -1017,30 +1044,44 @@ function pintarGestion(parte) {
   if ($("formTienda")) $("formTienda").addEventListener("submit", crearTienda);
   const fe = $("formEquipo"); if (fe) fe.addEventListener("submit", anadirAEquipo);
 }
+/* Crea la cuenta de acceso con la función «crear-cuenta», que solo puede
+   usar RR.HH. Así el registro público de Supabase puede estar cerrado.
+   Si la función aún no está desplegada, usa el registro público como antes
+   (con un cliente aparte para no cerrar la sesión de quien da el alta). */
+async function crearCuenta(usuario, password) {
+  const email = emailDe(usuario);
+  const { data, error } = await sb.functions.invoke("crear-cuenta", { body: { email, password } });
+  if (!error && data && data.id) return data.id;
+  const motivo = (data && data.error) || (error && error.context && typeof error.context.json === "function" ? ((await error.context.json().catch(() => ({}))).error || "") : "");
+  if (motivo === "EXISTE") throw new Error("Ese usuario ya existe en el sistema de acceso.");
+  const noDesplegada = error && (error.name === "FunctionsFetchError" || error.name === "FunctionsRelayError" || (error.context && error.context.status === 404));
+  if (motivo || !noDesplegada) throw new Error(motivo || (error && error.message) || "No se ha podido crear la cuenta.");
+  const cli = window.supabase.createClient(K.supabaseUrl, K.supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "sc-alta-" + Date.now() } });
+  const r = await cli.auth.signUp({ email, password });
+  if (r.error) throw r.error;
+  if (!r.data.user || (r.data.user.identities && !r.data.user.identities.length)) throw new Error("Ese usuario ya existe en el sistema de acceso.");
+  return r.data.user.id;
+}
 async function crearUsuario(ev) {
   ev.preventDefault();
   const f = Object.fromEntries(new FormData(ev.target));
   f.usuario = f.usuario.trim().toLowerCase();
-  if (S.perfiles.some(p => p.usuario === f.usuario)) return alert("Ya existe un usuario con ese nombre.");
+  if (S.perfiles.some(p => p.usuario === f.usuario)) return avisar("Ya existe un usuario con ese nombre.");
   const btn = ev.target.querySelector("button"); btn.disabled = true; btn.textContent = "Creando…";
   try {
-    // Cliente aparte para no cerrar la sesión del administrador
-    const cli = sb.demo ? sb : window.supabase.createClient(K.supabaseUrl, K.supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "sc-alta-" + Date.now() } });
-    const { data, error } = await cli.auth.signUp({ email: emailDe(f.usuario), password: f.password });
-    if (error) throw error;
-    if (!data.user || (data.user.identities && !data.user.identities.length)) throw new Error("Ese usuario ya existe en el sistema de acceso.");
-    const r = await sb.from("perfiles").insert({ id: data.user.id, usuario: f.usuario, nombre: f.nombre.trim(), rol: f.rol, zona: f.zona.trim() || null });
+    const idCuenta = await crearCuenta(f.usuario, f.password);
+    const r = await sb.from("perfiles").insert({ id: idCuenta, usuario: f.usuario, nombre: f.nombre.trim(), rol: f.rol, zona: f.zona.trim() || null });
     if (r.error) throw r.error;
     log(`Alta de usuario ${f.usuario} (${f.rol})`); toast("Usuario creado");
     await recargar();
-  } catch (e) { alert("No se ha podido crear el usuario: " + traducirError(e)); btn.disabled = false; btn.textContent = "Crear usuario"; }
+  } catch (e) { avisar("No se ha podido crear el usuario: " + traducirError(e)); btn.disabled = false; btn.textContent = "Crear usuario"; }
 }
 async function crearTienda(ev) {
   ev.preventDefault();
   const f = Object.fromEntries(new FormData(ev.target));
   const { error } = await sb.from("tiendas").insert({ anio: C.anio, nombre: f.nombre.trim(), codigo: f.codigo.trim(), rm_id: f.rm_id || null,
     datos: { objetivos: { s1: {}, fy: {} }, resultados: { s1: {}, fy: {} }, objetivosValidados: null, personas: [] } });
-  if (error) return alert("No se ha podido crear la tienda: " + traducirError(error));
+  if (error) return avisar("No se ha podido crear la tienda: " + traducirError(error));
   log(`Alta de tienda ${f.nombre}`); toast("Tienda creada"); await recargar();
 }
 /* Las tiendas de la red (engine.js, CONFIG.red) que aún no existen este año.
@@ -1052,11 +1093,11 @@ function faltanDeLaRed() {
 async function cargarRedDeTiendas() {
   const faltan = faltanDeLaRed();
   if (!faltan.length) return toast("Ya están las 21 tiendas de la red.");
-  if (!confirm(`Se van a crear ${faltan.length} tiendas de ${C.anio}, sin asignar a ningún Regional Manager. ¿Seguimos?`)) return false;
+  if (!(await confirmar({ titulo: "Crear las tiendas de la red", texto: `Se van a crear ${faltan.length} tiendas de ${C.anio}, sin asignar a ningún Regional Manager.`, ok: "Crear" }))) return false;
   const filas = faltan.map(x => ({ anio: C.anio, nombre: x.nombre, codigo: x.codigo, rm_id: null,
     datos: { objetivos: { s1: {}, fy: {} }, resultados: { s1: {}, fy: {} }, objetivosValidados: null, personas: [] } }));
   const { error } = await sb.from("tiendas").insert(filas);
-  if (error) return alert("No se han podido crear las tiendas: " + traducirError(error));
+  if (error) return avisar("No se han podido crear las tiendas: " + traducirError(error));
   log(`Alta de ${faltan.length} tiendas de la red`); toast(`${faltan.length} tiendas creadas`); await recargar();
 }
 
@@ -1101,20 +1142,21 @@ document.addEventListener("change", async e => {
   if (el.dataset.asignar) {
     const t = S.tiendas.find(x => x.id === el.dataset.asignar);
     const { error } = await sb.from("tiendas").update({ rm_id: el.value || null }).eq("id", t.id).select();
-    if (error) { alert(traducirError(error)); return recargar(); }
+    if (error) { avisar(traducirError(error)); return recargar(); }
     log(`Tienda ${t.nombre} asignada a ${(perfil(el.value) || {}).nombre || "nadie"}`, t); toast("Asignación guardada"); await recargar();
   }
   if (el.dataset.perfil) {
     const { error } = await sb.from("perfiles").update({ [el.dataset.campo]: el.value || null }).eq("id", el.dataset.perfil);
-    if (error) alert(traducirError(error)); else { toast("Guardado"); await recargar(); }
+    if (error) avisar(traducirError(error)); else { toast("Guardado"); await recargar(); }
   }
 });
 document.addEventListener("click", async e => {
   const b = e.target.closest("[data-action]"); if (!b || b.disabled) return;
   const a = b.dataset.action;
-  if (a === "idioma" && !S.me) { e.preventDefault(); setLang(b.dataset.l); if (typeof INV !== "undefined" && (INV.datos || INV.codigo !== undefined && document.querySelector(".guest"))) pintarInvitado(); else pantallaLogin(); return; }
+  if (a === "idioma" && !S.me) { e.preventDefault(); setLang(b.dataset.l); pintarPieLegal(); if (typeof INV !== "undefined" && (INV.datos || INV.codigo !== undefined && document.querySelector(".guest"))) pintarInvitado(); else pantallaLogin(); return; }
   if (typeof ACCIONES_INVITADO !== "undefined" && ACCIONES_INVITADO[a]) { e.preventDefault(); await ACCIONES_INVITADO[a](b); return; }
   if (a === "irDemo") { e.preventDefault(); sb = window.crearClienteDemo(); pantallaLogin(); return; }
+  if (a === "volverACargar") { location.reload(); return; }
   if (!S.me) return;
   const t = tienda();
   const nombreYo = S.me.nombre;
@@ -1152,10 +1194,10 @@ document.addEventListener("click", async e => {
     async miPassword() {
       b.closest("details").open = false;
       const p1 = prompt("Nueva contraseña (mínimo 8 caracteres):"); if (p1 == null) return false;
-      if (p1.length < 8) { alert("La contraseña debe tener al menos 8 caracteres."); return false; }
-      if (prompt("Repite la nueva contraseña:") !== p1) { alert("Las contraseñas no coinciden."); return false; }
+      if (p1.length < 8) { avisar("La contraseña debe tener al menos 8 caracteres."); return false; }
+      if (prompt("Repite la nueva contraseña:") !== p1) { avisar("Las contraseñas no coinciden."); return false; }
       const { error } = await sb.auth.updateUser({ password: p1 });
-      alert(error ? "No se ha podido cambiar: " + traducirError(error) : "Contraseña cambiada."); return false;
+      avisar(error ? "No se ha podido cambiar: " + traducirError(error) : "Contraseña cambiada."); return false;
     },
     selTienda() { S.ui.t = b.dataset.id; S.ui.p = null; if (S.ui.fase === "reglas") S.ui.fase = "obj"; },
     irTienda() { S.modulo = "evaluacion"; S.tab = "eval"; S.ui.t = b.dataset.id; S.ui.p = null; S.ui.fase = "obj"; },
@@ -1170,22 +1212,22 @@ document.addEventListener("click", async e => {
       log(`${nuevos.length} ${nuevos.length === 1 ? "persona traída" : "personas traídas"} de Personas al Scorecard de ${t.nombre}`, t); guardar(t);
     },
     nuevaPersona() { const np = { id: SC.uid(), nombre: "", puesto: t.personas.some(p => p.puesto === "SM") ? "ASM" : "SM", prorrata: 100, evals: {}, pdi: {} }; t.personas.push(np); S.ui.p = np.id; guardar(t); },
-    borrarPersona() { const p = t.personas.find(x => x.id === b.dataset.id); if (!confirm(`¿Eliminar a ${p.nombre || "esta persona"} y sus evaluaciones?`)) return false; t.personas = t.personas.filter(x => x !== p); log(`Baja de una persona en ${t.nombre}`, t); guardar(t); },
+    async borrarPersona() { const p = t.personas.find(x => x.id === b.dataset.id); if (!(await confirmar({ titulo: "Quitar a la persona", texto: `Se elimina a ${p.nombre || "esta persona"} y sus evaluaciones.`, ok: "Eliminar", peligro: true }))) return false; t.personas = t.personas.filter(x => x !== p); log(`Baja de una persona en ${t.nombre}`, t); guardar(t); },
     copiarObjetivos() { t.objetivos.fy = Object.assign({}, t.objetivos.fy, t.objetivos.s1); guardar(t); toast("Objetivos anuales copiados del seguimiento de 6 meses"); },
     validarObjetivos() {
       const falta = C.kpis.filter(k => k.tipo !== "inventario").filter(k => ["s1", "fy"].some(per => { const v = SC.num(getPath(t, `objetivos.${per}.${k.id}`)); return v == null || v <= 0; }));
-      if (falta.length) { alert("Faltan objetivos válidos en: " + falta.map(k => k.nombre).join(", ") + "."); return false; }
+      if (falta.length) { avisar("Faltan objetivos válidos en: " + falta.map(k => k.nombre).join(", ") + "."); return false; }
       t.objetivosValidados = { fecha: new Date().toISOString(), por: nombreYo }; log(`Objetivos validados en ${t.nombre}`, t); guardar(t); toast("Objetivos validados");
     },
-    editarObjetivos() {
-      if (resultadosBloqueados(t, "s1") || resultadosBloqueados(t, "fy")) { alert("Hay evaluaciones cerradas en esta tienda. Reábrelas antes de cambiar objetivos."); return false; }
-      if (!confirm("Los objetivos quedarán sin validar hasta que los vuelvas a validar. El cambio queda registrado.")) return false;
+    async editarObjetivos() {
+      if (resultadosBloqueados(t, "s1") || resultadosBloqueados(t, "fy")) { avisar("Hay evaluaciones cerradas en esta tienda. Reábrelas antes de cambiar objetivos."); return false; }
+      if (!(await confirmar({ titulo: "Editar los objetivos", texto: "Los objetivos quedarán sin validar hasta que los vuelvas a validar. El cambio queda registrado.", ok: "Editar" }))) return false;
       t.objetivosValidados = null; log(`Objetivos reabiertos en ${t.nombre}`, t); guardar(t);
     },
     valorar() { const e2 = ev(persona(t), S.ui.fase), v = Number(b.dataset.v); if (e2.val[b.dataset.i] === v) delete e2.val[b.dataset.i]; else e2.val[b.dataset.i] = v; guardar(t); },
     itemMas() { const i = b.dataset.i; ITEMS_ABIERTOS.has(i) ? ITEMS_ABIERTOS.delete(i) : ITEMS_ABIERTOS.add(i); },
     itemTodos() { TODO_ABIERTO = !TODO_ABIERTO; ITEMS_ABIERTOS.clear(); },
-    cerrar() {
+    async cerrar() {
       const p = persona(t), per = S.ui.fase, e2 = ev(p, per), r = SC.calcular(t, p, per), faltan = [];
       if (!t.objetivosValidados) faltan.push("validar los objetivos de la tienda");
       if (!p.nombre) faltan.push("el nombre de la persona");
@@ -1194,13 +1236,13 @@ document.addEventListener("click", async e => {
       if (!(e2.evaluador == null ? rmNombre(t) : e2.evaluador)) faltan.push("el nombre del evaluador");
       if (!e2.fecha) faltan.push("la fecha de la reunión");
       if (r.alertas.some(x => x.tipo === "error")) faltan.push("corregir los errores señalados");
-      if (faltan.length) { alert("Para cerrar falta: " + faltan.join(", ") + "."); return false; }
-      if (r.alertas.some(x => /sin evidencia/.test(x.t)) && !confirm("Hay valoraciones extremas sin evidencia. ¿Cerrar igualmente?")) return false;
+      if (faltan.length) { avisar("Para cerrar falta: " + faltan.join(", ") + "."); return false; }
+      if (r.alertas.some(x => /sin evidencia/.test(x.t)) && !(await confirmar({ titulo: "Faltan evidencias", texto: "Hay valoraciones extremas (0 o 2) sin evidencia. ¿Cerrar igualmente?", ok: "Cerrar igualmente" }))) return false;
       if (e2.evaluador == null) e2.evaluador = rmNombre(t);
       e2.cerrado = { fecha: new Date().toISOString(), por: nombreYo, nota: r.nota, bonus: r.bonus, ptsCual: r.ptsCual, ptsCuant: r.ptsCuant };
       log(`Cierre ${C.periodos[per].corto} de ${p.nombre} (${t.nombre}): ${SC.eur(r.bonus)}`, t); guardar(t); toast("Evaluación cerrada");
     },
-    reabrir() { const p = persona(t), e2 = ev(p, S.ui.fase); if (!confirm("La evaluación volverá a ser editable. La reapertura queda registrada.")) return false; log(`Reapertura ${C.periodos[S.ui.fase].corto} de ${p.nombre} (${t.nombre})`, t); delete e2.cerrado; guardar(t); },
+    async reabrir() { const p = persona(t), e2 = ev(p, S.ui.fase); if (!(await confirmar({ titulo: "Reabrir la evaluación", texto: "La evaluación volverá a ser editable. La reapertura queda registrada.", ok: "Reabrir" }))) return false; log(`Reapertura ${C.periodos[S.ui.fase].corto} de ${p.nombre} (${t.nombre})`, t); delete e2.cerrado; guardar(t); },
     imprimir() { $("print").innerHTML = informe(t, persona(t)); window.print(); return false; },
     per() { S.f.per = b.dataset.v; },
     orden() { if (S.f.orden === b.dataset.k) S.f.dir *= -1; else { S.f.orden = b.dataset.k; S.f.dir = ["bonus", "nota", "cual", "cuant"].includes(b.dataset.k) ? -1 : 1; } },
@@ -1209,25 +1251,25 @@ document.addEventListener("click", async e => {
     irPersonasTab() { S.modulo = "personas"; S.tab = b.dataset.v; S.indice = false; window.scrollTo(0, 0); },
     async toggleActivo() {
       const p = perfil(b.dataset.id);
-      if (p.activo && !confirm(`¿Desactivar a ${p.nombre}? No podrá entrar hasta que lo reactives. Sus tiendas y datos se conservan.`)) return false;
+      if (p.activo && !(await confirmar({ titulo: "Desactivar el usuario", texto: `${p.nombre} no podrá entrar hasta que lo reactives. Sus tiendas y datos se conservan.`, ok: "Desactivar", peligro: true }))) return false;
       const { error } = await sb.from("perfiles").update({ activo: !p.activo }).eq("id", p.id);
-      if (error) { alert(traducirError(error)); return false; }
+      if (error) { avisar(traducirError(error)); return false; }
       log(`${p.activo ? "Desactivado" : "Reactivado"} el usuario ${p.usuario}`); await recargar(); return false;
     },
     async resetPass() {
       const p = perfil(b.dataset.id), pw = prompt(`Nueva contraseña para ${p.nombre} (mínimo 8 caracteres):`);
       if (pw == null) return false;
       const { error } = await sb.rpc("admin_cambiar_password", { p_usuario: p.id, p_password: pw });
-      alert(error ? "No se ha podido cambiar: " + traducirError(error) : `Contraseña de ${p.nombre} cambiada. Comunícasela por un canal seguro.`);
+      avisar(error ? "No se ha podido cambiar: " + traducirError(error) : `Contraseña de ${p.nombre} cambiada. Comunícasela por un canal seguro.`);
       if (!error) log(`Contraseña restablecida para ${p.usuario}`);
       return false;
     },
     async cargarRed() { if (!esAdmin()) return false; return cargarRedDeTiendas(); },
     async borrarTienda() {
       const x = S.tiendas.find(y => y.id === b.dataset.id);
-      if (!confirm(`¿Eliminar ${x.nombre} y todas sus evaluaciones de ${C.anio}? No se puede deshacer.`)) return false;
+      if (!(await confirmar({ titulo: "Eliminar la tienda", texto: `Se eliminan ${x.nombre} y todas sus evaluaciones de ${C.anio}. No se puede deshacer.`, ok: "Eliminar", peligro: true, escribe: "ELIMINAR" }))) return false;
       const { error } = await sb.from("tiendas").delete().eq("id", x.id);
-      if (error) { alert(traducirError(error)); return false; }
+      if (error) { avisar(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
   }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO, typeof ACCIONES_PERSONAS === "undefined" ? {} : ACCIONES_PERSONAS, typeof ACCIONES_EB === "undefined" ? {} : ACCIONES_EB);
@@ -1317,6 +1359,7 @@ const ACCIONES_EQUIPO = {
     const csv = "﻿" + filas.map(f => f.map(x => `"${String(x == null ? "" : x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    log(`Exportación del equipo de ${t.nombre}`, t);
     a.download = `equipo-${(t.codigo || t.nombre || "tienda")}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     return false;

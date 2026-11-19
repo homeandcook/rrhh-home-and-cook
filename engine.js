@@ -34,13 +34,13 @@ const CONFIG = {
 
   bloques: [
     { id: "conoc", nombre: "Conocimientos del equipo", items: [
-      { id: "q01", peso: 0.05, nombre: "Formación de producto (SEB Academy)", guia: "" },
-      { id: "q02", peso: 0.05, nombre: "Participación del equipo en Atrivity", guia: "¿Cuál ha sido la participación de tu equipo en Atrivity?" },
+      { id: "q01", peso: 0.05, nombre: "Formación de producto", guia: "" },
+      { id: "q02", peso: 0.05, nombre: "Participación del equipo en la plataforma de formación", guia: "¿Cuál ha sido la participación de tu equipo en la plataforma de formación?" },
       { id: "q03", peso: 0.05, nombre: "Uso del manual de ventas", guia: "¿Cuántos miembros del equipo utilizan el manual de ventas?" }
     ]},
     { id: "func", nombre: "Funciones", items: [
-      { id: "q04", peso: 0.10, nombre: "Escaparate alineado con el plan comercial (foco GMG)", guia: "¿Cómo decides qué productos poner en tu escaparate una vez comunicado el plan comercial?" },
-      { id: "q05", peso: 0.05, nombre: "Organización y limpieza (sala de venta y almacén) y gastos Lyreco", guia: "" }
+      { id: "q04", peso: 0.10, nombre: "Escaparate alineado con el plan comercial", guia: "¿Cómo decides qué productos poner en tu escaparate una vez comunicado el plan comercial?" },
+      { id: "q05", peso: 0.05, nombre: "Organización y limpieza (sala de venta y almacén) y gasto de material", guia: "" }
     ]},
     { id: "gest", nombre: "Gestión", items: [
       { id: "q06", peso: 0.06, nombre: "Adaptación de la plantilla al tráfico y envío del horario en fecha", guia: "" },
@@ -52,7 +52,7 @@ const CONFIG = {
     { id: "comp", nombre: "Competencias y liderazgo", items: [
       { id: "q11", peso: 0.05, nombre: "Capacidad analítica", guia: "" },
       { id: "q12", peso: 0.15, nombre: "Motivación del equipo y ambiente laboral", guia: "¿Qué acciones tomas para motivar a tu equipo y fomentar un buen ambiente laboral?" },
-      { id: "q13", peso: 0.10, nombre: "Demos en tienda", guia: "¿Cuántas demos realizas al mes? ¿Son una herramienta imprescindible en tu equipo?" },
+      { id: "q13", peso: 0.10, nombre: "Atención y asesoramiento al cliente", guia: "¿Cómo acompañas a tu equipo para que cada cliente reciba atención y consejo? ¿Qué has corregido este periodo?" },
       { id: "q14", peso: 0.10, nombre: "Capacidad estratégica", guia: "Action plans realizados y focos trabajados (KPIs, reseñas…)." }
     ]}
   ],
@@ -472,7 +472,9 @@ Object.assign(SC, {
   },
   codigoInvitacion() {
     const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin caracteres que se confundan
-    let s = ""; for (let i = 0; i < 8; i++) s += abc[Math.floor(Math.random() * abc.length)];
+    // Generador seguro del navegador: 32 letras, así que cada byte se reparte sin sesgo.
+    const b = new Uint8Array(8); crypto.getRandomValues(b);
+    let s = ""; for (let i = 0; i < 8; i++) s += abc[b[i] & 31];
     return s.slice(0, 4) + "-" + s.slice(4);
   }
 });
@@ -636,29 +638,32 @@ CONFIG.tiposPrueba.offboarding = { t: { es: "Offboarding", en: "Offboarding", fr
 /* --------- KPIs del People Data Centre --------- */
 /* La red real, a 27/09/2026. "rm" es la clave de zona del Regional Manager
    que la gestiona; al crear los usuarios se asocia cada clave a su persona.
-   Si abre o cierra una tienda, se cambia aquí y en Usuarios y tiendas. */
+   Si abre o cierra una tienda, se cambia aquí y en Usuarios y tiendas.
+   «nombre» es lo que se ve (sin marcas, por la regla de marca); «alias» es
+   el nombre con el que la tienda aparece en los ficheros de la empresa, y
+   solo sirve para reconocerla al importar. No se muestra nunca. */
 CONFIG.red = [
-  { codigo: "ES001", nombre: "HOME & COOK S.SEBASTIAN REYES", rm: "es" },
-  { codigo: "ES002", nombre: "HOME & COOK GETAFE", rm: "es" },
-  { codigo: "ES003", nombre: "HOME & COOK SEVILLA", rm: "es" },
-  { codigo: "ES004", nombre: "HOME & COOK BIZKAIA", rm: "es" },
-  { codigo: "ES006", nombre: "HOME & COOK MALLORCA", rm: "es" },
-  { codigo: "ES007", nombre: "HOME & COOK TUI", rm: "pt" },
-  { codigo: "ES008", nombre: "HOME & COOK A CORUÑA", rm: "es" },
-  { codigo: "ES009", nombre: "HOME & COOK LAS ROZAS", rm: "es" },
-  { codigo: "ES011", nombre: "HOME & COOK VILADECANS", rm: "es" },
-  { codigo: "ES012", nombre: "HOME & COOK ALICANTE", rm: "es" },
-  { codigo: "ES014", nombre: "HOME & COOK MÁLAGA", rm: "es" },
-  { codigo: "ES015", nombre: "HOME & COOK ZARAGOZA", rm: "es" },
-  { codigo: "ES019", nombre: "WMF MALLORCA", rm: "es" },
-  { codigo: "ES020", nombre: "WMF S.SEBASTIAN REYES", rm: "es" },
-  { codigo: "PT001", nombre: "HOME & COOK PORTO", rm: "pt" },
-  { codigo: "PT002", nombre: "HOME & COOK FREEPORT", rm: "pt" },
-  { codigo: "PT003", nombre: "HOME & COOK ALGARVE", rm: "pt" },
-  { codigo: "PT004", nombre: "TEFAL OUTLET STRADA", rm: "pt" },
-  { codigo: "PT005", nombre: "WMF FREEPORT", rm: "pt" },
-  { codigo: "PT006", nombre: "WMF ALGARVE", rm: "pt" },
-  { codigo: "PT008", nombre: "TEFAL Campera", rm: "pt" }
+  { codigo: "ES001", nombre: "San Sebastián de los Reyes", alias: "HOME & COOK S.SEBASTIAN REYES", rm: "es" },
+  { codigo: "ES002", nombre: "Getafe", alias: "HOME & COOK GETAFE", rm: "es" },
+  { codigo: "ES003", nombre: "Sevilla", alias: "HOME & COOK SEVILLA", rm: "es" },
+  { codigo: "ES004", nombre: "Bizkaia", alias: "HOME & COOK BIZKAIA", rm: "es" },
+  { codigo: "ES006", nombre: "Mallorca", alias: "HOME & COOK MALLORCA", rm: "es" },
+  { codigo: "ES007", nombre: "Tui", alias: "HOME & COOK TUI", rm: "pt" },
+  { codigo: "ES008", nombre: "A Coruña", alias: "HOME & COOK A CORUÑA", rm: "es" },
+  { codigo: "ES009", nombre: "Las Rozas", alias: "HOME & COOK LAS ROZAS", rm: "es" },
+  { codigo: "ES011", nombre: "Viladecans", alias: "HOME & COOK VILADECANS", rm: "es" },
+  { codigo: "ES012", nombre: "Alicante", alias: "HOME & COOK ALICANTE", rm: "es" },
+  { codigo: "ES014", nombre: "Málaga", alias: "HOME & COOK MÁLAGA", rm: "es" },
+  { codigo: "ES015", nombre: "Zaragoza", alias: "HOME & COOK ZARAGOZA", rm: "es" },
+  { codigo: "ES019", nombre: "Mallorca 2", alias: "WMF MALLORCA", rm: "es" },
+  { codigo: "ES020", nombre: "San Sebastián de los Reyes 2", alias: "WMF S.SEBASTIAN REYES", rm: "es" },
+  { codigo: "PT001", nombre: "Porto", alias: "HOME & COOK PORTO", rm: "pt" },
+  { codigo: "PT002", nombre: "Freeport", alias: "HOME & COOK FREEPORT", rm: "pt" },
+  { codigo: "PT003", nombre: "Algarve", alias: "HOME & COOK ALGARVE", rm: "pt" },
+  { codigo: "PT004", nombre: "Strada", alias: "TEFAL OUTLET STRADA", rm: "pt" },
+  { codigo: "PT005", nombre: "Freeport 2", alias: "WMF FREEPORT", rm: "pt" },
+  { codigo: "PT006", nombre: "Algarve 2", alias: "WMF ALGARVE", rm: "pt" },
+  { codigo: "PT008", nombre: "Campera", alias: "TEFAL Campera", rm: "pt" }
 ];
 CONFIG.zonas = { es: "España", pt: "Portugal y Tui" };
 

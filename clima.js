@@ -4,7 +4,7 @@
    - De colectivo (tiendas, comerciales de campo, oficinas, demostradores):
      15 afirmaciones comunes + 2 propias + global + eNPS + 1 abierta que se
      adapta a lo que ha contestado cada persona.
-   - Tipo Great Place To Work: 60 afirmaciones en 5 dimensiones y 15
+   - Cultura y confianza: 60 afirmaciones en 5 dimensiones y 15
      apartados, global y 2 abiertas. La estructura es la de su modelo; las
      frases son propias (las suyas están protegidas).
    Las dos pueden llevar la parte 2, evaluación al responsable directo, si
@@ -96,7 +96,7 @@ const CL = {
   qs.push({ id: "a1", tipo: "texto", t: "¿Qué es lo que más te gusta de trabajar aquí? ¿Hay algo que lo haga distinto de otros sitios?", parte: 3 });
   qs.push({ id: "a2", tipo: "texto", t: "¿Qué cambiarías primero para que trabajar aquí fuera mejor?", parte: 3 });
   SC.CONFIG.plantillas.push({ id: "clima2-gptw", tipo: "clima", v2: true, anonima: true, gptw: true, escala: CL.ESCALA,
-    nombre: "Clima tipo Great Place To Work", preguntas: qs, intro: "", aviso: "" });
+    nombre: "Clima de cultura y confianza", preguntas: qs, intro: "", aviso: "" });
 })();
 
 /* Preguntas que ve quien responde, según lo que decidió RR.HH. */
@@ -107,7 +107,7 @@ const clAnon = c => clCfg(c).anonima !== false;
 function clEsV2(c) { const pl = c && SC.plantilla(c.plantilla); return !!(pl && pl.v2); }
 function clNombreEncuesta(c) {
   const cfg = clCfg(c), pl = SC.plantilla(c.plantilla) || {};
-  if (pl.gptw) return "Tipo Great Place To Work";
+  if (pl.gptw) return "Cultura y confianza";
   return pl.colectivo ? CL.COLECTIVOS[pl.colectivo].n : "Formato anterior";
 }
 function clMinutos(pl, cfg) {
@@ -270,7 +270,7 @@ function clNueva() {
     <div class="cl-form">
       <section class="cl-paso"><h2><span>1</span>Tipo de encuesta</h2>
         <div class="cl-ops dos">${radio("clTipo", "colectivo", !gptw, "De colectivo", "15 preguntas comunes y 2 propias del colectivo, valoración global y recomendación. Una abierta.")}
-          ${radio("clTipo", "gptw", gptw, "Tipo Great Place To Work", "60 afirmaciones en 5 dimensiones y 15 apartados, valoración global y 2 abiertas.")}</div></section>
+          ${radio("clTipo", "gptw", gptw, "Cultura y confianza", "60 afirmaciones en 5 dimensiones y 15 apartados, valoración global y 2 abiertas.")}</div></section>
       ${gptw ? "" : `<section class="cl-paso"><h2><span>2</span>Colectivo</h2>
         <div class="cl-ops pastillas">${Object.entries(CL.COLECTIVOS).map(([id, x]) => radio("clCol", id, N.col === id, x.n)).join("")}</div>
         <p class="hint">${esc(col.n)} añade: «${esc(col.propias[0][1])}» y «${esc(col.propias[1][1])}».</p></section>`}
@@ -292,7 +292,7 @@ function clNueva() {
     </div>
     <aside class="cl-resumen">
       <b class="cl-res-t">Resumen</b>
-      <dl><dt>Encuesta</dt><dd>${gptw ? "Tipo Great Place To Work" : "De colectivo · " + esc(col.n)}</dd>
+      <dl><dt>Encuesta</dt><dd>${gptw ? "Cultura y confianza" : "De colectivo · " + esc(col.n)}</dd>
         <dt>Parte 2</dt><dd>${N.p2 ? "Sí, al responsable directo" : "No"}</dd>
         <dt>Preguntas</dt><dd>${qs.length} · unos ${clMinutos(pl, cfg)} minutos</dd>
         <dt>Respuestas</dt><dd>${N.anon ? "Anónimas" : "Con nombre"}</dd></dl>
@@ -343,8 +343,8 @@ async function clEnviarPendientes(c) {
   return { bien, fallos, tope, total: pend.length };
 }
 function clAvisoEnvio(res) {
-  if (res.tope) alert(`Enviados ${res.bien} de ${res.total}.\n\nSe ha llegado al límite diario del proveedor de correo (100 al día en el plan gratuito). El resto queda pendiente: entra mañana en la encuesta y pulsa «Enviar los pendientes».`);
-  else if (res.fallos.length) alert(`Enviados ${res.bien} de ${res.total}.\n\nNo han salido:\n` + res.fallos.slice(0, 10).map(x => motivoLegible(x.motivo)).join("\n"));
+  if (res.tope) avisar(`Enviados ${res.bien} de ${res.total}.\n\nSe ha llegado al límite diario del proveedor de correo (100 al día en el plan gratuito). El resto queda pendiente: entra mañana en la encuesta y pulsa «Enviar los pendientes».`);
+  else if (res.fallos.length) avisar(`Enviados ${res.bien} de ${res.total}.\n\nNo han salido:\n` + res.fallos.slice(0, 10).map(x => motivoLegible(x.motivo)).join("\n"));
   else if (res.total) toast(res.bien === 1 ? "1 correo enviado" : res.bien + " correos enviados");
 }
 
@@ -462,7 +462,7 @@ function clModelos() {
   const tarjeta = id => {
     const pl = SC.plantilla(id), base = clPreguntas(pl, { parte2: false });
     return `<button class="cl-card ${sel === id ? "on" : ""}" data-action="clModelo" data-id="${id}">
-      <span class="cl-card-h"><b>${esc(pl.gptw ? "Tipo Great Place To Work" : CL.COLECTIVOS[pl.colectivo].n)}</b></span>
+      <span class="cl-card-h"><b>${esc(pl.gptw ? "Cultura y confianza" : CL.COLECTIVOS[pl.colectivo].n)}</b></span>
       <span class="muted">${pl.gptw ? "60 afirmaciones en 5 dimensiones y 15 apartados · 2 abiertas" : "15 comunes + 2 propias · global · eNPS · 1 abierta"}</span>
       <span class="cl-card-f"><span>${base.length} preguntas · unos ${clMinutos(pl, { parte2: false })} min</span><span class="muted">+10 con la parte 2</span></span></button>`;
   };
@@ -507,7 +507,7 @@ async function clCrearYa(N, plId, titulo, D, enviar) {
   const ins = await sb.from("campanas").insert({ tipo: "clima", plantilla: plId, titulo, anio: SC.CONFIG.anio, estado: "abierta", creado_por: yoReal().id, config: cfg }).select().single();
   if (ins.error) {
     const falta = /config/.test(ins.error.message || "");
-    alert(falta ? "Falta un cambio en la base de datos: ejecuta supabase/migracion_0.32.sql en el SQL Editor de Supabase y vuelve a intentarlo." : "No se ha podido crear la encuesta: " + traducirError(ins.error));
+    avisar(falta ? "Falta un cambio en la base de datos: ejecuta supabase/migracion_0.32.sql en el SQL Editor de Supabase y vuelve a intentarlo." : "No se ha podido crear la encuesta: " + traducirError(ins.error));
     await recargarPruebas(); pintar(); return;
   }
   const c = ins.data;
@@ -515,7 +515,7 @@ async function clCrearYa(N, plId, titulo, D, enviar) {
     const filas = sinMail.map(p => ({ campana_id: c.id, tienda_id: p.t || null, grupo: p.g || null, responsable: cfg.parte2 ? (p.r || null) : null,
       destinatario: cfg.anonima ? null : (p.n || null), codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
     const r2 = await sb.from("invitaciones").insert(filas);
-    if (r2.error) alert("La encuesta está creada, pero no se han podido generar las papeletas: " + traducirError(r2.error));
+    if (r2.error) avisar("La encuesta está creada, pero no se han podido generar las papeletas: " + traducirError(r2.error));
   }
   let res = null;
   if (enviar && conMail.length) { toast("Enviando…"); res = await clEnviarPendientes(c); }
@@ -619,7 +619,7 @@ const ACCIONES_CLIMA = {
   async clEstado() {
     const c = S.campanas.find(x => x.id === S.campana), nuevo = c.estado === "abierta" ? "cerrada" : "abierta";
     const { error } = await sb.from("campanas").update({ estado: nuevo }).eq("id", c.id);
-    if (error) { alert(traducirError(error)); return false; }
+    if (error) { avisar(traducirError(error)); return false; }
     S.tab = nuevo === "abierta" ? "clcurso" : "clanteriores";
     await recargarPruebas(); toast(nuevo === "cerrada" ? "Encuesta cerrada" : "Encuesta reabierta");
   },
@@ -628,7 +628,7 @@ const ACCIONES_CLIMA = {
     const ok = await confirmar({ titulo: "Borrar la encuesta", texto: `Se borran «${c.titulo}», sus códigos y todas sus respuestas. No se puede deshacer.`, ok: "Borrar", peligro: true, escribe: "BORRAR" });
     if (!ok) return false;
     const { error } = await sb.from("campanas").delete().eq("id", c.id);
-    if (error) { alert(traducirError(error)); return false; }
+    if (error) { avisar(traducirError(error)); return false; }
     S.campana = null; await recargarPruebas(); toast("Encuesta borrada");
   }
 };
@@ -655,7 +655,7 @@ document.addEventListener("change", e => {
 function clResumenTab(id) {
   const cs = (S.campanas || []).filter(c => c.tipo === "clima");
   const abiertas = cs.filter(c => c.estado === "abierta"), cerradas = cs.filter(c => c.estado === "cerrada");
-  if (id === "clnueva") return "Por colectivo o tipo Great Place To Work";
+  if (id === "clnueva") return "Por colectivo o de cultura y confianza";
   if (id === "clcurso") {
     if (!abiertas.length) return "Ninguna abierta ahora mismo";
     const D = abiertas.map(clDatos), n = D.reduce((a, x) => a + x.invs.length, 0), r = D.reduce((a, x) => a + x.resp.length, 0);
@@ -666,6 +666,6 @@ function clResumenTab(id) {
     const c = cs.filter(clEsV2).sort((a, b) => (a.creado < b.creado ? 1 : -1)).find(x => clDatos(x).resp.length >= CL.MIN);
     return c ? `${c.titulo}: ${clPct(clResumen(clDatos(c)).fav)} favorable` : `Se ven a partir de ${CL.MIN} respuestas`;
   }
-  if (id === "clmodelos") return "4 de colectivo y 1 tipo Great Place To Work";
+  if (id === "clmodelos") return "4 de colectivo y 1 de cultura y confianza";
   return "";
 }

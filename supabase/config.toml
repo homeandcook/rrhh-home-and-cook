@@ -13,3 +13,7 @@ verify_jwt = false
 [functions.resenas]
 # Igual que enviar-invitacion: comprueba la sesión y el rol por su cuenta.
 verify_jwt = false
+
+[functions.crear-cuenta]
+# Comprueba la sesión y que quien llama es RR.HH. por su cuenta.
+verify_jwt = false

@@ -63,11 +63,20 @@ function impTipologia(v) {
 }
 /* Nombre de tienda reconocible: sin la marca de la red delante */
 const impClaveTienda = x => impNorm(x).replace(/\b(home and cook|home cook|h c|hc|tienda|outlet|store)\b/g, " ").replace(/\s+/g, " ").trim();
+/* Los ficheros de la empresa nombran las tiendas a su manera (con la marca
+   delante, por ejemplo). CONFIG.red guarda ese nombre como «alias» para
+   reconocerlas aunque en Pippole se llamen solo por la ciudad. */
+function impTiendaPorAlias(ts, k) {
+  const r = (SC.CONFIG.red || []).find(x => x.alias && impNorm(x.alias) === k)
+    || (SC.CONFIG.red || []).find(x => x.alias && impClaveTienda(x.alias) === k);
+  return r ? ts.find(t => t.codigo === r.codigo) || null : null;
+}
 function impTiendaDe(ub) {
   const k = impClaveTienda(ub); if (!k) return null;
   const ts = S.todas && S.todas.length ? S.todas : S.tiendas;
   return ts.find(t => impNorm(t.codigo) === impNorm(ub) && t.codigo)
     || ts.find(t => impClaveTienda(t.nombre) === k)
+    || impTiendaPorAlias(ts, k)
     || (k.length >= 4 ? ts.find(t => { const kt = impClaveTienda(t.nombre); return kt.length >= 4 && (kt.includes(k) || k.includes(kt)); }) : null)
     || null;
 }
@@ -302,17 +311,14 @@ function impRevisionUsu() {
 /* Se crean de uno en uno: el sistema de acceso de Supabase limita las altas
    seguidas. Si salta el límite, se para y se dice cuántos faltan. */
 async function impCrearUsuarios(F) {
-  const cli = sb.demo ? sb : window.supabase.createClient(K.supabaseUrl, K.supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "sc-alta-lote-" + Date.now() } });
   const res = []; let parado = "";
   IMP.hechos = 0;
   for (const f of F) {
     const v = f.v, nombre = `${v.nombre} ${v.apellidos}`.trim();
     if (parado) { res.push({ v, nombre, estado: "Sin crear: " + parado }); continue; }
     try {
-      const { data, error } = await cli.auth.signUp({ email: emailDe(v.usuario), password: v.password });
-      if (error) throw error;
-      if (!data.user || (data.user.identities && !data.user.identities.length)) throw new Error("Ese usuario ya existe en el sistema de acceso.");
-      const r = await sb.from("perfiles").insert({ id: data.user.id, usuario: v.usuario, nombre, rol: v.rol, zona: v.rol === "rm" ? v.zona || null : null });
+      const idCuenta = await crearCuenta(v.usuario, v.password);
+      const r = await sb.from("perfiles").insert({ id: idCuenta, usuario: v.usuario, nombre, rol: v.rol, zona: v.rol === "rm" ? v.zona || null : null });
       if (r.error) throw r.error;
       res.push({ v, nombre, ok: true, estado: "Creado" });
     } catch (e) {
@@ -338,6 +344,7 @@ function impResultadoUsu() {
     <button class="btn primary" data-imp="terminar">Terminar</button></div>`;
 }
 function impDescargarUsu() {
+  log("Descarga de usuarios y contraseñas iniciales del alta masiva");
   const filas = [["Nombre", "Usuario", "Rol", "Contraseña inicial"]].concat((IMP.res || []).filter(r => r.ok).map(r => [r.nombre, r.v.usuario, IMP_ROLES[r.v.rol], r.v.password]));
   const csv = "\uFEFF" + filas.map(f => f.map(x => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
   const a = document.createElement("a");
@@ -520,6 +527,6 @@ async function impUsar() {
     const r = await empGuardarImportados(F);
     impCerrar();
     if (IMP.op.alUsar) IMP.op.alUsar(r);
-  } catch (e) { IMP.guardando = false; IMP.error = ""; impPintar(); alert("No se ha podido guardar: " + traducirError(e)); }
+  } catch (e) { IMP.guardando = false; IMP.error = ""; impPintar(); avisar("No se ha podido guardar: " + traducirError(e)); }
 }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && IMP.abierto && !IMP.guardando && IMP.paso !== "hecho") impCerrar(); });

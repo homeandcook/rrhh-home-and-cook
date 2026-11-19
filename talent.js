@@ -224,15 +224,15 @@ const ACCIONES_TALENT = {
   },
   talCerrar(b, t) {
     const p = persona(t), r = SC.talent(t, p);
-    if (!p.nombre) { alert("Pon el nombre de la persona antes de cerrar la ficha."); return false; }
-    if (r.falta.length) { alert("Para cerrar falta: " + r.falta.join(", ") + "."); return false; }
-    if (r.ajustado && !(r.tal.motivoAjuste || "").trim()) { alert("Has ajustado la banda de desempeño: explica por qué antes de cerrar."); return false; }
+    if (!p.nombre) { avisar("Pon el nombre de la persona antes de cerrar la ficha."); return false; }
+    if (r.falta.length) { avisar("Para cerrar falta: " + r.falta.join(", ") + "."); return false; }
+    if (r.ajustado && !(r.tal.motivoAjuste || "").trim()) { avisar("Has ajustado la banda de desempeño: explica por qué antes de cerrar."); return false; }
     r.tal.cerrado = { fecha: new Date().toISOString(), por: S.me.nombre };
     log(`Ficha de talento cerrada: ${p.nombre} (${t.nombre})`, t); guardar(t); toast("Ficha de talento cerrada");
   },
-  talReabrir(b, t) {
+  async talReabrir(b, t) {
     const p = persona(t);
-    if (!confirm("La ficha volverá a ser editable. La reapertura queda registrada.")) return false;
+    if (!(await confirmar({ titulo: "Reabrir la ficha", texto: "La ficha volverá a ser editable. La reapertura queda registrada.", ok: "Reabrir" }))) return false;
     delete talFicha(p).cerrado; log(`Ficha de talento reabierta: ${p.nombre} (${t.nombre})`, t); guardar(t);
   },
   talAbrir(b) { S.modulo = "evaluacion"; S.tab = "talent"; S.ui = { t: b.dataset.t, p: b.dataset.p, fase: "talent" }; },

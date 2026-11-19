@@ -31,10 +31,10 @@ Decidido el 16/11/2026: de momento solo se ven **Encuestas de clima**, **Desarro
 
 ## Siguiente trabajo acordado: Pippole genérica + configuración por cliente
 Decidido el 16/11/2026, **aún sin diseñar ni empezar**. Pippole pasa a ser genérica y lo propio de Home & Cook se convierte en la **configuración de un cliente**, que es el primero. Hoy ese contenido sigue escrito directamente en el código:
-- `engine.js`: lista `CONFIG.red` con las 21 tiendas («HOME & COOK …») y sus RM; pregunta eNPS `ENPS` y la del clima `x5` («recomendarías trabajar en Home & Cook»); puestos Store Manager / Assistant Store Manager y bonus (1000 € y 500 €).
+- `engine.js`: lista `CONFIG.red` con las 21 tiendas y sus RM (desde 0.37.0 `nombre` es la ciudad y `alias` el nombre de la empresa con la marca, que solo sirve para reconocerlas al importar: `impTiendaPorAlias`); pregunta eNPS `ENPS` y la del clima `x5` («recomendarías trabajar en Home & Cook»); puestos Store Manager / Assistant Store Manager y bonus (1000 € y 500 €).
 - `formacion.js`, `curso_datos.js`, `cursos.js`: Circuito de Venta con guiones («bienvenido a Home&Cook»), familias y argumentos por producto con marcas del grupo.
 - `docs_base.js`: Process Book escrito para una tienda outlet de la red.
-- `escape.js` + `img/esc-*.jpg`: formación PRL «Un turno seguro» con **fotos reales de tiendas**, donde se ven marcas en los lineales.
+- `escape.js` + `img/esc-*.jpg`: formación PRL «Un turno seguro» con **fotos reales de tiendas**, donde se ven marcas en los lineales. Desde 0.37.0 las fotos no se publican.
 - `pdc_carga.js`: abrevia «HOME & COOK» a «H&C» en nombres de tienda.
 - `config.js`: `enlaces.hometime` (herramienta interna del cliente, con VPN) y `dominioUsuarios: "homeandcook.app"`. **El dominio interno de usuarios no se cambia**: invalidaría los usuarios que ya existen. No se ve en ninguna pantalla.
 - Supabase: tabla `tiendas` y su `datos` (equipo, kpis, bajas…).
@@ -60,7 +60,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - Estado global `S`, pintado completo con `pintar()` y apartados en el array `MODULOS`.
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
   - Navegación en dos niveles: índice del apartado con tarjetas y botón atrás.
-  - Para confirmar, usa `confirmar()`, un modal propio; nunca `confirm()`.
+  - Para confirmar, usa `confirmar()`, un modal propio; para avisar, `avisar(texto, titulo)`. Nunca `confirm()` ni `alert()` (desde 0.37.0 no queda ninguno).
   - **Ver como** (0.27.0): `cambiarVista(id)` pone en `S.me` el usuario elegido y guarda el administrador en `S.real`.
     - `S.todas` tiene todas las tiendas; `aplicarVista()` recorta `S.tiendas` según el rol que se está viendo.
     - Para escribir en la base de datos con el usuario real, usa `yoReal()`. Por ejemplo, `actividad.usuario_id` debe ser `auth.uid()`.
@@ -80,7 +80,8 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - La lectura con IA está como botón desactivado: no activarla sin el visto bueno del DPO del cliente.
   - **Desde 0.34.0 Personas tiene pestañas** `pplantilla` (pintarPersonas), `paccesos`, `ptiendas`, `pactividad` (las tres con `pintarGestion(parte)`). `S.modulo = "gestion"` redirige a Personas → Usuarios con acceso.
   - **Selector común** (0.34.0, personas.js): `selPHtml(k, op)`, `selPElegidos(k, filtro)`, estado `S.selP[k]`, acciones `spTip/spModo/spGrupo/spPers`. Lo usan envíos de campañas (`k = "env"`, envios.js) y Desarrollo (`k = "dr-oficina|dr-retail"`, acción `data-tra="dePersonas"`). Scorecard: `scCandidatos(t)` y acción `scDePersonas`.
-  - Modo "usuarios" (0.33.1): alta masiva de cuentas desde Usuarios y tiendas (acción `impUsuarios`). `impCrearUsuarios` usa `signUp` con un cliente aparte, de uno en uno, y se para si Supabase devuelve límite de altas.
+  - Modo "usuarios" (0.33.1): alta masiva de cuentas desde Usuarios y tiendas (acción `impUsuarios`). `impCrearUsuarios` crea cada cuenta con `crearCuenta()` (app.js), de una en una, y se para si Supabase devuelve límite de altas.
+  - **Alta de cuentas** (0.37.0): `crearCuenta(usuario, password)` llama a la Edge Function `crear-cuenta` (solo admin; usa la clave de servicio que Supabase pone en las funciones) y, si no está desplegada, al registro público como antes. Con la función desplegada, el registro público de Supabase se puede desactivar.
 - **Clima** (0.32.0): `clima.js` (banco de preguntas `CL`, plantillas `clima2-tiendas|campo|oficinas|demo|gptw`, pestañas `clnueva/clcurso/clanteriores/clresultados/clmodelos`, acciones `ACCIONES_CLIMA`) y `clima_inv.js` (pantalla de quien responde, estado `CI`, acciones `cli*`, vista previa `clPrevia`).
   - «A quién» (0.33): `N.usarB` (de Personas: `modoB` todas|grupos|personas, `tips` en GPTW) y `N.usarL` (archivo con el importador, `N.imp`). `clRespEmp(e)` decide a quién evalúa en la parte 2.
   - **Anónimas por defecto; con nombre si se elige** (0.35.0): `campanas.config.anonima === false` (`clAnon(c)`). Con nombre: `pendientes` lleva `n`, la invitación lleva `destinatario` y `email`, se envía con `{ids}` (modo «clima» del correo), recordatorio solo a quien falta, y Resultados muestra respuestas por persona. Anónimas: nunca se guarda el nombre.
@@ -102,7 +103,10 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - Resend: cuenta propia de Pippole (no la personal del usuario), dominio `pippole.es` en región Irlanda, registros DNS añadidos en Hostinger el 16/11/2026 (DKIM `resend._domainkey`, CNAME `send` y `rsend`). Remitente `Pippole <no-responder@pippole.es>`.
   - La función con el diseño de la 0.26.0 y el envío de Desarrollo está desplegada desde el 16/11/2026.
 - **Modo demostración**: `?demo` usa `demo.js`, un cliente falso en memoria, con equipos de ejemplo en cada tienda y la función de correo simulada (`sb.functions.invoke`). Usuarios `admin`, `rm.es`, `rm.pt` y `marketing`, contraseña `demo1234`.
-- **Idiomas**: `i18n.js` (es, en y fr) para el acceso y las pantallas de invitado. El resto de la interfaz está en español.
+- **Idiomas**: `i18n.js` (es, en y fr) para el acceso y las pantallas de invitado. El resto de la interfaz está en español: al entrar, `entrar()` pone `LANG = "es"` y el selector no sale en la cabecera (0.37.0).
+- **Privacidad** (0.37.0): `privacidad.html` + `privacidad.js` (rellena los huecos con `APP_CONFIG.legal`: `responsable`, `encargado`, `contacto`, `conservacion`, `fecha`, `validado`). Pie `#pieLegal` fuera de `#app` con `pintarPieLegal("invitado"|"acceso"|"oculto")`: aviso completo a quien entra con código, enlace en el acceso. Texto pendiente de validar por el DPO.
+- **CSP** (0.37.0): etiqueta `meta` en `index.html` y en `privacidad.html`. Scripts solo de `'self'` y jsdelivr; conexiones solo a `*.supabase.co`. Nada de `onclick=` ni `<script>` en línea ni `eval`. Si se añade un CDN o un servicio, hay que añadirlo a la CSP.
+- **Prueba de humo** (0.37.0): `pruebas/humo.py` (Playwright). `publicar-pages.yml` la pasa, junto con `node --check` de cada fichero, antes de publicar. En local: `HUMO_LIBS=<ruta a supabase.js> python3 pruebas/humo.py`. Falla si aparece una marca del cliente en pantalla.
 
 ## Despliegue
 - Repositorio `homeandcook/rrhh-home-and-cook` (público). La web se sirve con **GitHub Pages** desde la rama `main` en `www.pippole.es`.
@@ -115,8 +119,8 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 - **Flujos de GitHub Actions**:
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
-  - `desplegar-funciones.yml`: despliega `enviar-invitacion` y `resenas` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.36.2**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+  - `desplegar-funciones.yml`: despliega `enviar-invitacion`, `resenas` y `crear-cuenta` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.37.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.
@@ -139,6 +143,6 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 - PRL: la formación del juego **complementa**, no sustituye, la formación específica del puesto que exige la LPRL. El contenido debe revisarlo el servicio de prevención.
 
 ## Correcciones del usuario que hay que respetar
-- En las tiendas **no hay demostraciones de cocina**.
+- En las tiendas **no hay demostraciones de cocina**. Por eso el ítem q13 del Scorecard es «Atención y asesoramiento al cliente» (0.37.0).
 - Las formaciones **no se repiten**. En la 0.23.0 se añadió una caducidad anual (`caducada()` en `formacion.js`); **pendiente de confirmar si se quita**.
 - El correo y la interfaz deben ser sobrios y profesionales, sin adornos.

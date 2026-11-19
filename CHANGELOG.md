@@ -423,3 +423,34 @@ Scorecard más fácil de leer (opción A «Continuidad»). El cálculo no cambia
 - Resultados de tienda: cada KPI con objetivo lleva una barra de consecución (del 90 % al 110 %, con una raya en el 100 %), en verde si el factor es 1 o más y en ámbar si es menor. Debajo, una línea explica desde qué consecución el factor llega a 1.
 - El factor se ve como etiqueta.
 - Valoración cualitativa: debajo de cada ítem valorado aparece su nivel en palabras («En línea», «Por encima»…), sin tener que abrir el detalle.
+
+## 0.37.0 · 19/11/2026 · **SQL: sí** (`migracion_0.37.sql`, opcional: nombres de tienda)
+Fase 1 del análisis completo (limpieza) y la parte de la fase 2 que no depende del DPO.
+
+Seguridad
+- Los códigos de invitación se generan con el generador seguro del navegador (`crypto.getRandomValues`), no con `Math.random`.
+- Nueva función `crear-cuenta`: crea las cuentas de acceso y solo la puede usar RR.HH. El alta de un usuario y el alta masiva la usan. Con ella desplegada, se puede **desactivar el registro público** en Supabase (Authentication → Sign In / Providers → «Allow new users to sign up»). Si la función no está, se usa el registro público como antes.
+- Política de contenido (CSP) y de referente en `index.html`: scripts solo de este sitio y de jsdelivr, conexiones solo a Supabase, y los enlaces con código no se pasan a otros sitios. Se quitan los dos manejadores `onclick`/`onsubmit` escritos en el HTML.
+- Fuera del repositorio `supabase/usuarios_reales.md` (nombres y cargos reales). Sigue en el historial de git.
+- Las fotos de `img/` (tiendas reales, apartado PRL oculto) ya no se publican en la web.
+
+Privacidad
+- Quien entra con código ve un aviso de privacidad (es, en, fr) y un enlace a la nueva página `privacidad.html`. La pantalla de acceso enlaza también a ella.
+- `privacidad.html`: responsable, encargado, datos y bases legales, encuestas anónimas, decisiones automatizadas, dónde se guardan, plazos y derechos. Los huecos se rellenan con `APP_CONFIG.legal` en `config.js` (`responsable`, `encargado`, `contacto`, `conservacion`, `validado`). Pendiente de validar por el DPO.
+- Las exportaciones (consolidado del Scorecard, plantilla, equipo de tienda, formaciones, maestro de Talent Review, contraseñas del alta masiva) quedan en Actividad.
+
+Marca y textos
+- Tiendas llamadas por la ciudad («A Coruña», «Mallorca 2»…) en `CONFIG.red`. Al importar personas se siguen reconociendo los nombres de los ficheros de la empresa (`alias`). `migracion_0.37.sql` cambia los nombres en la base de datos, solo donde siguen con el nombre original.
+- Ítems del Scorecard sin marcas: «Formación de producto», «Participación del equipo en la plataforma de formación», «Escaparate alineado con el plan comercial», «Organización y limpieza … y gasto de material». «Demos en tienda» pasa a «Atención y asesoramiento al cliente» (mismo peso, 10 %).
+- La encuesta «tipo Great Place To Work» pasa a llamarse «de cultura y confianza».
+- Portada: Clima ya no dice que siempre es anónima; Scorecard cuenta seguimientos y cierres (no fichas de talento); Desarrollo dice si hay ciclo; Personas, para el RM, habla solo de la plantilla de sus tiendas.
+- Portada del RM: «Para hoy» va antes que las tiendas, con una línea que explica las tres marcas de cada tienda.
+- Ficha de tienda del RM: ya no muestra Talent Matrix, Onboarding ni Offboarding, que están ocultos.
+
+Experiencia
+- Ningún `alert()` ni `confirm()` del navegador: todo usa el modal propio (`avisar()` y `confirmar()`). Borrar una tienda pide escribir ELIMINAR.
+- El selector de idioma solo aparece en el acceso y en las pantallas de invitado; dentro, todo en español.
+
+Calidad
+- `pruebas/humo.py`: entra en la demo como RR.HH. y como RM, recorre cada apartado y pestaña, abre la pantalla de código y la página de privacidad, y falla si hay errores o alguna marca en pantalla.
+- `publicar-pages.yml` comprueba la sintaxis de todos los ficheros y pasa la prueba de humo antes de publicar. Si falla, no se publica.

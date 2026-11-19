@@ -203,15 +203,15 @@ const ACCIONES_PRL = {
     t.personas.filter(x => x.nombre && !p.personas.some(y => y.nombre === x.nombre)).forEach(x => { p.personas.push({ id: SC.uid(), nombre: x.nombre, puesto: (C.bonus[x.puesto] || {}).nombre || x.puesto, alta: null, formaciones: {}, reconocimiento: null }); n++; });
     log(`PRL: ${n} personas traídas del Scorecard en ${t.nombre}`, t); guardar(t); toast(`${n} personas añadidas`);
   },
-  prlBorrarPersona(b) {
+  async prlBorrarPersona(b) {
     const t = S.tiendas.find(x => x.id === filtroPrl().tienda); if (!t) return false;
     const p = prlDe(t), x = p.personas.find(y => y.id === b.dataset.id);
-    if (!confirm(`¿Quitar a ${x.nombre} del registro de prevención de esta tienda?`)) return false;
+    if (!(await confirmar({ titulo: "Quitar del registro", texto: `Se quita a ${x.nombre} del registro de prevención de esta tienda.`, ok: "Quitar", peligro: true }))) return false;
     p.personas = p.personas.filter(y => y.id !== x.id); log(`PRL: baja de una persona en ${t.nombre}`, t); guardar(t);
   },
-  prlBorrarInc(b) {
+  async prlBorrarInc(b) {
     const t = S.tiendas.find(x => x.id === filtroPrl().tienda); if (!t) return false;
-    if (!confirm("¿Eliminar esta incidencia del registro?")) return false;
+    if (!(await confirmar({ titulo: "Eliminar la incidencia", texto: "Se elimina esta incidencia del registro.", ok: "Eliminar", peligro: true }))) return false;
     const p = prlDe(t); p.incidencias = p.incidencias.filter(y => y.id !== b.dataset.id); log(`PRL: incidencia eliminada en ${t.nombre}`, t); guardar(t);
   }
 };
