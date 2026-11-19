@@ -67,7 +67,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - **Mis tiendas** (0.27.0): portada del RM y ficha de tienda (`S.modulo = "tienda"`, `S.tiendaFoco`, `APARTADOS_TIENDA`).
     - Abre cada apartado con `irA()` de `hoy.js`, filtrado por la tienda.
     - Los nombres de acción son globales: `irTienda` ya existe en Usuarios y tiendas. Antes de crear una acción, comprueba que el nombre no esté usado.
-- **Employer Branding** (0.36.0): `resenas.js` (apartado `employer`, solo admin vía `MODULOS_SOLO_ADMIN`; estado `S.eb` con `ebS()`, acciones `eb*` en `ACCIONES_EB`). Tabla `resenas_sitios` (solo `place_id`, migración 0.36). Edge Function `supabase/functions/resenas`: `{buscar}` (Text Search) y `{sitios:[place_id]}` (Place Details con reseñas, máximo 5 por sitio). Secreto `GOOGLE_PLACES_KEY`.
+- **Employer Branding** (0.36.0; **aparcado y oculto desde 0.36.1** a petición del usuario: para retomarlo, quitar `employer` de `MODULOS_OCULTOS`, ejecutar `migracion_0.36.sql` y poner el secreto `GOOGLE_PLACES_KEY`): `resenas.js` (apartado `employer`, solo admin vía `MODULOS_SOLO_ADMIN`; estado `S.eb` con `ebS()`, acciones `eb*` en `ACCIONES_EB`). Tabla `resenas_sitios` (solo `place_id`, migración 0.36). Edge Function `supabase/functions/resenas`: `{buscar}` (Text Search) y `{sitios:[place_id]}` (Place Details con reseñas, máximo 5 por sitio). Secreto `GOOGLE_PLACES_KEY`.
   - **Condiciones de Google**: no se guarda contenido de Places en la base de datos (solo el `place_id`); hay que mostrar la atribución a Google y el autor de cada reseña. Lo visto por cada persona va en `localStorage` (`pp-eb-<usuario>`).
   - Coste: Place Details con reseñas es SKU «Enterprise + Atmosphere» (1.000 gratis al mes). Consulta automática como mucho cada 20 h por persona (`EB_HORAS_AUTO`).
   - Siguiente paso acordado: Google Business Profile API (todas las reseñas y respuestas) cuando haya acceso de quien gestiona las fichas.
@@ -116,7 +116,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion` y `resenas` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.36.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.36.1**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.

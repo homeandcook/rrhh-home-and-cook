@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.36.0";
+const APP_VERSION = "0.36.1";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -28,7 +28,7 @@ const MODULOS_MARKETING = ["pdc"];
 /* Pippole se centra de momento en tres bloques: Encuestas de clima, Formación
    de IA y Desarrollo. El resto de apartados sigue en el código, oculto: para
    recuperar uno basta con quitarlo de esta lista. */
-const MODULOS_OCULTOS = ["prl", "pdc", "docs", "hometime"];
+const MODULOS_OCULTOS = ["prl", "pdc", "docs", "hometime", "employer"]; // employer: aparcado el 19/11/2026 hasta tener clave de Google y la migración 0.36
 const MODULOS_SOLO_ADMIN = ["employer"];
 const puedeVer = id => !MODULOS_OCULTOS.includes(id) && (!esMarketing() || MODULOS_MARKETING.includes(id)) && (!MODULOS_SOLO_ADMIN.includes(id) || esAdmin());
 const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
@@ -246,7 +246,7 @@ async function recargar() {
   S.perfiles = p.data || [S.me];
   await Promise.all([recargarPruebas(), cargarDocumentos(), cargarEmpleados(), typeof cargarAvisosDr === "function" ? cargarAvisosDr() : null]);
   // Reseñas de Google: sin esperar; como mucho una consulta automática al día
-  if (esAdmin() && typeof cargarSitiosResenas === "function") cargarSitiosResenas().then(() => { if (S.modulo === "inicio") pintar(); ebActualizar(true); });
+  if (esAdmin() && puedeVer("employer") && typeof cargarSitiosResenas === "function") cargarSitiosResenas().then(() => { if (S.modulo === "inicio") pintar(); ebActualizar(true); });
   if (realEsAdmin()) { const a = await sb.from("actividad").select("*").order("fecha", { ascending: false }).limit(150); S.actividad = a.data || []; }
   if (!S.tiendas.some(x => x.id === S.ui.t)) S.ui.t = null;
   pintar();

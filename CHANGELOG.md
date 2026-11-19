@@ -287,6 +287,9 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.36.1 · 19/11/2026 · **SQL: no**
+- Employer Branding queda **aparcado y oculto** (en `MODULOS_OCULTOS`) hasta retomarlo: falta la clave de Google (`GOOGLE_PLACES_KEY`) y la migración 0.36. El código y la función siguen listos; mientras está oculto no se consulta Google.
+
 ## 0.36.0 · 19/11/2026 · **SQL: sí** (`supabase/migracion_0.36.sql`) · función nueva `resenas`
 - **Employer Branding**, apartado nuevo (solo RR.HH.): las reseñas de Google de cada tienda y de la oficina.
   - Cifras: nota media ponderada, total de reseñas, nuevas desde tu última revisión y sitios por debajo de 4.
