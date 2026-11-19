@@ -75,24 +75,25 @@ function clInvPintar() {
   if (!paso) {
     const n = contables.length, min = clMinutos(CI.pl, CI.cfg);
     const partes = [[CI.pl.gptw ? "Cómo es trabajar aquí" : "Tu día a día", CI.pl.gptw ? "60 afirmaciones en 5 apartados: credibilidad, respeto, imparcialidad, orgullo y compañerismo, y una valoración global." : `${contables.filter(s => s.q && s.q.parte === 1).length} preguntas sobre cómo se trabaja.`]];
-    if (CI.cfg.parte2) partes.push(["Tu responsable directo", "10 afirmaciones, también anónimas."]);
+    const anon = CI.cfg.anonima !== false;
+    if (CI.cfg.parte2) partes.push(["Tu responsable directo", anon ? "10 afirmaciones, también anónimas." : "10 afirmaciones."]);
     partes.push([CI.pl.gptw ? "Dos preguntas abiertas" : "Una pregunta abierta", "Opcionales: escribe solo si quieres."]);
     h = `<div class="cli-in">${marca}
       <div class="cli-tit"><span class="cli-eti">Encuesta de clima${CI.unidad ? " · " + esc(CI.unidad) : col ? " · " + esc(col.n) : ""}</span>
         <h1>¿Cómo se trabaja aquí?</h1>
         <p>Toca la respuesta que más se acerque a lo que vives. Pasa sola a la siguiente y puedes volver atrás para cambiarla.</p></div>
-      <div class="cli-datos"><div><b>${min}</b><small>minutos</small></div><div><b>${n}</b><small>preguntas</small></div><div><b>100 %</b><small>anónima</small></div></div>
+      <div class="cli-datos"><div><b>${min}</b><small>minutos</small></div><div><b>${n}</b><small>preguntas</small></div><div><b>${anon ? "100 %" : "Con"}</b><small>${anon ? "anónima" : "tu nombre"}</small></div></div>
       <ol class="cli-partes">${partes.map(p => `<li><b>${esc(p[0])}</b><span>${esc(p[1])}</span></li>`).join("")}</ol>
       <div class="cli-sp"></div>
       <button class="cli-btn" data-action="cliEmpezar">${CI.guardado != null ? "Seguir donde lo dejé" : "Empezar"}</button>
-      <p class="cli-nota">Tu código no lleva tu nombre. Se guarda en este dispositivo: si la dejas a medias, vuelve con el mismo código.</p></div>`;
+      <p class="cli-nota">${anon ? "Tu código no lleva tu nombre." : "Esta encuesta no es anónima: tus respuestas llevan tu nombre y RR.HH. las verá así."} Se guarda en este dispositivo: si la dejas a medias, vuelve con el mismo código.</p></div>`;
   } else if (paso.k === "fin") {
     const dur = CI.t0 ? Math.max(1, Math.round((Date.now() - CI.t0) / 1000)) : 0;
     const r = Object.keys(CI.ans).length + Object.values(CI.textos).filter(x => x && x.trim()).length;
     h = `<div class="cli-in fin">${marca}
       <span class="cli-ok" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
       <h1>${CI.previa ? "Fin de la vista previa" : "Gracias. Ya está enviada."}</h1>
-      <p>${CI.previa ? "Así termina la encuesta para quien responde. No se ha guardado ninguna respuesta." : CI.yaEstaba ? "Esta encuesta ya se respondió con este código. Gracias por participar." : `Has respondido ${r} preguntas${dur ? " en " + (dur >= 60 ? Math.floor(dur / 60) + " min " + (dur % 60) + " s" : dur + " segundos") : ""}. Tus respuestas son anónimas y se suman a las de tu ${esc(col ? col.eq : "equipo")}.`}</p>
+      <p>${CI.previa ? "Así termina la encuesta para quien responde. No se ha guardado ninguna respuesta." : CI.yaEstaba ? "Esta encuesta ya se respondió con este código. Gracias por participar." : `Has respondido ${r} preguntas${dur ? " en " + (dur >= 60 ? Math.floor(dur / 60) + " min " + (dur % 60) + " s" : dur + " segundos") : ""}. ${CI.cfg.anonima !== false ? `Tus respuestas son anónimas y se suman a las de tu ${esc(col ? col.eq : "equipo")}.` : "Tus respuestas han llegado a RR.HH. con tu nombre."}`}</p>
       ${CI.previa ? `<button class="cli-btn" data-action="cliCerrarPrevia">Cerrar la vista previa</button>` : `<div class="cli-caja"><b>¿Y ahora qué?</b><span>Cuando cierre la encuesta, se compartirán los resultados de tu ${esc(col ? col.eq : "equipo")} y las acciones que se decidan con ellos.</span></div>
       <p class="cli-nota">Ya puedes cerrar esta ventana.</p>`}</div>`;
   } else {
@@ -111,7 +112,7 @@ function clInvPintar() {
         <span class="cli-eti chip">Parte 1 hecha</span>
         <h2 class="cli-p">Ahora, 10 preguntas sobre tu responsable directo</h2>
         <div class="cli-resp"><span>${esc(ini)}</span><div><b>${esc(nom || "Tu responsable directo")}</b><small>${esc(rol || (col ? col.resp : "Responsable directo"))}</small></div></div>
-        <p class="cli-txt">También es anónima. Solo verá un resumen si le han valorado ${CL.MIN} personas o más, nunca respuestas sueltas.</p>
+        <p class="cli-txt">${CI.cfg.anonima !== false ? `También es anónima. Solo verá un resumen si le han valorado ${CL.MIN} personas o más, nunca respuestas sueltas.` : `RR.HH. verá tus respuestas con tu nombre. Tu responsable solo verá un resumen si le han valorado ${CL.MIN} personas o más.`}</p>
         <div class="cli-sp"></div><button class="cli-btn" data-action="cliSeguir">Seguir · 1 minuto</button></div></div>`;
     } else if (paso.k === "abierta") {
       const q = paso.q, ultima = seq[CI.i + 1] && seq[CI.i + 1].k === "fin";
@@ -121,7 +122,7 @@ function clInvPintar() {
         <span class="cli-eti chip">${abiertas.length > 1 ? `Abierta ${na} de ${abiertas.length}` : "Última"} · opcional</span>
         <h2 class="cli-p">${esc(txt)}</h2>
         <label class="cli-area"><span>Tu respuesta</span><textarea data-cli-txt="${q.id}" maxlength="500" rows="5" placeholder="Escribe aquí, en pocas palabras">${esc(CI.textos[q.id] || "")}</textarea></label>
-        <span class="cli-nota izq">Sin nombres, por favor: así nadie puede reconocerte. Máximo 500 caracteres.</span>
+        <span class="cli-nota izq">${CI.cfg.anonima !== false ? "Sin nombres, por favor: así nadie puede reconocerte. " : ""}Máximo 500 caracteres.</span>
         <div class="cli-sp"></div>
         <button class="cli-btn" data-action="cliSeguir" ${CI.enviando ? "disabled" : ""}>${ultima ? (CI.enviando ? "Enviando…" : CI.previa ? "Terminar la vista previa" : "Enviar respuestas") : "Siguiente"}</button>
         <button class="cli-btn ghost" data-action="cliSaltar" ${CI.enviando ? "disabled" : ""}>${ultima ? "Saltar y enviar" : "Saltar"}</button></div></div>`;

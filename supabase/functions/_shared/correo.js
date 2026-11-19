@@ -31,13 +31,13 @@ function textosCorreo(it, firma, aj) {
   const T = {
     clima: {
       eti: "Encuesta de clima", asunto: `${t}: tu opinión cuenta`,
-      intro: `Queremos saber cómo vives el trabajo en tu tienda: qué funciona y qué cambiarías. Tus respuestas sirven para decidir mejoras, nunca para evaluarte.`,
+      intro: `Queremos saber cómo vives tu trabajo: qué funciona y qué cambiarías. Esta encuesta va con tu nombre y sirve para decidir mejoras, nunca para evaluarte.`,
       datos: [["Duración", dur || "Pocos minutos"], ["Preguntas", i.n ? String(i.n) : "—"], ["Respuestas", "Con tu nombre"]],
       boton: "Responder la encuesta", nota: "El código es personal y sirve una sola vez. No lo reenvíes."
     },
     anonima: {
       eti: "Encuesta de clima · anónima", asunto: `${t}: tu opinión cuenta, y es anónima`,
-      intro: `Queremos saber cómo vives el trabajo en tu tienda: qué funciona y qué cambiarías. Es anónima: el código no lleva tu nombre y la plataforma no guarda a quién se ha enviado cada uno.`,
+      intro: `Queremos saber cómo vives tu trabajo: qué funciona y qué cambiarías. Es anónima: el código no lleva tu nombre y la plataforma no guarda a quién se ha enviado cada uno.`,
       datos: [["Duración", dur || "Pocos minutos"], ["Preguntas", i.n ? String(i.n) : "—"], ["Respuestas", "Anónimas"]],
       boton: "Responder la encuesta", nota: "El código sirve una sola vez. Si no quieres que nadie vea tu respuesta, contéstala cuando estés a solas."
     },
@@ -129,7 +129,7 @@ function montarCorreo(it, x, URL_APP, cargo) {
     pila ? `Hola ${pila},` : "Hola,", "", x.intro, "", x.extra || null, x.extra ? "" : null,
     ...x.datos.map(([k, v]) => `${k}: ${v}`), x.datos.length ? "" : null,
     primera ? `Empieza aquí. Primera pregunta: ${primera.t} Respóndela en ${enlace}${it.codigo}` : null, primera ? "" : null,
-    `Enlace: ${directo}`, conCodigo ? `Código: ${it.codigo}` : null, "",
+    `Enlace: ${directo}`, conCodigo ? `Código, por si el enlace no funciona: ${it.codigo}` : null, "",
     conCodigo ? "Cómo funciona:\n" + pasos.map((p, k) => `${k + 1}. ${p}`).join("\n") + "\n" : null,
     x.nota, "", "Gracias,", x.firma, cargo
   ].filter((l) => l !== null).join("\n");
@@ -206,7 +206,7 @@ function montarCorreo(it, x, URL_APP, cargo) {
   ${conCodigo ? `<tr><td class="pad" style="padding:22px 38px 0">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${FONDO};border:1px dashed #C9BCF5;border-radius:12px">
       <tr><td align="center" style="padding:20px 18px 21px">
-        <div style="font:600 10.5px/1 ${SANS};color:${GRIS};letter-spacing:.11em;text-transform:uppercase">Tu código de acceso</div>
+        <div style="font:600 10.5px/1 ${SANS};color:${GRIS};letter-spacing:.11em;text-transform:uppercase">Tu código · por si el botón no funciona</div>
         <div class="cod" style="font:700 30px/1.2 ${MONO};color:${TINTA};letter-spacing:.1em;padding-top:10px">${esc(it.codigo)}</div>
       </td></tr>
     </table>

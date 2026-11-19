@@ -34,7 +34,7 @@ function avLista() {
     if (!esAdmin() && !misTiendas.has(i.tienda_id)) return;
     const pl = SC.plantilla(c.plantilla) || {};
     if (pl.oculto || (typeof plantillaVisible === "function" && !plantillaVisible(pl))) return;
-    if (pl.anonima) {
+    if (pl.anonima && !(pl.v2 && (c.config || {}).anonima === false)) {
       const g = anon[c.id] || (anon[c.id] = { tipo: "anon", c, n: 0, fecha: "", fechas: [] });
       g.n++; g.fechas.push(i.respondido); if (i.respondido > g.fecha) g.fecha = i.respondido;
       return;

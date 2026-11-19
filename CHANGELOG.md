@@ -287,6 +287,13 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.35.0 · 19/11/2026 · **SQL: no** · se vuelve a desplegar la función de correo
+- **Encuestas de clima anónimas o con nombre.** En «Nueva encuesta» → Opciones, interruptor «Respuestas anónimas» (encendido por defecto).
+  - Anónima, como hasta ahora: el código no lleva nombre, nadie sabe quién ha respondido qué y los resultados salen por tienda, departamento o grupo con 5 respuestas o más.
+  - Con nombre: cada código va a una persona (nombre y correo en la invitación). El correo y la encuesta lo dicen claramente. La campaña muestra «Quién ha respondido», el recordatorio solo llega a quien falta (con su propio código) y Resultados añade «Respuestas por persona» y el nombre junto a cada comentario.
+  - Se guarda en `campanas.config.anonima`. En las anónimas los nombres no se guardan en ningún sitio.
+- **Correo**: el código lleva encima «Por si el botón no funciona» (el botón ya lo incluye y no hace falta escribirlo). El texto de clima dice «cómo vives tu trabajo» en lugar de «en tu tienda», que no encajaba en oficinas.
+
 ## 0.34.3 · 19/11/2026 · **SQL: no** · se vuelve a desplegar la función de correo
 - La vista previa del correo ya no depende de descargar la plantilla en el navegador: en la web publicada no se conseguía (ni como módulo ni como script).
   - Si el navegador no puede cargarla, la vista previa la monta la propia función de correo (modo `vista_previa`: no envía nada ni lee datos de nadie) y se actualiza mientras se escribe.

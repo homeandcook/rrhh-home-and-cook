@@ -102,6 +102,8 @@ const CL = {
 /* Preguntas que ve quien responde, según lo que decidió RR.HH. */
 function clPreguntas(pl, cfg) { return pl.preguntas.filter(q => q.parte !== 2 || (cfg && cfg.parte2)); }
 function clCfg(c) { return (c && c.config) || {}; }
+/* Anónima salvo que RR.HH. elija «Con nombre» al crearla (0.35.0) */
+const clAnon = c => clCfg(c).anonima !== false;
 function clEsV2(c) { const pl = c && SC.plantilla(c.plantilla); return !!(pl && pl.v2); }
 function clNombreEncuesta(c) {
   const cfg = clCfg(c), pl = SC.plantilla(c.plantilla) || {};
@@ -160,7 +162,7 @@ function pintarClima(tab) {
 function clChips(c) {
   const cfg = clCfg(c), pl = SC.plantilla(c.plantilla) || {};
   return `<span class="cl-chip">${esc(clNombreEncuesta(c))}</span>${pl.v2 && cfg.parte2 ? `<span class="cl-chip">Con evaluación al responsable</span>` : ""}
-    ${pl.anonima ? `<span class="cl-chip suave">Anónima</span>` : `<span class="cl-chip suave">Con nombre</span>`}`;
+    ${(pl.v2 ? clAnon(c) : pl.anonima) ? `<span class="cl-chip suave">Anónima</span>` : `<span class="cl-chip aviso">Con nombre</span>`}`;
 }
 function clTarjeta(c) {
   const D = clDatos(c), n = D.invs.length, r = D.resp.length, p = n ? r / n : 0, cfg = D.cfg;
@@ -188,7 +190,7 @@ function clLista(estado) {
 /* ---------- Nueva encuesta: el asistente ---------- */
 const CL_TIP = { tiendas: "tiendas", campo: "comerciales", oficinas: "oficinas", demo: "demostradores" };
 function clN() {
-  if (!S.cn) S.cn = { tipo: "colectivo", col: "tiendas", p2: true, usarB: true, usarL: false, tips: Object.keys(IMP_TIPOS), modoB: "todas", grupos: [], pers: [],
+  if (!S.cn) S.cn = { tipo: "colectivo", col: "tiendas", p2: true, anon: true, usarB: true, usarL: false, tips: Object.keys(IMP_TIPOS), modoB: "todas", grupos: [], pers: [],
     imp: null, impNombre: "", titulo: "", cierre: "" };
   return S.cn;
 }
@@ -221,9 +223,9 @@ function clDestinatarios(N) {
     let ps = clBase(N);
     if (N.modoB === "grupos") ps = ps.filter(e => N.grupos.includes(clGrupoEmp(e)));
     if (N.modoB === "personas") ps = ps.filter(e => N.pers.includes(e.id));
-    ps.forEach(e => { const m = (e.correo || "").toLowerCase(); meter(m, { e: clMail(m) ? m : "", t: e.tienda_id || null, g: e.tienda_id ? null : clGrupoEmp(e), r: clRespEmp(e) }); });
+    ps.forEach(e => { const m = (e.correo || "").toLowerCase(); meter(m, { e: clMail(m) ? m : "", n: empNombre(e), t: e.tienda_id || null, g: e.tienda_id ? null : clGrupoEmp(e), r: clRespEmp(e) }); });
   }
-  if (N.usarL && N.imp) N.imp.forEach(x => { const m = (x.e || "").toLowerCase(); meter(m, { e: clMail(m) ? m : "", t: x.t || null, g: x.t ? null : x.g, r: x.r, err: !clMail(m) }); });
+  if (N.usarL && N.imp) N.imp.forEach(x => { const m = (x.e || "").toLowerCase(); meter(m, { e: clMail(m) ? m : "", n: x.nombre || null, t: x.t || null, g: x.t ? null : x.g, r: x.r, err: !clMail(m) }); });
   return out;
 }
 function clQuien(N, gptw, col) {
@@ -272,10 +274,14 @@ function clNueva() {
       ${gptw ? "" : `<section class="cl-paso"><h2><span>2</span>Colectivo</h2>
         <div class="cl-ops pastillas">${Object.entries(CL.COLECTIVOS).map(([id, x]) => radio("clCol", id, N.col === id, x.n)).join("")}</div>
         <p class="hint">${esc(col.n)} añade: «${esc(col.propias[0][1])}» y «${esc(col.propias[1][1])}».</p></section>`}
-      <section class="cl-paso"><h2><span>${gptw ? 2 : 3}</span>Evaluación al responsable</h2>
+      <section class="cl-paso"><h2><span>${gptw ? 2 : 3}</span>Opciones</h2>
         <button type="button" class="cl-switch ${N.p2 ? "on" : ""}" data-action="clP2" aria-pressed="${N.p2}">
           <span><b>Incluir 10 preguntas sobre el responsable directo</b><small>Cada persona evalúa a su responsable directo de Personas (o el de la columna «responsable» del archivo). En tiendas, sin responsable, al Store Manager, y al Regional Manager en el caso de los Store Managers. Solo se enseña con ${CL.MIN} respuestas o más.</small></span>
-          <i aria-hidden="true"></i></button></section>
+          <i aria-hidden="true"></i></button>
+        <button type="button" class="cl-switch ${N.anon ? "on" : ""}" data-action="clAnonimo" aria-pressed="${N.anon}">
+          <span><b>Respuestas anónimas</b><small>${N.anon ? `El código no lleva nombre y nadie puede saber quién ha respondido qué, tampoco RR.HH. Los resultados salen por tienda, departamento o grupo, y solo con ${CL.MIN} respuestas o más.` : "Desactivado: cada respuesta queda asociada a la persona y en los resultados verás quién ha contestado qué."}</small></span>
+          <i aria-hidden="true"></i></button>
+        ${N.anon ? "" : `<p class="hint warn">Con nombre, la gente suele contestar con menos sinceridad. El correo y la encuesta lo dirán claramente. Antes de usarla con datos reales, cuéntaselo al comité y al responsable de protección de datos.</p>`}</section>
       <section class="cl-paso"><h2><span>${gptw ? 3 : 4}</span>A quién</h2>
         ${clQuien(N, gptw, col)}
         ${D.some(x => x.err) ? `<p class="hint warn">${D.filter(x => x.err).length} ${D.filter(x => x.err).length === 1 ? "persona del archivo no tiene" : "personas del archivo no tienen"} un correo válido: recibirán papeleta.</p>` : ""}
@@ -289,7 +295,7 @@ function clNueva() {
       <dl><dt>Encuesta</dt><dd>${gptw ? "Tipo Great Place To Work" : "De colectivo · " + esc(col.n)}</dd>
         <dt>Parte 2</dt><dd>${N.p2 ? "Sí, al responsable directo" : "No"}</dd>
         <dt>Preguntas</dt><dd>${qs.length} · unos ${clMinutos(pl, cfg)} minutos</dd>
-        <dt>Respuestas</dt><dd>Anónimas</dd></dl>
+        <dt>Respuestas</dt><dd>${N.anon ? "Anónimas" : "Con nombre"}</dd></dl>
       <div class="cl-cifras"><div><b>${D.length}</b><small>personas</small></div><div class="on"><b>${conMail}</b><small>por correo</small></div><div><b>${sinMail}</b><small>papeleta</small></div></div>
       ${conMail > 100 ? `<p class="hint">Más de 100 correos: con el plan gratuito del proveedor de correo salen 100 al día y el resto queda pendiente para el día siguiente.</p>` : ""}
       ${sb.demo ? `<p class="hint">Demostración: no sale ningún correo.</p>` : ""}
@@ -314,13 +320,14 @@ async function clEnviarPendientes(c) {
   for (let i = 0; i < pend.length && !tope; i += LOTE) {
     const trozo = pend.slice(i, i + LOTE);
     if (pend.length > LOTE) toast(`Enviando: ${Math.min(i + LOTE, pend.length)} de ${pend.length}…`);
-    const filas = trozo.map(p => ({ campana_id: c.id, tienda_id: p.t || null, grupo: p.g || null, responsable: cfg.parte2 ? (p.r || null) : null,
-      codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
+    const nom = !clAnon(c);
+    const filas = trozo.map(p => Object.assign({ campana_id: c.id, tienda_id: p.t || null, grupo: p.g || null, responsable: cfg.parte2 ? (p.r || null) : null,
+      codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }, nom ? { destinatario: p.n || null, email: p.e } : {}));
     const ins = await sb.from("invitaciones").insert(filas).select();
     if (ins.error) { fallos.push({ motivo: traducirError(ins.error) }); break; }
     const pares = (ins.data || []).map((r, k) => ({ id: r.id, email: trozo[k].e }));
     let r;
-    try { r = await enviarPorLaPlataforma(null, null, { anonimos: pares, info }); }
+    try { r = nom ? await enviarPorLaPlataforma(pares.map(p => p.id), null, { info }) : await enviarPorLaPlataforma(null, null, { anonimos: pares, info }); }
     catch (e) { r = { resultados: pares.map(p => ({ id: p.id, ok: false, motivo: e.message })) }; }
     const ok = new Set((r.resultados || []).filter(x => x.ok).map(x => x.id));
     const salen = pares.filter(p => ok.has(p.id)), noSalen = pares.filter(p => !ok.has(p.id));
@@ -345,7 +352,8 @@ function clAvisoEnvio(res) {
 function clDetalle(c) {
   const D = clDatos(c), cfg = D.cfg, A = clResumen(D), n = D.invs.length;
   const papeletas = D.invs.filter(i => !i.enviado && i.estado !== "respondida");
-  const pend = (cfg.pendientes || []).length, enviadosA = (cfg.enviadosA || []).length;
+  const pend = (cfg.pendientes || []).length, enviadosA = (cfg.enviadosA || []).length, anon = clAnon(c);
+  const sinResp = D.invs.filter(i => i.email && i.enviado && i.estado !== "respondida").length;
   const unidades = {};
   D.invs.forEach(i => { const u = clUnidad(i); (unidades[u] = unidades[u] || { n: 0, r: 0 }).n++; if (i.estado === "respondida") unidades[u].r++; });
   const volver = c.estado === "abierta" ? "En curso" : "Anteriores";
@@ -364,14 +372,20 @@ function clDetalle(c) {
       <div><b>${enviadosA}</b><small>personas invitadas por correo</small></div>
       <div class="${pend ? "warn" : ""}"><b>${pend}</b><small>pendientes de enviar</small>${pend ? `<button class="btn small primary" data-action="clEnviarPend" ${envioDirecto() ? "" : "disabled"}>Enviar los pendientes</button>` : ""}</div>
       <div><b>${papeletas.length}</b><small>códigos en papeleta, sin usar</small>${papeletas.length ? `<button class="btn small" data-action="clPapeletas">Imprimir papeletas</button>` : ""}</div>
-      <div><b>${enviadosA}</b><small>recibirían un recordatorio</small>${enviadosA ? `<button class="btn small" data-action="clRecordar">Recordatorio general</button>` : ""}</div>
+      ${anon ? `<div><b>${enviadosA}</b><small>recibirían un recordatorio</small>${enviadosA ? `<button class="btn small" data-action="clRecordar">Recordatorio general</button>` : ""}</div>`
+        : `<div><b>${sinResp}</b><small>sin responder, con correo</small>${sinResp ? `<button class="btn small" data-action="clRecordar">Recordar a quien falta</button>` : ""}</div>`}
     </div>
-    <p class="hint">Es anónima: los códigos no llevan nombre y la plataforma no guarda qué código recibió cada persona. Por eso el recordatorio va a todas las personas invitadas, sin código.</p></section>` : ""}
-  <section class="card"><div class="card-h"><h2>Participación por ${D.pl.colectivo && D.pl.colectivo !== "tiendas" ? esc(CL.COLECTIVOS[D.pl.colectivo].eq) : "tienda o grupo"}</h2><span class="muted">solo cuántos han respondido, nunca quién</span></div>
+    <p class="hint">${anon ? "Es anónima: los códigos no llevan nombre y la plataforma no guarda qué código recibió cada persona. Por eso el recordatorio va a todas las personas invitadas, sin código." : "Es con nombre: cada código va a una persona y el recordatorio solo llega a quien todavía no ha respondido."}</p></section>` : ""}
+  <section class="card"><div class="card-h"><h2>Participación por ${D.pl.colectivo && D.pl.colectivo !== "tiendas" ? esc(CL.COLECTIVOS[D.pl.colectivo].eq) : "tienda o grupo"}</h2><span class="muted">${anon ? "solo cuántos han respondido, nunca quién" : "con nombre: más abajo, quién ha respondido"}</span></div>
     ${Object.keys(unidades).length ? `<div class="tablewrap"><table class="cl-t"><thead><tr><th>Unidad</th><th class="num">Códigos</th><th class="num">Respuestas</th><th>Participación</th></tr></thead><tbody>
       ${Object.entries(unidades).sort((a, b) => a[0].localeCompare(b[0])).map(([u, x]) => `<tr><td>${esc(u)}</td><td class="num">${x.n}</td><td class="num">${x.r}</td>
         <td><span class="cl-barra mini"><i style="width:${Math.round(x.r / x.n * 100)}%"></i></span> ${Math.round(x.r / x.n * 100)} %</td></tr>`).join("")}</tbody></table></div>`
       : `<p class="muted">Todavía no hay códigos.${pend ? " Envía los pendientes para empezar." : ""}</p>`}</section>
+  ${!anon && D.invs.length ? `<section class="card"><div class="card-h"><h2>Quién ha respondido</h2><span class="muted">${D.resp.length} de ${D.invs.length}</span></div>
+    <div class="tablewrap"><table class="cl-t"><thead><tr><th>Persona</th><th>Unidad</th><th>Estado</th></tr></thead><tbody>
+    ${D.invs.slice().sort((a, b) => (a.destinatario || "").localeCompare(b.destinatario || "", "es")).map(i => `<tr><td><b>${esc(i.destinatario || "Sin nombre")}</b>${i.email ? `<small class="pp-sub">${esc(i.email)}</small>` : ""}</td><td>${esc(clUnidad(i))}</td>
+      <td>${i.estado === "respondida" ? `<span class="badge ok">Respondida${i.respondido ? " · " + esc(new Date(i.respondido).toLocaleDateString("es-ES")) : ""}</span>` : i.enviado ? `<span class="badge">Enviada, sin responder</span>` : `<span class="badge">Papeleta</span>`}</td></tr>`).join("")}
+    </tbody></table></div></section>` : ""}
   ${esAdmin() ? `<div class="cl-pie"><button class="btn" data-action="clCorreo">Ver y editar el correo</button><button class="btn" data-action="clEstado">${c.estado === "abierta" ? "Cerrar la encuesta" : "Reabrir la encuesta"}</button>
     <button class="btn peligro-g" data-action="clBorrar">Borrar la encuesta</button></div>` : ""}`;
 }
@@ -421,14 +435,21 @@ function clResultados() {
         return `<tr><td>${esc(r)}</td><td class="num">${rs.length}</td><td class="num"><b>${clPct(tot)}</b></td><td>${its[0] ? esc(its[0].q.t) : "–"}</td><td>${its.length ? esc(its[its.length - 1].q.t) : "–"}</td></tr>`;
       }).join("")}</tbody></table></div></section>`;
   }
+  if (!clAnon(c)) {
+    h += `<section class="card"><div class="card-h"><h2>Respuestas por persona</h2><span class="muted">encuesta con nombre</span></div><div class="tablewrap"><table class="cl-t"><thead><tr><th>Persona</th><th>Unidad</th>${CL.DIMS.map(d => `<th class="num">${esc(d)}</th>`).join("")}<th class="num">Total</th>${D.cfg.parte2 ? `<th class="num">Responsable</th>` : ""}</tr></thead><tbody>
+      ${A.R.slice().sort((a, b) => (a.destinatario || "").localeCompare(b.destinatario || "", "es")).map(i => { const X = clResumen(D, x => x === i);
+        return `<tr><td><b>${esc(i.destinatario || "Sin nombre")}</b></td><td>${esc(clUnidad(i))}</td>${X.dims.map(x => `<td class="num ${x.fav != null && x.fav < 0.5 ? "bajo" : ""}">${clPct(x.fav)}</td>`).join("")}<td class="num"><b>${clPct(X.fav)}</b></td>${D.cfg.parte2 ? `<td class="num">${clPct(X.p2)}</td>` : ""}</tr>`; }).join("")}
+      </tbody></table></div></section>`;
+  }
   // Comentarios
   const textos = D.qs.filter(q => q.tipo === "texto");
   const coments = [];
-  A.R.forEach(i => textos.forEach(q => { const v = (i.respuestas || {})[q.id]; if (typeof v === "string" && v.trim()) coments.push({ q, v: v.trim(), dim: (i.respuestas || {})[q.id + "_dim"] || null }); }));
+  const conNom = !clAnon(c);
+  A.R.forEach(i => textos.forEach(q => { const v = (i.respuestas || {})[q.id]; if (typeof v === "string" && v.trim()) coments.push({ q, v: v.trim() + (conNom && i.destinatario ? " — " + i.destinatario : ""), dim: (i.respuestas || {})[q.id + "_dim"] || null }); }));
   if (coments.length) {
     const grupo = x => (x.q.inteligente ? (x.dim ? "Sobre " + CL.FRASE[x.dim] : "Lo que más valoran") : x.q.t);
     const G = {}; coments.forEach(x => (G[grupo(x)] = G[grupo(x)] || []).push(x.v));
-    h += `<section class="card"><div class="card-h"><h2>Comentarios</h2><span class="muted">${coments.length} · tal como los escribieron, sin datos de quién</span></div>
+    h += `<section class="card"><div class="card-h"><h2>Comentarios</h2><span class="muted">${coments.length} · tal como los escribieron${conNom ? "" : ", sin datos de quién"}</span></div>
       ${Object.entries(G).map(([g, vs]) => `<h3 class="cl-h3">${esc(g)} <small>${vs.length}</small></h3><ul class="cl-com">${vs.map(v => `<li>${esc(v)}</li>`).join("")}</ul>`).join("")}</section>`;
   }
   return h;
@@ -465,10 +486,10 @@ function clModelos() {
 function clOpCorreoNueva(N, titulo) {
   const gptw = N.tipo === "gptw", plId = gptw ? "clima2-gptw" : "clima2-" + N.col;
   const cfg = { version: 2, encuesta: gptw ? "gptw" : N.col, colectivo: gptw ? null : N.col, parte2: !!N.p2 };
-  return { titulo, modo: "anonima", info: infoCampana({ plantilla: plId, config: cfg, tipo: "clima" }), aj: N.correo || {} };
+  return { titulo, modo: N.anon !== false ? "anonima" : "clima", info: infoCampana({ plantilla: plId, config: cfg, tipo: "clima" }), aj: N.correo || {} };
 }
 function clOpCorreo(c, recordatorio) {
-  return { titulo: c.titulo, modo: recordatorio ? "recordatorio" : "anonima", info: infoCampana(c), aj: (c.config || {}).correo || {} };
+  return { titulo: c.titulo, modo: !clAnon(c) ? "clima" : recordatorio ? "recordatorio" : "anonima", info: infoCampana(c), aj: (c.config || {}).correo || {} };
 }
 async function clRecordarYa(c, mails) {
   toast("Enviando…");
@@ -480,8 +501,9 @@ async function clRecordarYa(c, mails) {
 }
 async function clCrearYa(N, plId, titulo, D, enviar) {
   const gptw = N.tipo === "gptw", conMail = D.filter(x => x.e), sinMail = D.filter(x => !x.e);
-  const cfg = { version: 2, encuesta: gptw ? "gptw" : N.col, colectivo: gptw ? null : N.col, parte2: !!N.p2, cierre: N.cierre || null,
-    pendientes: conMail.map(x => ({ e: x.e, t: x.t, g: x.g, r: x.r })), enviadosA: [], correo: N.correo || {} };
+  // En las anónimas el nombre no se guarda en ninguna parte
+  const cfg = { version: 2, encuesta: gptw ? "gptw" : N.col, colectivo: gptw ? null : N.col, parte2: !!N.p2, anonima: N.anon !== false, cierre: N.cierre || null,
+    pendientes: conMail.map(x => (N.anon !== false ? { e: x.e, t: x.t, g: x.g, r: x.r } : { e: x.e, n: x.n || null, t: x.t, g: x.g, r: x.r })), enviadosA: [], correo: N.correo || {} };
   const ins = await sb.from("campanas").insert({ tipo: "clima", plantilla: plId, titulo, anio: SC.CONFIG.anio, estado: "abierta", creado_por: yoReal().id, config: cfg }).select().single();
   if (ins.error) {
     const falta = /config/.test(ins.error.message || "");
@@ -490,7 +512,8 @@ async function clCrearYa(N, plId, titulo, D, enviar) {
   }
   const c = ins.data;
   if (sinMail.length) {
-    const filas = sinMail.map(p => ({ campana_id: c.id, tienda_id: p.t || null, grupo: p.g || null, responsable: cfg.parte2 ? (p.r || null) : null, codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
+    const filas = sinMail.map(p => ({ campana_id: c.id, tienda_id: p.t || null, grupo: p.g || null, responsable: cfg.parte2 ? (p.r || null) : null,
+      destinatario: cfg.anonima ? null : (p.n || null), codigo: SC.codigoInvitacion(), estado: "pendiente", respuestas: {} }));
     const r2 = await sb.from("invitaciones").insert(filas);
     if (r2.error) alert("La encuesta está creada, pero no se han podido generar las papeletas: " + traducirError(r2.error));
   }
@@ -507,6 +530,7 @@ const ACCIONES_CLIMA = {
   clTipo(b) { const N = clN(); N.tipo = b.dataset.v; N.grupos = []; N.pers = []; N.modoB = "todas"; },
   clCol(b) { const N = clN(); N.col = b.dataset.v; N.grupos = []; N.pers = []; N.modoB = "todas"; },
   clP2() { const N = clN(); N.p2 = !N.p2; },
+  clAnonimo() { const N = clN(); N.anon = !N.anon; },
   clUsar(b) { const N = clN(); if (b.dataset.v === "B") N.usarB = !N.usarB; else { N.usarL = !N.usarL; if (N.usarL && !N.imp) return ACCIONES_CLIMA.clImp(); } },
   clTip(b) { const N = clN(), k = b.dataset.v; N.tips = N.tips.includes(k) ? N.tips.filter(x => x !== k) : N.tips.concat(k); N.grupos = []; N.pers = []; N.modoB = "todas"; },
   clModoB(b) { clN().modoB = b.dataset.v; },
@@ -537,7 +561,7 @@ const ACCIONES_CLIMA = {
       return false;
     }
     const ok = await confirmar({ titulo: `Crear «${titulo}»`, ok: "Crear",
-      texto: `${conMail.length} ${conMail.length === 1 ? "persona recibirá" : "personas recibirán"} su código por correo cuando pulses «Enviar los pendientes»${sinMail.length ? ` y se generarán ${sinMail.length} ${sinMail.length === 1 ? "papeleta" : "papeletas"} para quien no tiene correo` : ""}. Es anónima.` });
+      texto: `${conMail.length} ${conMail.length === 1 ? "persona recibirá" : "personas recibirán"} su código por correo cuando pulses «Enviar los pendientes»${sinMail.length ? ` y se generarán ${sinMail.length} ${sinMail.length === 1 ? "papeleta" : "papeletas"} para quien no tiene correo` : ""}. ${N.anon ? "Es anónima." : "Es con nombre."}` });
     if (!ok) return false;
     b.disabled = true; b.textContent = "Creando…";
     await clCrearYa(N, plId, titulo, D, false);
@@ -566,6 +590,19 @@ const ACCIONES_CLIMA = {
   },
   async clRecordar() {
     const c = S.campanas.find(x => x.id === S.campana), mails = clCfg(c).enviadosA || [];
+    if (!clAnon(c)) {
+      // Con nombre: solo a quien no ha respondido, con su propio código
+      const ids = clDatos(c).invs.filter(i => i.email && i.enviado && i.estado !== "respondida").map(i => i.id);
+      if (!ids.length) { toast("Todos los invitados por correo han respondido"); return false; }
+      abrirVistaCorreo(Object.assign(clOpCorreo(c), { n: ids.length, txtEnviar: `Enviar el recordatorio a ${ids.length}`,
+        alGuardar: aj => guardarCorreoCampana(c, aj), alEnviar: async () => {
+          toast("Enviando…");
+          const lotes = []; for (let i = 0; i < ids.length; i += LOTE) { const t = ids.slice(i, i + LOTE); lotes.push(() => enviarPorLaPlataforma(t, null, { info: { [c.id]: infoCampana(c) } })); }
+          const res = await enviarEnLotes(lotes, "Enviando recordatorios");
+          log(`${res.bien} recordatorios de ${c.titulo}`); await recargarPruebas(); pintar(); clAvisoEnvio(Object.assign(res, { total: ids.length }));
+        } }));
+      return false;
+    }
     if (!mails.length) return false;
     abrirVistaCorreo(Object.assign(clOpCorreo(c, true), { n: mails.length, txtEnviar: `Enviar el recordatorio a ${mails.length}`,
       alGuardar: aj => guardarCorreoCampana(c, aj), alEnviar: () => clRecordarYa(c, mails) }));

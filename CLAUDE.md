@@ -79,7 +79,8 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - Modo "usuarios" (0.33.1): alta masiva de cuentas desde Usuarios y tiendas (acción `impUsuarios`). `impCrearUsuarios` usa `signUp` con un cliente aparte, de uno en uno, y se para si Supabase devuelve límite de altas.
 - **Clima** (0.32.0): `clima.js` (banco de preguntas `CL`, plantillas `clima2-tiendas|campo|oficinas|demo|gptw`, pestañas `clnueva/clcurso/clanteriores/clresultados/clmodelos`, acciones `ACCIONES_CLIMA`) y `clima_inv.js` (pantalla de quien responde, estado `CI`, acciones `cli*`, vista previa `clPrevia`).
   - «A quién» (0.33): `N.usarB` (de Personas: `modoB` todas|grupos|personas, `tips` en GPTW) y `N.usarL` (archivo con el importador, `N.imp`). `clRespEmp(e)` decide a quién evalúa en la parte 2.
-  - Siempre anónimas. `campanas.config` = {version 2, encuesta, colectivo, parte2, cierre, pendientes [{e,t,g,r}], enviadosA}. `invitaciones.responsable` (a quién evalúa la parte 2) y `grupo` (listas pegadas). Migración 0.32.
+  - **Anónimas por defecto; con nombre si se elige** (0.35.0): `campanas.config.anonima === false` (`clAnon(c)`). Con nombre: `pendientes` lleva `n`, la invitación lleva `destinatario` y `email`, se envía con `{ids}` (modo «clima» del correo), recordatorio solo a quien falta, y Resultados muestra respuestas por persona. Anónimas: nunca se guarda el nombre.
+  - `campanas.config` = {version 2, encuesta, colectivo, parte2, anonima, cierre, pendientes [{e,t,g,r,(n)}], enviadosA, correo}. `invitaciones.responsable` (a quién evalúa la parte 2) y `grupo` (listas pegadas). Migración 0.32.
   - El código de cada correo se crea justo antes de enviarlo (`clEnviarPendientes`); si no sale, se borra y vuelve a pendientes.
   - Resultados: % favorable (respuestas 3 y 4 de 0–4), mínimo `CL.MIN` = 5 por grupo y por responsable.
   - Las frases de la tipo Great Place To Work son propias: su cuestionario está protegido y no se copia.
@@ -111,7 +112,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.34.3**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.35.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.
