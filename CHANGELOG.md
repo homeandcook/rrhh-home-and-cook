@@ -287,6 +287,11 @@ Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Fo
 - La tabla de entregas muestra si se ha enviado el correo y cuándo.
 - Los scripts llevan `?v=versión` para que el navegador no mezcle archivos de versiones distintas tras publicar. **Al publicar una versión nueva hay que cambiar ese número en `index.html`.**
 
+## 0.34.2 · 19/11/2026 · **SQL: no** · se vuelve a desplegar la función de correo
+- Arreglo de verdad de «No se ha podido cargar la plantilla del correo»: el navegador no conseguía descargarla como módulo.
+  - `supabase/functions/_shared/correo.js` es ahora un script normal que deja sus funciones en `CORREO`. La web lo carga como el resto de ficheros, desde `correo_plantilla.js` en la raíz del sitio; la función de correo lo importa igual que antes.
+  - El correo que sale no cambia.
+
 ## 0.34.1 · 19/11/2026 · **SQL: no**
 - Arreglo: en la web publicada, «Ver y editar el correo» decía «No se ha podido cargar la plantilla del correo».
   - La plantilla se carga ahora cuando hace falta, primero desde una copia en la raíz del sitio (`correo_plantilla.js`, que crea `publicar-pages.yml`) y, si no está, desde `supabase/functions/_shared/correo.js`.

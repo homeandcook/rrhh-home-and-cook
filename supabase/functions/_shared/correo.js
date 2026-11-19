@@ -5,20 +5,25 @@
 //   - la función enviar-invitacion la importa para enviar;
 //   - la web la carga como módulo para la vista previa antes de enviar
 //     (publicar-pages.yml copia este fichero a la misma ruta del sitio).
-// JavaScript sin tipos a propósito: lo entienden Deno y el navegador.
+// JavaScript sin tipos y SIN «export», a propósito: es un script normal
+// que deja todo en globalThis.CORREO. Así lo carga el navegador con una
+// etiqueta <script> como el resto de la web (los módulos fallaban en
+// algunos navegadores) y la función lo importa por su efecto en Deno.
 //
 // it = { codigo, nombre, titulo, modo, repite, info: {min, n, umbral,
 //        cert, primera}, limite, personas }
 // aj = lo que RR.HH. cambia en la vista previa: { asunto, intro, extra,
 //      firma, cargo }. Vacío = el texto de siempre.
 // ===================================================================
-export const esc = (s) =>
+(function () {
+"use strict";
+const esc = (s) =>
   String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 /* Párrafos: una línea en blanco separa párrafos; un salto simple, línea */
 const parrafos = (t) => String(t || "").split(/\n\s*\n/).map((p) => esc(p.trim()).replace(/\n/g, "<br>")).filter(Boolean);
 
 /* ---------- Textos por tipo ---------- */
-export function textosCorreo(it, firma, aj) {
+function textosCorreo(it, firma, aj) {
   aj = aj || {};
   const t = it.titulo, min = it.info.min, i = it.info;
   const dur = !min ? "" : min >= 55 && min <= 70 ? "Alrededor de 1 hora" : min > 70 ? `Alrededor de ${Math.round(min / 30) / 2} horas`.replace(".5", " y media") : `Unos ${min} minutos`;
@@ -101,7 +106,7 @@ const R = "#5B3FD9", R2 = "#EFEAFE", TINTA = "#231A3D", GRIS = "#5A5170", LINEA 
 const SANS = "'Segoe UI',system-ui,-apple-system,Helvetica,Arial,sans-serif";
 const MONO = "'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace";
 
-export function montarCorreo(it, x, URL_APP, cargo) {
+function montarCorreo(it, x, URL_APP, cargo) {
   cargo = x.cargo || cargo;
   const pila = (() => {
     const n = (it.nombre || "").trim(); if (!n || it.modo === "anonima" || it.modo === "recordatorio") return "";
@@ -244,6 +249,8 @@ export function montarCorreo(it, x, URL_APP, cargo) {
 }
 
 /* Para la vista previa y la función: todo en uno */
-export function prepararCorreo(it, firma, cargo, URL_APP, aj) {
+function prepararCorreo(it, firma, cargo, URL_APP, aj) {
   return montarCorreo(it, textosCorreo(it, firma, aj), URL_APP, cargo);
 }
+globalThis.CORREO = { esc, textosCorreo, montarCorreo, prepararCorreo };
+})();

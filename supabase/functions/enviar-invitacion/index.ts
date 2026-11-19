@@ -46,8 +46,11 @@
 //   URL_PLATAFORMA   p. ej. "https://www.pippole.es/"
 // ===================================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
-// @ts-ignore: módulo JavaScript compartido con la web
-import { prepararCorreo } from "../_shared/correo.js";
+// Plantilla compartida con la web: script que deja sus funciones en
+// globalThis.CORREO (ver ../_shared/correo.js).
+import "../_shared/correo.js";
+// deno-lint-ignore no-explicit-any
+const { prepararCorreo } = (globalThis as any).CORREO;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

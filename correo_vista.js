@@ -23,22 +23,26 @@ function vcUrl() { return (location.origin + location.pathname).replace(/index\.
 
 /* op = { titulo, modo, info, limite, personas, aj, n (destinatarios),
           ejemplo (nombre de ejemplo), alGuardar(aj), alEnviar(aj), txtEnviar } */
-/* La plantilla se carga como módulo cuando hace falta. Primero la copia que
-   publicar-pages.yml deja en la raíz del sitio; si no está (en local), la
-   del repositorio. */
+/* La plantilla (supabase/functions/_shared/correo.js) es un script normal
+   que deja sus funciones en window.CORREO. Se carga como el resto de la
+   web: primero la copia que publicar-pages.yml deja en la raíz del sitio
+   (correo_plantilla.js) y, si no está (en local), la del repositorio. */
 let vcCarga = null;
+function vcScript(src) {
+  return new Promise((ok, mal) => {
+    const el = document.createElement("script"); el.src = src; el.async = true;
+    el.onload = () => (window.CORREO ? ok(window.CORREO) : mal(new Error(src + " no define la plantilla")));
+    el.onerror = () => { el.remove(); mal(new Error("no se ha podido descargar " + src.split("?")[0])); };
+    document.head.appendChild(el);
+  });
+}
 function cargarPlantillaCorreo() {
   if (window.CORREO) return Promise.resolve(window.CORREO);
-  if (!vcCarga) vcCarga = (async () => {
-    const v = typeof APP_VERSION !== "undefined" ? APP_VERSION : Date.now();
-    let err = null;
-    for (const u of ["correo_plantilla.js", "supabase/functions/_shared/correo.js"]) {
-      try { const m = await import(new URL(u + "?v=" + v, location.href).href); if (m && m.prepararCorreo) { window.CORREO = m; return m; } }
-      catch (e) { err = e; }
-    }
-    vcCarga = null;
-    throw err || new Error("plantilla vacía");
-  })();
+  if (!vcCarga) {
+    const v = "?v=" + (typeof APP_VERSION !== "undefined" ? APP_VERSION : Date.now());
+    vcCarga = vcScript("correo_plantilla.js" + v).catch(() => vcScript("supabase/functions/_shared/correo.js" + v))
+      .catch(e => { vcCarga = null; throw e; });
+  }
   return vcCarga;
 }
 window.addEventListener("load", () => { cargarPlantillaCorreo().catch(() => {}); });
