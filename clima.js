@@ -400,12 +400,12 @@ function clResultados() {
   const sel = `<select data-clres="1" aria-label="Encuesta">${cs.map(x => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${esc(x.titulo)}</option>`).join("")}</select>`;
   let h = `<div class="page-h"><div><h1>Resultados</h1><p class="muted">Porcentaje favorable: quien contesta «A menudo» o «Casi siempre». Ningún grupo se enseña con menos de ${CL.MIN} respuestas.</p></div><div class="page-h-b">${sel}</div></div>`;
   if (A.n < CL.MIN) return h + `<div class="cl-vacio"><b>${A.n} ${A.n === 1 ? "respuesta" : "respuestas"} de ${D.invs.length}</b><p>Los resultados se ven a partir de ${CL.MIN} respuestas, para que nadie pueda ser reconocido.</p></div>`;
-  const barra = (t, v, extra) => `<div class="cl-br"><span>${esc(t)}</span><div><i style="width:${v == null ? 0 : Math.round(v * 100)}%"></i></div><b>${clPct(v)}</b>${extra || ""}</div>`;
-  h += `<div class="cl-kpis"><div class="oscuro"><small>Clima favorable</small><b>${clPct(A.fav)}</b><small>${A.n} respuestas · ${Math.round(A.n / D.invs.length * 100)} % de participación</small></div>
+  const barra = (t, v, extra, ex) => `<div class="cl-br${ex ? " con-ex" : ""}"><span>${esc(t)}</span><div><i style="width:${v == null ? 0 : Math.round(v * 100)}%"></i></div><b>${clPct(v)}${ex || ""}</b>${extra || ""}</div>`;
+  h += `<div class="cl-kpis"><div class="oscuro"><small>Clima favorable</small><b>${clPct(A.fav)}</b><small>${A.n} respuestas · ${Math.round(A.n / D.invs.length * 100)} % de participación</small><button class="ex-btn" data-action="exClima">¿De dónde sale?</button></div>
     <div><small>Valoración global</small><b>${clPct(A.glob)}</b><small>«${esc((D.qs.find(q => q.id === "glob") || {}).t || "")}»</small></div>
     ${A.enps != null ? `<div><small>eNPS</small><b>${(A.enps > 0 ? "+" : "") + A.enps}</b><small>de −100 a +100</small></div>` : ""}
     ${D.cfg.parte2 ? `<div><small>Responsables</small><b>${clPct(A.p2)}</b><small>favorable en la parte 2</small></div>` : ""}</div>`;
-  h += `<div class="cl-dos"><section class="card"><div class="card-h"><h2>Por dimensión</h2></div><div class="cl-barras">${A.dims.map(x => barra(x.d, x.fav)).join("")}</div></section>`;
+  h += `<div class="cl-dos"><section class="card"><div class="card-h"><h2>Por dimensión</h2></div><div class="cl-barras">${A.dims.map(x => barra(x.d, x.fav, "", x.fav == null ? "" : `<button class="ex-mini" data-action="exClima" data-dim="${esc(x.d)}" aria-label="¿De dónde sale el % de ${esc(x.d)}?" title="¿De dónde sale?">?</button>`)).join("")}</div></section>`;
   const orden = A.items.filter(x => x.fav != null).sort((a, b) => b.fav - a.fav);
   h += `<section class="card"><div class="card-h"><h2>Lo mejor y lo peor valorado</h2></div>
     <ol class="cl-top">${orden.slice(0, 3).map(x => `<li class="ok"><b>${clPct(x.fav)}</b>${esc(x.q.t)}</li>`).join("")}</ol>

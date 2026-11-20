@@ -48,7 +48,7 @@ function pintarPersonas() {
   const cifra = (k, n, t) => `<button class="pp-cifra ${F.tip === k ? "on" : ""}" data-action="pTip" data-v="${k}" aria-pressed="${F.tip === k}"><b>${n}</b><small>${t}</small></button>`;
   $("vista").innerHTML = `<div class="page pp">
     <div class="page-h"><div><h1>${admin ? "Plantilla" : "Personas"}</h1><p class="muted">${admin ? "La plantilla de la empresa. No entran en la plataforma: reciben encuestas, Talent Review y formaciones por correo, con un código." : "Las personas de tus tiendas. Las altas y los cambios los hace RR.HH."}</p></div>
-      ${admin ? `<div class="page-h-b"><button class="btn" data-action="pCsv" ${todos.length ? "" : "disabled"}>Descargar CSV</button><button class="btn" data-action="pAnadir">Añadir persona</button><button class="btn primary" data-action="pImportar">Importar archivo</button></div>` : ""}</div>
+      ${admin ? `<div class="page-h-b"><button class="btn" data-action="pCsv" ${todos.length ? "" : "disabled"}>Descargar CSV</button><button class="btn" data-action="mdEnviarTodos" ${act.some(e => e.correo && !e.datos_enviado) ? "" : "disabled"} title="Envía a cada persona un código para consultar sus datos">Enviar «Tus datos»</button><button class="btn" data-action="pAnadir">Añadir persona</button><button class="btn primary" data-action="pImportar">Importar archivo</button></div>` : ""}</div>
     ${S.pe ? empFormulario() : ""}
     ${todos.length ? `<div class="pp-cifras">${cifra("", act.length, act.length === 1 ? "activa" : "activas")}${Object.entries(IMP_TIPOS).map(([k, n]) => cifra(k, cuenta(k), n)).join("")}
       <div class="pp-cifra fija ${sinMail ? "aviso" : ""}"><b>${sinMail}</b><small>sin correo</small></div></div>
@@ -90,6 +90,7 @@ function empFormulario() {
       <div class="pp-acc"><button class="btn primary" type="submit">${nuevo ? "Añadir" : "Guardar cambios"}</button><button class="btn" type="button" data-action="pCancelar">Cancelar</button>
         ${nuevo ? "" : `<span class="spacer"></span><button class="btn ghost" type="button" data-action="pBaja" data-id="${p.id}">${p.activo ? "Dar de baja" : "Reactivar"}</button><button class="btn ghost danger" type="button" data-action="pBorrar" data-id="${p.id}">Borrar</button>`}</div>
     </form>
+    ${typeof bloqueMisDatos === "function" ? bloqueMisDatos(p) : ""}
     <p class="hint">En tiendas, si la ubicación coincide con una tienda de la plataforma, la persona aparece en esa tienda (envíos, Desarrollo y resultados por tienda). Sin responsable directo, en tiendas se toma al Store Manager, y para el Store Manager, a su Regional Manager.</p></section>`;
 }
 function empFilaDesde(v) {
@@ -154,7 +155,7 @@ async function empGuardarImportados(F) {
 const ACCIONES_PERSONAS = {
   pTip(b) { const F = pfil(); F.tip = F.tip === b.dataset.v ? "" : b.dataset.v; F.ub = ""; },
   pAnadir() { if (!esAdmin()) return false; S.pe = { tipologia: pfil().tip || "tiendas", activo: true }; window.scrollTo(0, 0); },
-  pEditar(b) { const e = empPorId(b.dataset.id); if (!e || !esAdmin()) return false; S.pe = Object.assign({}, e); window.scrollTo(0, 0); },
+  pEditar(b) { const e = empPorId(b.dataset.id); if (!e || !esAdmin()) return false; S.pe = Object.assign({}, e); if (typeof registrarAcceso === "function") registrarAcceso(e.id, "Personas"); window.scrollTo(0, 0); },
   pCancelar() { S.pe = null; },
   pImportar() { if (!esAdmin()) return false; abrirImportador("base", { tipDef: pfil().tip || "tiendas" }); return false; },
   async pBaja(b) {

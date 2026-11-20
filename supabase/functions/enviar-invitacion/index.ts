@@ -65,13 +65,21 @@ const MAX = 100;
 type Info = { min?: number; n?: number; umbral?: number; cert?: boolean; primera?: { id: string; t: string } };
 type Item = {
   id: string; codigo: string; nombre: string; email: string; titulo: string;
-  modo: "clima" | "anonima" | "formacion" | "psico" | "onboarding" | "offboarding" | "mystery" | "desarrollo" | "recordatorio";
+  modo: "clima" | "anonima" | "formacion" | "psico" | "onboarding" | "offboarding" | "mystery" | "desarrollo" | "recordatorio" | "datos";
   repite: boolean; info: Info; motivo?: string; limite?: string | null; personas?: number;
   // deno-lint-ignore no-explicit-any
   aj?: any;
 };
 // deno-lint-ignore no-explicit-any
 const ajustes = (cfg: any) => (cfg && typeof cfg === "object" && cfg.correo && typeof cfg.correo === "object" ? cfg.correo : {});
+
+/* Código de «Tus datos»: «XXXX-XXXX» y su huella SHA-256, igual que en la base de datos */
+const normalizar = (c: string) => { const v = c.toUpperCase().replace(/[^A-Z0-9]/g, ""); return v.length === 8 ? v.slice(0, 4) + "-" + v.slice(4) : ""; };
+async function huella(c: string) {
+  const n = normalizar(c); if (!n) return "";
+  const b = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(n)));
+  return Array.from(b).map((x) => x.toString(16).padStart(2, "0")).join("");
+}
 
 /* Textos y maqueta: ../_shared/correo.js (los comparte con la vista previa de la web) */
 /* ---------- Petición ---------- */
@@ -92,6 +100,10 @@ Deno.serve(async (req) => {
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "Petición no válida" }, 400); }
   const desarrollo = body?.tipo === "desarrollo";
+  // «Tus datos» (0.38.0): [{ id: empleado, codigo }]. El código lo acaba de
+  // generar la base de datos; aquí se comprueba contra su huella antes de enviarlo.
+  const datosP: { id: string; codigo: string }[] = body?.tipo === "datos" && Array.isArray(body?.datos)
+    ? body.datos.filter((x: { id?: unknown; codigo?: unknown }) => x && typeof x.id === "string" && typeof x.codigo === "string") : [];
   const ids: string[] = Array.isArray(body?.ids) ? body.ids.filter((x: unknown) => typeof x === "string") : [];
   const anon: { id: string; email: string }[] = Array.isArray(body?.anonimos)
     ? body.anonimos.filter((x: { id?: unknown; email?: unknown }) => x && typeof x.id === "string" && typeof x.email === "string") : [];
@@ -107,7 +119,7 @@ Deno.serve(async (req) => {
       primera: o.primera && typeof o.primera.id === "string" && /^[a-z0-9_]{1,12}$/.test(o.primera.id) && typeof o.primera.t === "string"
         ? { id: o.primera.id, t: o.primera.t.slice(0, 300) } : undefined };
   }
-  const total = ids.length + anon.length + (rec ? rec.emails.length : 0);
+  const total = ids.length + anon.length + (rec ? rec.emails.length : 0) + datosP.length;
   const vista = body?.vista_previa && typeof body.vista_previa === "object" ? body.vista_previa : null;
   if (!total && !vista) return json({ error: "No se ha indicado ningún envío" }, 400);
   if (total > MAX) return json({ error: `Máximo ${MAX} envíos por llamada` }, 400);
@@ -125,7 +137,7 @@ Deno.serve(async (req) => {
   // Vista previa (0.34.3): devuelve el correo montado, sin enviar nada ni
   // leer datos de nadie. La web la usa si no puede cargar la plantilla.
   if (vista) {
-    const MODOS = ["clima", "anonima", "formacion", "psico", "onboarding", "offboarding", "mystery", "desarrollo", "recordatorio"];
+    const MODOS = ["clima", "anonima", "formacion", "psico", "onboarding", "offboarding", "mystery", "desarrollo", "recordatorio", "datos"];
     const v = vista.it || {};
     const texto = (x: unknown, n: number) => (typeof x === "string" ? x.slice(0, n) : "");
     // deno-lint-ignore no-explicit-any
@@ -149,7 +161,18 @@ Deno.serve(async (req) => {
   }
 
   const items: Item[] = [];
-  if (desarrollo) {
+  if (datosP.length) {
+    if (quien.rol !== "admin") return json({ error: "Solo RR.HH. puede enviar el acceso a «Tus datos»" }, 403);
+    const { data: emps, error: e1 } = await suyo.from("empleados").select("id, nombre, correo, datos_hash, activo").in("id", datosP.map((x) => x.id));
+    if (e1) return json({ error: e1.message }, 400);
+    for (const d of datosP) {
+      const e = (emps || []).find((x) => x.id === d.id);
+      const ok = !!e && !!e.datos_hash && (await huella(d.codigo)) === e.datos_hash;
+      items.push({ id: d.id, codigo: normalizar(d.codigo), nombre: e ? e.nombre || "" : "", email: e ? e.correo || "" : "", titulo: "Tus datos",
+        modo: "datos", repite: false, info: {},
+        motivo: !e ? "Persona no encontrada" : !e.activo ? "Persona de baja" : !ok ? "El código no corresponde a esta persona" : undefined });
+    }
+  } else if (desarrollo) {
     const { data: evs, error: e1 } = await suyo.from("dr_evaluadores").select("id, codigo, nombre, email, entregado, enviado, ciclo_id").in("id", ids);
     if (e1) return json({ error: e1.message }, 400);
     if (!evs || evs.length !== ids.length) return json({ error: "Algún responsable no existe o no tienes permiso" }, 403);
@@ -236,7 +259,8 @@ Deno.serve(async (req) => {
   // marca la fecha, nunca la dirección.
   if (enviados.length) {
     const servicio = createClient(URL_SB, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    await servicio.from(desarrollo ? "dr_evaluadores" : "invitaciones").update({ enviado: new Date().toISOString() }).in("id", enviados);
+    if (datosP.length) await servicio.from("empleados").update({ datos_enviado: new Date().toISOString() }).in("id", enviados);
+    else await servicio.from(desarrollo ? "dr_evaluadores" : "invitaciones").update({ enviado: new Date().toISOString() }).in("id", enviados);
   }
 
   // En las anónimas la respuesta no devuelve direcciones, solo ids y estado.

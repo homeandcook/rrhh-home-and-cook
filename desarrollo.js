@@ -527,7 +527,7 @@ const ACCIONES_DR = {
     const def = ($("drCat") || {}).value || A.categorias[A.categorias.length - 1];
     await drCrearEquipos(resps.map(r => ({ resp: drNombre(r), email: r.correo || "", unidad: r.departamento || r.ubicacion || "", puesto: r.puesto || null,
       personas: drEquipo(r).map(p => ({ nombre: drNombre(p), puesto: p.puesto || null, departamento: p.departamento || p.ubicacion || null,
-        categoria: drCategoria(p, A, def), ant_compania: drAnios(p.fecha_alta), ant_puesto: null, id_empleado: null })) })));
+        categoria: drCategoria(p, A, def), ant_compania: drAnios(p.fecha_alta), ant_puesto: null, id_empleado: p.id || null })) })));
     selP("dr-" + amb).pers = []; selP("dr-" + amb).grupos = [];
   },
   async copiarEnlace(b) { const e = drS().ev.find(x => x.id === b.dataset.id); await drCopiar(`${drEnlace(e)}\nCódigo: ${e.codigo}`, "Enlace y código copiados"); return false; },

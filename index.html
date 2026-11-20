@@ -588,7 +588,57 @@ small.mail{color:var(--muted);word-break:break-all}
 .aviso-anon{background:var(--mist);border-left:3px solid var(--l1);border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 14px;color:var(--muted);font-size:13.5px;line-height:1.5}
 .modal-c.estrecho{max-width:460px}
 .modal-c.estrecho h2{margin:0 0 10px;font-size:19px}
-.pie-legal{max-width:640px;margin:0 auto;padding:4px 16px 28px;text-align:center;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.ex-ov{position:fixed;inset:0;z-index:80;background:rgba(20,14,40,.45);display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px;overflow-y:auto}
+.ex-caja{background:var(--paper);color:var(--ink);border-radius:16px;max-width:760px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.ex-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 22px 12px;border-bottom:1px solid var(--line)}
+.ex-h h2{margin:0;font-size:19px;text-wrap:balance}.ex-h p{margin:4px 0 0}
+.ex-b{padding:18px 22px 22px;display:flex;flex-direction:column;gap:18px}
+.ex-pasos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
+.ex-paso{display:flex;gap:14px}.ex-paso>div{min-width:0;flex:1;display:flex;flex-direction:column;gap:6px}
+.ex-paso p{margin:0;color:var(--muted);line-height:1.55}
+.ex-n{flex:none;width:28px;height:28px;border-radius:50%;background:color-mix(in srgb,var(--red) 14%,var(--paper));color:var(--red);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+.ex-n.os{background:var(--ink);color:var(--paper)}
+.ex-t{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+.ex-t th{text-align:left;font-weight:600;color:var(--muted);padding:7px 10px;border-bottom:1px solid var(--line)}
+.ex-t td{padding:7px 10px;border-bottom:1px solid var(--line)}.ex-t .num{text-align:right;white-space:nowrap}.ex-t tr.tot td{font-weight:700;border-bottom:0}
+.ex-linea{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}.ex-linea span:last-child{color:var(--muted)}
+.ex-chip{padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.ex-chip.ok{background:color-mix(in srgb,var(--l2) 16%,transparent);color:var(--l2)}.ex-chip.ko{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.ex-nota{color:var(--warn)!important;font-size:13.5px}
+.ex-ori{border-top:1px solid var(--line);padding-top:14px;font-size:13.5px}
+.ex-ori b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.ex-ori p{margin:0;color:var(--muted)}
+.ex-ori dl{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;margin:0}.ex-ori dt{color:var(--muted)}.ex-ori dd{margin:0}
+.ticket .t-ex{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0 4px}
+.ex-btn{margin-top:10px;font:inherit;font-size:13px;font-weight:700;padding:6px 12px;border-radius:9px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer;align-self:flex-start}
+.ex-mini{font:inherit;font-size:12px;font-weight:800;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--red);cursor:pointer;margin-left:6px;vertical-align:middle}
+.cl-br b{display:flex;align-items:center;justify-content:flex-end;white-space:nowrap}
+.cl-br.con-ex{grid-template-columns:minmax(110px,1fr) 2fr 78px}
+@media (max-width:560px){.ex-ori dl{grid-template-columns:1fr}.ex-h{padding:16px}.ex-b{padding:14px 16px 18px}}
+.cop-aviso{padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--red) 10%,var(--paper));border:1px solid color-mix(in srgb,var(--red) 25%,var(--paper));font-size:14px;line-height:1.5}
+.ex-b section{display:flex;flex-direction:column;gap:8px}.ex-b section h3{margin:0;font-size:15.5px}.ex-b section>p{margin:0;line-height:1.55}
+.cop-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.cop-l li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;line-height:1.5}.cop-l li span{flex:1 1 320px}
+.cop-l li small{font-size:12px;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--red) 10%,var(--paper));color:var(--red);font-weight:600}
+.cop-q{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;line-height:1.5}
+.cop-plan input{width:100%;min-width:110px;font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+.cop-plan td:first-child{min-width:240px}
+.cop-acc{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.md-card{max-width:560px;text-align:left}.md-card h1{text-align:left}.md-card .sub{text-align:left}
+.md-s{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px;display:flex;flex-direction:column;gap:8px;background:var(--paper)}
+.md-s h2{margin:0;font-size:15.5px}.md-s p{margin:0;line-height:1.5;font-size:14px}
+.md-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.md-chip{padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:var(--mist);color:var(--muted)}
+.md-chip.ok{background:var(--okbg);color:var(--l2)}.md-chip.aviso{background:var(--warnbg);color:var(--warn)}
+.md-dl{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;margin:0;font-size:14px}.md-dl dt{color:var(--muted)}.md-dl dd{margin:0;overflow-wrap:anywhere}
+.md-quien{font-size:12.5px!important;color:var(--muted)}.md-quien b{color:var(--ink)}
+.md-anon{background:color-mix(in srgb,var(--red) 8%,var(--paper));border-color:color-mix(in srgb,var(--red) 22%,var(--paper))}
+.md-plano{border:0;background:transparent;padding:4px 2px}
+.md-acc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}.md-acc li{display:flex;justify-content:space-between;gap:10px}.md-acc li span:last-child{color:var(--muted)}
+.md-acc-b{display:flex;flex-direction:column;gap:10px;margin-top:16px}.md-acc-b a.btn{text-decoration:none;text-align:center}
+.pp-md{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.pp-md>div{flex:1 1 320px}.pp-md p{margin:4px 0 0}
+max-width:640px;margin:0 auto;padding:4px 16px 28px;text-align:center;font-size:12.5px;line-height:1.5;color:var(--muted)}
 .pie-legal a{color:inherit}
 .conf-t{color:var(--muted);margin:0;line-height:1.55;white-space:pre-line}
 .conf-e{margin-top:16px}
@@ -1544,40 +1594,43 @@ body.imp-on{overflow:hidden}
 <p id="pieLegal" class="pie-legal" hidden></p>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=0.37.0"></script>
-<script src="i18n.js?v=0.37.0"></script>
-<script src="marca.js?v=0.37.0"></script>
-<script src="marcas.js?v=0.37.0"></script>
-<script src="engine.js?v=0.37.0"></script>
-<script src="talent.js?v=0.37.0"></script>
-<script src="pruebas.js?v=0.37.0"></script>
-<script src="envios.js?v=0.37.0"></script>
-<script src="importar.js?v=0.37.0"></script>
-<script src="personas.js?v=0.37.0"></script>
-<script src="correo_vista.js?v=0.37.0"></script>
-<script src="resenas.js?v=0.37.0"></script>
-<script src="clima.js?v=0.37.0"></script>
-<script src="clima_inv.js?v=0.37.0"></script>
-<script src="pdc.js?v=0.37.0"></script>
-<script src="pdc_carga.js?v=0.37.0"></script>
-<script src="bajas.js?v=0.37.0"></script>
-<script src="prl.js?v=0.37.0"></script>
-<script src="curso_datos.js?v=0.37.0"></script>
-<script src="cursos.js?v=0.37.0"></script>
-<script src="formacion.js?v=0.37.0"></script>
-<script src="docs_base.js?v=0.37.0"></script>
-<script src="docs.js?v=0.37.0"></script>
-<script src="arcade.js?v=0.37.0"></script>
-<script src="escape.js?v=0.37.0"></script>
-<script src="ia_datos.js?v=0.37.0"></script>
-<script src="ia.js?v=0.37.0"></script>
-<script src="desarrollo_cat.js?v=0.37.0"></script>
-<script src="desarrollo_inf.js?v=0.37.0"></script>
-<script src="desarrollo_eval.js?v=0.37.0"></script>
-<script src="desarrollo.js?v=0.37.0"></script>
-<script src="hoy.js?v=0.37.0"></script>
-<script src="avisos.js?v=0.37.0"></script>
-<script src="demo.js?v=0.37.0"></script>
-<script src="app.js?v=0.37.0"></script>
+<script src="config.js?v=0.38.0"></script>
+<script src="i18n.js?v=0.38.0"></script>
+<script src="marca.js?v=0.38.0"></script>
+<script src="marcas.js?v=0.38.0"></script>
+<script src="engine.js?v=0.38.0"></script>
+<script src="talent.js?v=0.38.0"></script>
+<script src="pruebas.js?v=0.38.0"></script>
+<script src="envios.js?v=0.38.0"></script>
+<script src="importar.js?v=0.38.0"></script>
+<script src="personas.js?v=0.38.0"></script>
+<script src="correo_vista.js?v=0.38.0"></script>
+<script src="resenas.js?v=0.38.0"></script>
+<script src="clima.js?v=0.38.0"></script>
+<script src="clima_inv.js?v=0.38.0"></script>
+<script src="pdc.js?v=0.38.0"></script>
+<script src="pdc_carga.js?v=0.38.0"></script>
+<script src="bajas.js?v=0.38.0"></script>
+<script src="prl.js?v=0.38.0"></script>
+<script src="curso_datos.js?v=0.38.0"></script>
+<script src="cursos.js?v=0.38.0"></script>
+<script src="formacion.js?v=0.38.0"></script>
+<script src="docs_base.js?v=0.38.0"></script>
+<script src="docs.js?v=0.38.0"></script>
+<script src="arcade.js?v=0.38.0"></script>
+<script src="escape.js?v=0.38.0"></script>
+<script src="ia_datos.js?v=0.38.0"></script>
+<script src="ia.js?v=0.38.0"></script>
+<script src="desarrollo_cat.js?v=0.38.0"></script>
+<script src="desarrollo_inf.js?v=0.38.0"></script>
+<script src="desarrollo_eval.js?v=0.38.0"></script>
+<script src="desarrollo.js?v=0.38.0"></script>
+<script src="hoy.js?v=0.38.0"></script>
+<script src="avisos.js?v=0.38.0"></script>
+<script src="demo.js?v=0.38.0"></script>
+<script src="explica.js?v=0.38.0"></script>
+<script src="copiloto.js?v=0.38.0"></script>
+<script src="misdatos.js?v=0.38.0"></script>
+<script src="app.js?v=0.38.0"></script>
 </body>
 </html>

@@ -454,3 +454,25 @@ Experiencia
 Calidad
 - `pruebas/humo.py`: entra en la demo como RR.HH. y como RM, recorre cada apartado y pestaña, abre la pantalla de código y la página de privacidad, y falla si hay errores o alguna marca en pantalla.
 - `publicar-pages.yml` comprueba la sintaxis de todos los ficheros y pasa la prueba de humo antes de publicar. Si falla, no se publica.
+
+## 0.38.0 · 20/11/2026 · **SQL: sí** (`migracion_0.38.sql`, para «Tus datos»)
+Los tres prototipos aprobados: transparencia en las cifras, copiloto del manager y «Tus datos».
+
+«¿De dónde sale?» (`explica.js`)
+- Scorecard: botón en el panel del bonus. Abre el cálculo paso a paso con los datos reales: base (bonus con la puntuación máxima ÷ 2 × periodo trabajado), media por bloque del cualitativo, tabla de KPIs con peso × factor, mínimos de cada bloque, total y nota. Al pie, de dónde vienen los datos: quién validó los objetivos y cuándo, quién valoró, cuántas evidencias y si está cerrada.
+- Clima: el mismo botón en «Clima favorable» y en cada dimensión. Explica cuántas respuestas cuentan, cuántas son favorables y la regla de las 5 respuestas.
+- Usa las mismas funciones que la pantalla, así que no puede contradecirla.
+
+Copiloto del manager (`copiloto.js`)
+- Botón «Preparar la conversación» en el bloque Conversación del Scorecard.
+- Borrador **hecho con reglas, sin IA**: resumen en dos frases, lo que va bien (valoraciones de 1,5 o más con su evidencia, KPIs sobre el 100 %), temas para hablar (KPIs con factor menor que 1 y cuánto valdría subirlos, valoraciones bajas o en línea con más peso, la dimensión de clima más baja de la tienda), preguntas y un plan editable.
+- «Llevar el plan a la conversación» lo añade a «Plan de mejora acordado» y queda en Actividad.
+- Clima de la tienda solo con 5 respuestas o más. No usa bajas, respuestas individuales, comentarios con nombre ni otras tiendas.
+
+«Tus datos» (`misdatos.js`, `migracion_0.38.sql`)
+- Cada persona de la plantilla puede ver con un código personal su ficha, sus evaluaciones cerradas del Scorecard, si está en un Talent Review, sus formaciones y encuestas con nombre, quién puede ver cada cosa y quién ha abierto su ficha en los últimos 90 días. Puede descargarlo todo. Las encuestas anónimas no aparecen, y se explica por qué.
+- Se entra por la misma puerta del código. El código lo genera la base de datos (`datos_codigo_nuevo`) y solo se guarda su huella SHA-256.
+- RR.HH. lo envía desde Personas: en la ficha de cada persona («Enviar su acceso») o a todas las que aún no lo tienen («Enviar «Tus datos»»). Nuevo tipo de correo `datos` en `enviar-invitacion`, que comprueba el código contra su huella antes de enviarlo.
+- Registro de accesos: abrir la ficha de una persona en Personas o en el Scorecard queda en `accesos_ficha` (una vez por persona, usuario, día y apartado).
+- Desarrollo guarda el vínculo con la persona de la plantilla (`id_empleado`) al crear equipos desde Personas.
+- `privacidad.html` lo menciona.

@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.37.0";
+const APP_VERSION = "0.38.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -770,6 +770,7 @@ function vistaPeriodo(t, per) {
   h += `</tbody></table></div></fieldset>
     <p class="hint kbar-ley">La barra compara lo conseguido con el objetivo; la raya marca el 100 %. Desde el ${SC.pct(desde1, 0)} el factor es 1 o más.</p></section>` + selectorPersonas(t);
   const p = persona(t); if (!p) return h;
+  if (typeof registrarAcceso === "function") registrarAcceso(p.emp_id, "Scorecard");
   const e = ev(p, per), cerr = !!e.cerrado, sc = `e:${p.id}:${per}`;
   // Cada ítem es una fila: nombre, peso y la escala. La pregunta de ayuda y
   // el campo de evidencias viven plegados y solo se abren cuando hacen falta:
@@ -807,7 +808,7 @@ function vistaPeriodo(t, per) {
     });
   });
   h += `</section>`;
-  h += `<section class="card"><h2>Conversación</h2><div class="grid2">
+  h += `<section class="card"><div class="card-h"><h2>Conversación</h2><button class="btn" data-action="copiloto">Preparar la conversación</button></div><div class="grid2">
     <label>Comentarios del evaluador<textarea rows="3" data-scope="${sc}" data-path="comentEvaluador">${esc(e.comentEvaluador || "")}</textarea></label>
     <label>Comentarios del evaluado<textarea rows="3" data-scope="${sc}" data-path="comentEvaluado">${esc(e.comentEvaluado || "")}</textarea></label>
     <label class="span2">Plan de mejora acordado<textarea rows="3" data-scope="${sc}" data-path="planMejora">${esc(e.planMejora || "")}</textarea></label>
@@ -823,6 +824,7 @@ function pintarTicket() {
   let h = `<p class="t-per">${esc(P.nombre)}</p><p class="t-lbl">${esc(P.bonus)}</p>
     <p class="t-big num">${r.bonus == null ? "–" : SC.eur(r.bonus)}</p>
     <p class="t-sub num">de ${SC.eur(bonusMax(p), 0)} máximo${SC.num(p.prorrata) != null && SC.num(p.prorrata) !== 100 ? " (prorrateado)" : ""}</p>
+    <button class="btn block t-ex" data-action="exBonus"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"></path><path d="M12 17.5h.01"></path></svg>¿De dónde sale?</button>
     <dl class="t-rows num">
       <dt>Cualitativo <small>${r.nValorados}/${r.nItems} ítems</small></dt><dd>${SC.fmt(r.ptsCual, 3)} <small>/ ${SC.fmt(r.maxCual, 2)}</small><span>${SC.eur(r.bonusCual)}</span></dd>
       <dt>Cuantitativo <small>${r.kpis.filter(k => k.completo).length}/${r.kpis.length} KPIs</small></dt><dd>${SC.fmt(r.ptsCuant, 3)} <small>/ ${SC.fmt(r.maxCuant, 2)}</small><span>${SC.eur(r.bonusCuant)}</span></dd>
@@ -1272,7 +1274,7 @@ document.addEventListener("click", async e => {
       if (error) { avisar(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
-  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO, typeof ACCIONES_PERSONAS === "undefined" ? {} : ACCIONES_PERSONAS, typeof ACCIONES_EB === "undefined" ? {} : ACCIONES_EB);
+  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO, typeof ACCIONES_PERSONAS === "undefined" ? {} : ACCIONES_PERSONAS, typeof ACCIONES_EB === "undefined" ? {} : ACCIONES_EB, typeof ACCIONES_EXPLICA === "undefined" ? {} : ACCIONES_EXPLICA, typeof ACCIONES_COPILOTO === "undefined" ? {} : ACCIONES_COPILOTO, typeof ACCIONES_MISDATOS_ADMIN === "undefined" ? {} : ACCIONES_MISDATOS_ADMIN);
   if (!acciones[a]) return;
   const res = await acciones[a](b, t);
   if (res !== false) pintar();

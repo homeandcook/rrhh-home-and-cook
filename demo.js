@@ -95,6 +95,7 @@ window.crearClienteDemo = function () {
       const t = db.tiendas.find(x => x.id === r.tienda_id); return !!(t && db.sesion && t.rm_id === db.sesion.user.id); }
   };
   const err = m => ({ data: null, error: { message: m } });
+  const demoNormCod = c => { const v = String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); return v.length === 8 ? v.slice(0, 4) + "-" + v.slice(4) : ""; };
 
   class Q {
     constructor(t) { this.t = t; this.op = "select"; this.f = []; this.ret = false; this.one = null; this.ord = null; this.lim = null; }
@@ -185,6 +186,16 @@ window.crearClienteDemo = function () {
     functions: {
       invoke(nombre, { body }) {
         if (nombre === "resenas") return new Promise(r => setTimeout(() => r({ data: demoResenas(body), error: null }), 400));
+        if (nombre === "enviar-invitacion" && body && body.tipo === "datos") return new Promise(r => setTimeout(() => {
+          const res = (body.datos || []).map(d => {
+            const e = (db.empleados || []).find(x => x.id === d.id);
+            if (!e) return { id: d.id, ok: false, motivo: "Persona no encontrada" };
+            if (e.datos_hash !== "demo:" + demoNormCod(d.codigo)) return { id: d.id, ok: false, motivo: "El código no corresponde a esta persona" };
+            if (!e.correo) return { id: d.id, ok: false, motivo: "Sin correo válido" };
+            e.datos_enviado = new Date().toISOString(); return { id: d.id, ok: true };
+          });
+          save(); r({ data: { enviados: res.filter(x => x.ok).length, total: res.length, resultados: res }, error: null });
+        }, 250));
         if (nombre === "crear-cuenta") return new Promise(r => setTimeout(() => {
           const e = String(body.email || "").replace(/@.*/, "@demo");
           if (db.auth.some(x => x.email === e)) return r({ data: { error: "EXISTE" }, error: null });
@@ -213,6 +224,49 @@ window.crearClienteDemo = function () {
     },
     rpc(fn, a) {
       return new Promise(r => setTimeout(() => {
+        // «Tus datos» (0.38): en la demo la «huella» es el propio código con un prefijo.
+        if (fn === "datos_codigo_nuevo") {
+          if (rol() !== "admin") return r(err("Solo RR.HH. puede crear códigos de consulta"));
+          const e = (db.empleados || []).find(x => x.id === a.p_empleado && x.activo);
+          if (!e) return r(err("Esa persona no existe o está de baja"));
+          const c = SC.codigoInvitacion(); e.datos_hash = "demo:" + c; e.datos_enviado = null; save();
+          return r({ data: c, error: null });
+        }
+        if (fn === "registrar_acceso") {
+          if (!rol()) return r({ data: null, error: null });
+          db.accesos_ficha = db.accesos_ficha || [];
+          const dia = new Date().toISOString().slice(0, 10), u = db.sesion.user.id;
+          const x = db.accesos_ficha.find(y => y.empleado_id === a.p_empleado && y.usuario_id === u && y.dia === dia && y.donde === a.p_donde);
+          if (x) x.cuando = new Date().toISOString(); else db.accesos_ficha.push({ empleado_id: a.p_empleado, usuario_id: u, dia, donde: a.p_donde, cuando: new Date().toISOString() });
+          save(); return r({ data: null, error: null });
+        }
+        if (fn === "mis_datos") {
+          const n = demoNormCod(a.p_codigo);
+          const e = n && (db.empleados || []).find(x => x.activo && x.datos_hash === "demo:" + n);
+          if (!e) return r({ data: null, error: null });
+          const t = db.tiendas.find(x => x.id === e.tienda_id), rmP = t && db.perfiles.find(x => x.id === t.rm_id);
+          const resp = e.responsable_id && db.empleados.find(x => x.id === e.responsable_id);
+          const scs = [];
+          ((t && t.datos.personas) || []).filter(p => p.emp_id === e.id).forEach(p => Object.entries(p.evals || {}).forEach(([k, v]) => {
+            if (v && v.cerrado) scs.push({ anio: t.anio, periodo: k, fecha: v.cerrado.fecha, por: v.cerrado.por, nota: v.cerrado.nota, bonus: v.cerrado.bonus });
+          }));
+          const lim = Date.now() - 90 * 864e5, acc = {};
+          (db.accesos_ficha || []).filter(x => x.empleado_id === e.id && Date.parse(x.cuando) > lim).forEach(x => {
+            const pf = db.perfiles.find(y => y.id === x.usuario_id); if (!pf) return;
+            const k = pf.rol + "|" + pf.nombre; if (!acc[k] || acc[k].cuando < x.cuando) acc[k] = { rol: pf.rol, nombre: pf.nombre, cuando: x.cuando };
+          });
+          return r({ data: clone({
+            ficha: { nombre: e.nombre, apellidos: e.apellidos, correo: e.correo, puesto: e.puesto, tipologia: e.tipologia, ubicacion: e.ubicacion,
+              departamento: e.departamento, tienda: t ? t.nombre : null, responsable: resp ? (resp.nombre + " " + (resp.apellidos || "")).trim() : null, fecha_alta: e.fecha_alta || null },
+            quien: { rm: rmP ? rmP.nombre : null, responsable: resp ? (resp.nombre + " " + (resp.apellidos || "")).trim() : null },
+            scorecard: scs,
+            desarrollo: db.dr_personas.filter(p => p.id_empleado === e.id).map(p => { const c = db.dr_ciclos.find(x => x.id === p.ciclo_id), ev = db.dr_evaluadores.find(x => x.id === p.evaluador_id);
+              return { ciclo: c ? c.nombre : "", anio: c ? c.anio : null, estado: p.estado, evaluador: ev ? ev.nombre : "" }; }),
+            invitaciones: e.correo ? db.invitaciones.filter(i => i.email && i.email.toLowerCase() === e.correo.toLowerCase()).map(i => { const c = db.campanas.find(x => x.id === i.campana_id);
+              return { tipo: c ? c.tipo : "", titulo: c ? c.titulo : "", estado: i.estado, respondido: i.respondido || null }; }) : [],
+            accesos: Object.values(acc).sort((x, y) => (x.cuando < y.cuando ? 1 : -1))
+          }), error: null });
+        }
         if (fn === "invitacion_abrir") {
           const i = db.invitaciones.find(x => x.codigo === String(a.p_codigo || "").trim().toUpperCase());
           if (!i) return r({ data: null, error: null });

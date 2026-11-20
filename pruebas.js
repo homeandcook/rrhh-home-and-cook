@@ -17,6 +17,8 @@ async function abrirInvitacion(codigo) {
   /* Misma puerta para todo lo que rellenan terceros: si el código no es de
      una encuesta o formación, puede ser el de un responsable del Talent Review. */
   if (!error && !data && typeof abrirTalent === "function" && await abrirTalent(INV.codigo, true)) return;
+  // …o el código personal de «Tus datos» (0.38.0).
+  if (!error && !data && typeof abrirMisDatos === "function" && await abrirMisDatos(INV.codigo)) return;
   if (error) { INV.error = traducirError(error); INV.datos = null; }
   else if (!data) { INV.error = "Ese código no existe o ya ha caducado. Revisa que lo has copiado entero."; INV.datos = null; }
   else { INV.datos = data; INV.respuestas = data.respuestas || {}; INV.fase = "curso"; INV.paso = 0; INV.esc = null; }

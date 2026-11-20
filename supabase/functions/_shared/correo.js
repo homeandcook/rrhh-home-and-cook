@@ -77,6 +77,12 @@ function textosCorreo(it, firma, aj) {
       datos: [["Personas", it.personas ? String(it.personas) : "Tu equipo"], ["Tiempo", "Unos 10 min por persona"], ["Fecha límite", limite || "La que indique RR.HH."]],
       boton: "Valorar a mi equipo", nota: "El código es solo tuyo. Sirve hasta que envíes tus valoraciones a RR.HH."
     },
+    datos: {
+      eti: "Tus datos", asunto: "Consulta qué datos tuyos hay en Pippole",
+      intro: `Con este código puedes ver en cualquier momento qué datos tuyos guarda Pippole, quién puede verlos y quién ha abierto tu ficha. Solo es para consultar: no tienes que rellenar nada.`,
+      datos: [["Qué verás", "Tu ficha, evaluaciones y formaciones"], ["Encuestas anónimas", "No aparecen: no se guarda quién respondió"], ["Validez", "Hasta que pidas uno nuevo"]],
+      boton: "Ver mis datos", nota: "El código es solo tuyo y da acceso a tus datos. No lo reenvíes. Si crees que alguien lo tiene, pide uno nuevo a RR.HH."
+    },
     recordatorio: {
       eti: "Recordatorio", asunto: `Recordatorio: ${t}`,
       intro: `Si todavía no has respondido ${"«" + t + "»"}, aún estás a tiempo. Usa el código que te llegó en el correo anterior. Si ya la has hecho, gracias: puedes ignorar este mensaje.`,
@@ -121,6 +127,8 @@ function montarCorreo(it, x, URL_APP, cargo) {
   const directo = conCodigo ? enlace + encodeURIComponent(it.codigo) : URL_APP;
   const pasos = it.modo === "desarrollo"
     ? ["Pulsa el botón: tu código ya va incluido.", "Completa la ficha de cada persona.", "Pulsa «Enviar a RR.HH.» al terminar."]
+    : it.modo === "datos"
+      ? ["Pulsa el botón: tu código ya va incluido.", "Revisa tu ficha y quién la ve.", "Si algo no está bien, escribe a privacidad o a RR.HH."]
     : it.modo === "formacion"
       ? ["Pulsa el botón: tu código ya va incluido.", "Repasa los módulos a tu ritmo.", "Haz el examen final y envíalo."]
       : ["Pulsa el botón: tu código ya va incluido.", "Responde las preguntas.", "Pulsa enviar al terminar."];
