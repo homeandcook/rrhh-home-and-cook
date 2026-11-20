@@ -15,6 +15,7 @@ const VC_CAMPOS = ["asunto", "intro", "extra", "firma", "cargo"];
 
 /* Modo del correo según la campaña, igual que en la función de envío */
 function modoCorreo(c, pl) {
+  if (pl && pl.capacidad) return "capacidad";
   if (pl && pl.anonima) return "anonima";
   return c && ["clima", "formacion", "psico", "onboarding", "offboarding", "mystery"].includes(c.tipo) ? c.tipo : "psico";
 }

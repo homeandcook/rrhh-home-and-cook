@@ -40,9 +40,9 @@ function avLista() {
       return;
     }
     const t = (S.todas || []).find(x => x.id === i.tienda_id);
-    const nota = c.tipo === "formacion" || c.tipo === "psico" ? SC.puntuar(pl, i.respuestas || {}) : null;
+    const nota = !pl.capacidad && (c.tipo === "formacion" || c.tipo === "psico") ? SC.puntuar(pl, i.respuestas || {}) : null;
     out.push({ tipo: "inv", c, i, fecha: i.respondido, quien: i.destinatario || "Una persona", donde: t ? t.nombre : "",
-      que: c.tipo === "formacion" ? `ha completado ${SC.txt(pl.nombre) || c.titulo}` : c.tipo === "clima" ? `ha respondido ${c.titulo}` : `ha completado ${c.titulo}`,
+      que: c.tipo === "formacion" ? `ha completado ${SC.txt(pl.nombre) || c.titulo}` : c.tipo === "clima" ? `ha respondido ${c.titulo}` : pl.capacidad ? `ha terminado ${c.titulo}` : `ha completado ${c.titulo}`,
       extra: nota && nota.max ? `${Math.round(nota.pct * 100)} %${pl.umbral ? (nota.pct >= pl.umbral ? " · superada" : " · no superada") : ""}` : "" });
   });
   const visto = avVisto();
@@ -136,6 +136,7 @@ const ACCIONES_AVISOS = {
     const c = x.c;
     if (c.tipo === "clima") irA({ m: "clima", campana: c.id });
     else if (c.tipo === "formacion") irA({ m: "formacion", tab: "seguimiento" });
+    else if (c.plantilla === "cap") irA({ m: "capacidad", tab: "capcurso", campana: c.id });
     else if (c.tipo === "psico") irA({ m: "formacion", tab: "psico", campana: c.id });
     else irA({ m: S.modulo, campana: c.id });
   }

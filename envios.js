@@ -24,6 +24,7 @@ const LIMITE_GRATIS = 100;
 /* Datos de la plantilla para el texto del correo (duración, preguntas…) */
 function infoCampana(c) {
   const pl = SC.plantilla(c.plantilla) || {}, n = (pl.preguntas || []).length;
+  if (pl.capacidad && typeof capInfo === "function") return capInfo((c.config || {}).juegos);
   /* Clima por colectivo: preguntas según la parte 2 y la primera pregunta,
      que el correo trae ya para contestar con un clic */
   if (pl.v2 && typeof clPreguntas === "function") {

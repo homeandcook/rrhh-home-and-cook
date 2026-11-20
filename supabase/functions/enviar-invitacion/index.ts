@@ -62,10 +62,10 @@ const json = (body: unknown, status = 200) =>
 const MAIL = /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/;
 const MAX = 100;
 
-type Info = { min?: number; n?: number; umbral?: number; cert?: boolean; primera?: { id: string; t: string } };
+type Info = { min?: number; n?: number; umbral?: number; cert?: boolean; pc?: boolean; primera?: { id: string; t: string } };
 type Item = {
   id: string; codigo: string; nombre: string; email: string; titulo: string;
-  modo: "clima" | "anonima" | "formacion" | "psico" | "onboarding" | "offboarding" | "mystery" | "desarrollo" | "recordatorio" | "datos";
+  modo: "clima" | "anonima" | "formacion" | "psico" | "capacidad" | "onboarding" | "offboarding" | "mystery" | "desarrollo" | "recordatorio" | "datos";
   repite: boolean; info: Info; motivo?: string; limite?: string | null; personas?: number;
   // deno-lint-ignore no-explicit-any
   aj?: any;
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     const o = v as any; if (!o || typeof o !== "object") continue;
     info[k] = { min: Number(o.min) > 0 && Number(o.min) < 600 ? Math.round(Number(o.min)) : undefined,
       n: Number(o.n) > 0 && Number(o.n) < 500 ? Math.round(Number(o.n)) : undefined,
-      umbral: Number(o.umbral) > 0 && Number(o.umbral) <= 1 ? Number(o.umbral) : undefined, cert: o.cert === true,
+      umbral: Number(o.umbral) > 0 && Number(o.umbral) <= 1 ? Number(o.umbral) : undefined, cert: o.cert === true, pc: o.pc === true,
       primera: o.primera && typeof o.primera.id === "string" && /^[a-z0-9_]{1,12}$/.test(o.primera.id) && typeof o.primera.t === "string"
         ? { id: o.primera.id, t: o.primera.t.slice(0, 300) } : undefined };
   }
@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
   // Vista previa (0.34.3): devuelve el correo montado, sin enviar nada ni
   // leer datos de nadie. La web la usa si no puede cargar la plantilla.
   if (vista) {
-    const MODOS = ["clima", "anonima", "formacion", "psico", "onboarding", "offboarding", "mystery", "desarrollo", "recordatorio", "datos"];
+    const MODOS = ["clima", "anonima", "formacion", "psico", "capacidad", "onboarding", "offboarding", "mystery", "desarrollo", "recordatorio", "datos"];
     const v = vista.it || {};
     const texto = (x: unknown, n: number) => (typeof x === "string" ? x.slice(0, n) : "");
     // deno-lint-ignore no-explicit-any
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
       modo: (MODOS.includes(v.modo) ? v.modo : "psico") as Item["modo"], repite: false,
       info: { min: Number(o.min) > 0 && Number(o.min) < 600 ? Math.round(Number(o.min)) : undefined,
         n: Number(o.n) > 0 && Number(o.n) < 500 ? Math.round(Number(o.n)) : undefined,
-        umbral: Number(o.umbral) > 0 && Number(o.umbral) <= 1 ? Number(o.umbral) : undefined, cert: o.cert === true,
+        umbral: Number(o.umbral) > 0 && Number(o.umbral) <= 1 ? Number(o.umbral) : undefined, cert: o.cert === true, pc: o.pc === true,
         primera: o.primera && typeof o.primera.id === "string" && /^[a-z0-9_]{1,12}$/.test(o.primera.id) && typeof o.primera.t === "string"
           ? { id: o.primera.id, t: o.primera.t.slice(0, 300) } : undefined },
       limite: typeof v.limite === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.limite) ? v.limite : null,
@@ -195,13 +195,14 @@ Deno.serve(async (req) => {
       if (invs.length !== new Set(pedir).size) return json({ error: "Alguna de las invitaciones no existe o no es tuya" }, 403);
     }
     const campIds = [...new Set([...invs.map((i) => i.campana_id), ...(rec ? [rec.campana_id] : [])])];
-    const { data: camps } = await suyo.from("campanas").select("id, titulo, estado, tipo, config").in("id", campIds);
+    const { data: camps } = await suyo.from("campanas").select("id, titulo, estado, tipo, plantilla, config").in("id", campIds);
     const camp = (id: string) => (camps || []).find((x) => x.id === id);
     const motivoInv = (inv: typeof invs[number], c: ReturnType<typeof camp>) =>
       !c ? "Campaña no encontrada" : c.estado !== "abierta" ? "La campaña está cerrada" : inv.estado === "respondida" ? "Ya ha respondido" : undefined;
     for (const id of ids) {
       const inv = invs.find((x) => x.id === id)!, c = camp(inv.campana_id);
-      const modo = (c && ["clima", "formacion", "psico", "onboarding", "offboarding", "mystery"].includes(c.tipo) ? c.tipo : "psico") as Item["modo"];
+      const modo = (c && c.tipo === "psico" && c.plantilla === "cap" ? "capacidad"
+        : c && ["clima", "formacion", "psico", "onboarding", "offboarding", "mystery"].includes(c.tipo) ? c.tipo : "psico") as Item["modo"];
       items.push({ id, codigo: inv.codigo, nombre: inv.destinatario || "", email: inv.email || "", titulo: c ? c.titulo : "", modo,
         repite: !!inv.enviado, info: info[inv.campana_id] || {}, aj: ajustes(c && c.config), motivo: motivoInv(inv, c) });
     }

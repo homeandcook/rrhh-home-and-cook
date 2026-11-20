@@ -33,6 +33,8 @@ function pintarInvitado() {
       <p class="login-err">${esc(INV.error)}</p>
       <button class="btn primary block" type="submit">${t("entrar")}</button></form>
       <p class="hint" style="text-align:center">${t("soyRRHH")} <a href="#" data-action="irLogin">${t("entraUsuario")}</a></p>`;
+  } else if (pl && pl.capacidad && typeof pintarCapInvitado === "function") {
+    pintarCapInvitado(); return;
   } else if (pl && pl.v2 && d.campana_estado !== "cerrada" && typeof pintarClimaInvitado === "function") {
     pintarClimaInvitado(); return;
   } else if (INV.enviado && pl && pl.curso) {
@@ -104,7 +106,7 @@ const ACCIONES_INVITADO = {
 /* ---------- Panel de RR.HH. y RM ---------- */
 /* Las plantillas de cursos ocultos no se ofrecen para campañas nuevas */
 function plantillaVisible(p) { const c = p.curso && typeof cursoDe === "function" ? cursoDe(p.curso) : null; return !c || !c.oculto; }
-function campanasDe(tipo) { return (S.campanas || []).filter(c => c.tipo === tipo && c.anio === SC.CONFIG.anio); }
+function campanasDe(tipo) { return (S.campanas || []).filter(c => c.tipo === tipo && c.plantilla !== "cap" && c.anio === SC.CONFIG.anio); }
 function invitacionesDe(id) { return (S.invitaciones || []).filter(i => i.campana_id === id); }
 function tiendaDe(id) { return S.tiendas.find(t => t.id === id); }
 
@@ -113,7 +115,7 @@ function pintarPruebas(tipo) {
   const nombreTipo = SC.txt(T.t);
   const sel = cs.find(c => c.id === S.campana) || cs[cs.length - 1];
   if (sel) S.campana = sel.id;
-  const plantillas = SC.CONFIG.plantillas.filter(p => p.tipo === tipo && plantillaVisible(p));
+  const plantillas = SC.CONFIG.plantillas.filter(p => p.tipo === tipo && !p.capacidad && plantillaVisible(p));
   let h = `<div class="page"><div class="page-h"><h1>${esc(nombreTipo)}</h1>
     <div class="page-h-b"><button class="btn" data-action="actualizarPruebas" title="Traer las últimas respuestas">Actualizar</button>
     ${esAdmin() && cs.length ? `<button class="btn peligro-g" data-action="borrarCampana">Borrar campaña</button>` : ""}
@@ -358,7 +360,7 @@ function asuntoInvitacion(inv) {
 const ACCIONES_PRUEBAS = {
   selCampana(b) { S.campana = b.dataset.id; },
   async nuevaCampana(b) {
-    const tipo = b.dataset.tipo, pls = SC.CONFIG.plantillas.filter(p => p.tipo === tipo && plantillaVisible(p));
+    const tipo = b.dataset.tipo, pls = SC.CONFIG.plantillas.filter(p => p.tipo === tipo && !p.capacidad && plantillaVisible(p));
     let plantilla = pls[0].id;
     if (pls.length > 1) {
       const op = prompt(`¿Qué plantilla?\n${pls.map((p2, i) => `${i + 1}. ${SC.txt(p2.nombre)}`).join("\n")}\n\nEscribe el número:`, "1");

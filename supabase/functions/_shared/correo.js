@@ -53,6 +53,12 @@ function textosCorreo(it, firma, aj) {
       datos: [["Duración", dur || "Unos 10 minutos"], ["Preguntas", i.n ? String(i.n) : "—"], ["Intentos", "Uno"]],
       boton: "Empezar la prueba", nota: "Busca un momento tranquilo: una vez enviada, no se puede repetir."
     },
+    capacidad: {
+      eti: "Pruebas de capacidad", asunto: `${t}: tu código de acceso`,
+      intro: `Te invitamos a hacer ${"«" + t + "»"}: ${i.n ? i.n + " pruebas" : "unas pruebas"} cortas con forma de minijuego. No miden conocimientos, sino cómo planificas, recuerdas, calculas o razonas, así que no hace falta prepararlas.`,
+      datos: [["Duración", dur || "Unos 15 minutos"], ["Pruebas", i.n ? String(i.n) : "—"], ["Dispositivo", i.pc ? "Mejor en ordenador" : "Ordenador o móvil"]],
+      boton: "Empezar las pruebas", nota: "Busca un sitio tranquilo y sin interrupciones. Cada prueba se hace una vez; entre una y otra puedes descansar."
+    },
     onboarding: {
       eti: "Tus primeras semanas", asunto: `${t}: ¿cómo han ido tus primeras semanas?`,
       intro: `Queremos saber cómo ha sido tu incorporación: qué te ha ayudado y qué echaste en falta. Nos sirve para recibir mejor a quien llegue después.`,
@@ -131,6 +137,8 @@ function montarCorreo(it, x, URL_APP, cargo) {
       ? ["Pulsa el botón: tu código ya va incluido.", "Revisa tu ficha y quién la ve.", "Si algo no está bien, escribe a privacidad o a RR.HH."]
     : it.modo === "formacion"
       ? ["Pulsa el botón: tu código ya va incluido.", "Repasa los módulos a tu ritmo.", "Haz el examen final y envíalo."]
+    : it.modo === "capacidad"
+      ? ["Pulsa el botón: tu código ya va incluido.", "Lee las instrucciones de cada prueba antes de empezarla.", "Al terminar la última, los resultados se envían solos."]
       : ["Pulsa el botón: tu código ya va incluido.", "Responde las preguntas.", "Pulsa enviar al terminar."];
 
   const texto = [

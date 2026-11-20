@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.38.0";
+const APP_VERSION = "0.39.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -29,7 +29,7 @@ const MODULOS_MARKETING = ["pdc"];
    de IA y Desarrollo. El resto de apartados sigue en el código, oculto: para
    recuperar uno basta con quitarlo de esta lista. */
 const MODULOS_OCULTOS = ["prl", "pdc", "docs", "hometime", "employer"]; // employer: aparcado el 19/11/2026 hasta tener clave de Google y la migración 0.36
-const MODULOS_SOLO_ADMIN = ["employer"];
+const MODULOS_SOLO_ADMIN = ["employer", "capacidad"];
 const puedeVer = id => !MODULOS_OCULTOS.includes(id) && (!esMarketing() || MODULOS_MARKETING.includes(id)) && (!MODULOS_SOLO_ADMIN.includes(id) || esAdmin());
 const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
 /* «Ver como»: RR.HH. puede ver la plataforma tal como la ve otro usuario.
@@ -354,6 +354,9 @@ const MODULOS = [
   { id: "desarrollo", t: "Desarrollo", grupo: "activo",
     d: "Talent Review y plan de desarrollo: cada responsable valora a su equipo y RR.HH. calibra.",
     tabs: [["oficina", "Oficina"], ["retail", "Retail"]] },
+  { id: "capacidad", t: "Pruebas de capacidad", grupo: "activo",
+    d: "Minijuegos para selección y desarrollo: planificación, memoria, atención, cálculo, razonamiento, análisis de datos y priorización. Se envían con un código.",
+    tabs: [["capnueva", "Nuevas pruebas", true], ["capcurso", "En curso y resultados", true], ["capcatalogo", "Las pruebas", true]] },
   /* Scorecard (visible desde la 0.34.0). Talent Matrix, Mapa 9-Box,
      Onboarding y Offboarding siguen en el código, sin pestaña: el talento
      se lleva ahora en Desarrollo. Para recuperarlas, añadirlas aquí:
@@ -381,7 +384,7 @@ const MODULOS = [
   { id: "hometime", t: "HomeTime", grupo: "externo", enlace: "hometime", d: "" }
 ];
 /* Qué apartado y qué pestaña corresponden a cada cuestionario con código */
-const TAB_TXT = { pplantilla: "pplantilla", paccesos: "paccesos", ptiendas: "ptiendas", pactividad: "pactividad", clnueva: "clnueva", clcurso: "clcurso", clanteriores: "clanteriores", clresultados: "clresultados", clmodelos: "clmodelos", envios: "envios", seguimiento: "seguimiento", eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
+const TAB_TXT = { pplantilla: "pplantilla", paccesos: "paccesos", ptiendas: "ptiendas", pactividad: "pactividad", clnueva: "clnueva", clcurso: "clcurso", clanteriores: "clanteriores", clresultados: "clresultados", clmodelos: "clmodelos", capnueva: "capnueva", capcurso: "capcurso", capcatalogo: "capcatalogo", envios: "envios", seguimiento: "seguimiento", eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
   onboarding: "onboarding", offboarding: "offboarding", bajas: "bajas", prevencion: "prevencion",
   clima: "clima", cursos: "cursos", psico: "psico", process: "process", politica: "politica" };
 const TAB_PRUEBA = { onboarding: ["evaluacion", "onboarding"], offboarding: ["evaluacion", "offboarding"],
@@ -428,6 +431,7 @@ function pintar() {
   if (S.modulo === "personas" && !(S.indice && tabs.length > 1)) { const tp = tabActual(); return tp === "pplantilla" || !esAdmin() ? pintarPersonas() : pintarGestion(tp); }
   if (S.modulo === "clima" && !(S.indice && tabs.length > 1)) return pintarClima(tabActual());
   if (S.modulo === "desarrollo" && !(S.indice && tabs.length > 1)) return pintarDesarrollo(tabActual());
+  if (S.modulo === "capacidad" && !(S.indice && tabs.length > 1)) return pintarCapacidad(tabActual());
   if (S.indice && tabs.length > 1) return pintarIndice(m, tabs);
   const tab = tabActual();
   if (S.modulo === "evaluacion") {
@@ -492,6 +496,7 @@ function resumenTab(id) {
     if (id === "cursos") { const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0; return `${cursosVisibles().length} ${cursosVisibles().length === 1 ? "formación" : "formaciones"} · ${n} ${n === 1 ? "completada" : "completadas"}`; }
     if (id === "process") return `${libro("process").items.length} procesos`;
     if (id.startsWith("cl") && typeof clResumenTab === "function") return clResumenTab(id);
+    if (/^cap(nueva|curso|catalogo)$/.test(id) && typeof capResumenTab === "function") return capResumenTab(id);
     if (id === "politica") return `${libro("politica").items.length} fichas`;
   } catch (e) {}
   return "";
@@ -552,7 +557,7 @@ const APARTADOS_TIENDA = [
 ];
 function resumenEnTienda(x, m, tab) {
   const codigos = tipo => {
-    const cs = (S.campanas || []).filter(c => c.tipo === tipo).map(c => c.id);
+    const cs = (S.campanas || []).filter(c => c.tipo === tipo && c.plantilla !== "cap").map(c => c.id);
     const inv = (S.invitaciones || []).filter(i => i.tienda_id === x.id && cs.includes(i.campana_id));
     return inv.length ? `${inv.filter(i => i.estado === "respondida").length} de ${inv.length} códigos respondidos` : "Sin códigos para esta tienda";
   };
@@ -592,9 +597,10 @@ function pintarInicio() {
       return cs.length ? `${ab.length} ${ab.length === 1 ? "encuesta abierta" : "encuestas abiertas"} · ${inv.filter(i => i.estado === "respondida").length} de ${inv.length} respuestas` : "Sin encuestas todavía";
     }
     if (m.id === "desarrollo") return typeof resumenDesarrollo === "function" ? resumenDesarrollo() : "";
+    if (m.id === "capacidad") return typeof capResumenTab === "function" ? capResumenTab("capcurso") : "";
     if (m.id === "formacion") {
       const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0;
-      const cs = (S.campanas || []).filter(c => c.tipo === "psico");
+      const cs = (S.campanas || []).filter(c => c.tipo === "psico" && c.plantilla !== "cap");
       const inv = (S.invitaciones || []).filter(i => cs.some(c => c.id === i.campana_id));
       const pruebas = inv.length ? ` · ${inv.filter(i => i.estado === "respondida").length} de ${inv.length} pruebas` : "";
       return `${cursosVisibles().length} ${cursosVisibles().length === 1 ? "formación" : "formaciones"} · ${n} ${n === 1 ? "completada" : "completadas"}${pruebas}`;
@@ -1274,7 +1280,7 @@ document.addEventListener("click", async e => {
       if (error) { avisar(traducirError(error)); return false; }
       log(`Baja de tienda ${x.nombre}`); await recargar(); return false;
     }
-  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO, typeof ACCIONES_PERSONAS === "undefined" ? {} : ACCIONES_PERSONAS, typeof ACCIONES_EB === "undefined" ? {} : ACCIONES_EB, typeof ACCIONES_EXPLICA === "undefined" ? {} : ACCIONES_EXPLICA, typeof ACCIONES_COPILOTO === "undefined" ? {} : ACCIONES_COPILOTO, typeof ACCIONES_MISDATOS_ADMIN === "undefined" ? {} : ACCIONES_MISDATOS_ADMIN);
+  }, typeof ACCIONES_TALENT === "undefined" ? {} : ACCIONES_TALENT, typeof ACCIONES_PRUEBAS === "undefined" ? {} : ACCIONES_PRUEBAS, typeof ACCIONES_PDC === "undefined" ? {} : ACCIONES_PDC, typeof ACCIONES_BAJAS === "undefined" ? {} : ACCIONES_BAJAS, typeof ACCIONES_FORMACION === "undefined" ? {} : ACCIONES_FORMACION, typeof ACCIONES_ARC === "undefined" ? {} : ACCIONES_ARC, typeof ACCIONES_IA === "undefined" ? {} : ACCIONES_IA, typeof ACCIONES_ESC === "undefined" ? {} : ACCIONES_ESC, typeof ACCIONES_DOCS === "undefined" ? {} : ACCIONES_DOCS, typeof ACCIONES_PRL === "undefined" ? {} : ACCIONES_PRL, typeof ACCIONES_HOY === "undefined" ? {} : ACCIONES_HOY, typeof ACCIONES_CLIMA === "undefined" ? {} : ACCIONES_CLIMA, typeof ACCIONES_AVISOS === "undefined" ? {} : ACCIONES_AVISOS, typeof ACCIONES_EQUIPO === "undefined" ? {} : ACCIONES_EQUIPO, typeof ACCIONES_PERSONAS === "undefined" ? {} : ACCIONES_PERSONAS, typeof ACCIONES_EB === "undefined" ? {} : ACCIONES_EB, typeof ACCIONES_EXPLICA === "undefined" ? {} : ACCIONES_EXPLICA, typeof ACCIONES_COPILOTO === "undefined" ? {} : ACCIONES_COPILOTO, typeof ACCIONES_MISDATOS_ADMIN === "undefined" ? {} : ACCIONES_MISDATOS_ADMIN, typeof ACCIONES_CAP === "undefined" ? {} : ACCIONES_CAP);
   if (!acciones[a]) return;
   const res = await acciones[a](b, t);
   if (res !== false) pintar();

@@ -476,3 +476,34 @@ Copiloto del manager (`copiloto.js`)
 - Registro de accesos: abrir la ficha de una persona en Personas o en el Scorecard queda en `accesos_ficha` (una vez por persona, usuario, día y apartado).
 - Desarrollo guarda el vínculo con la persona de la plantilla (`id_empleado`) al crear equipos desde Personas.
 - `privacidad.html` lo menciona.
+
+## 0.39.0 · 20/11/2026 · **SQL: no**
+Pruebas de capacidad: siete minijuegos propios para selección y desarrollo, con envío por código y resultados por persona.
+
+Las pruebas (`capacidad.js`)
+- **Ruta de reposición** (planificación): llevar un carro que no frena hasta el punto de entrega con el mínimo de movimientos. Cinco almacenes generados al azar, siempre con solución y con el mínimo calculado.
+- **Memoria con interrupciones** (memoria de trabajo): repetir una secuencia de señales después de decir si un número es par o impar.
+- **Clasificador** (atención y flexibilidad): clasificar por forma o por color cuando la regla cambia sin avisar. Mide aciertos, rapidez y el coste del cambio.
+- **Caja rápida** (cálculo aplicado): cambio, descuentos, promociones y totales, con 30 segundos por pregunta. Los importes siempre salen en céntimos exactos.
+- **Patrones** (razonamiento abstracto): matrices de 3 × 3 de fácil a difícil, generadas cada vez.
+- **Minicaso: qué local abrir** (análisis de datos): plano y dos pestañas de datos; la ubicación con más ventas nunca es la de más beneficio.
+- **Bandeja de entrada** (priorización): ordenar siete tareas por impacto, fecha y esfuerzo.
+- Baterías: **Retail** (ruta, memoria, caja y clasificador, 15 min) y **Oficina y especialistas** (patrones, minicaso, bandeja y memoria, 21 min), o a medida.
+- Opción de **tiempo adicional del 50 %** para adaptar las pruebas.
+- Cada código genera ejercicios distintos, así que no sirve pasarse las respuestas.
+
+Apartado «Pruebas de capacidad» (`capacidad_app.js`, solo RR.HH.)
+- Nuevas pruebas: batería, destinatarios (personas de la plantilla, elegidas una a una, o una lista de candidatos «Nombre; correo»), nombre, cierre y vista previa del correo.
+- En curso y resultados: puntuación de 0 a 100 por prueba e índice medio, reinicios, informe por persona (cada prueba con sus indicadores y su tabla), CSV, enviar pendientes, recordar y cerrar o reabrir.
+- Las pruebas: catálogo con vista previa para probar cada una.
+- Aviso fijo: sin baremo, las puntuaciones solo sirven para comparar dentro de una campaña. Antes de usarlas en selección real hace falta un piloto, un estudio de sesgos y el visto bueno del DPO. Para candidatos externos, además, el aviso de privacidad.
+
+Quien hace las pruebas
+- Entra por la misma puerta del código. Ve la lista de pruebas, las hace seguidas y puede descansar entre una y otra. El avance se guarda en su navegador; si recarga a mitad de una prueba, esa prueba empieza de nuevo y queda anotado.
+- No ve su puntuación. Al terminar se envía todo con `invitacion_responder`.
+- Pantallas solo en español por ahora.
+
+Correo
+- Nuevo tipo `capacidad` en la plantilla y en `enviar-invitacion` (se elige por la plantilla de la campaña `cap`).
+
+Sin migración: son campañas de tipo `psico` con plantilla `cap`; Formación y sus contadores no las mezclan con las pruebas situacionales.

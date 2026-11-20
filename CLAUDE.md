@@ -18,7 +18,7 @@ Este repositorio es **público**: aquí no van datos de personas, claves secreta
 - El lienzo con las cuatro direcciones de marca estudiadas está en claude.ai (artefacto «Pippole · Direcciones de marca»). La elegida es la 2, «Cercana».
 
 ## Foco actual (desde 0.28.0)
-Decidido el 16/11/2026: de momento solo se ven **Encuestas de clima**, **Desarrollo** y **Formación de IA**; desde la 0.34.0 también **Scorecard** (apartado `evaluacion`, pestañas Scorecard y Consolidado) y **Personas**. El resto de apartados está oculto con `MODULOS_OCULTOS` en `app.js` (no borrado).
+Decidido el 16/11/2026: de momento solo se ven **Encuestas de clima**, **Desarrollo** y **Formación de IA**; desde la 0.34.0 también **Scorecard** (apartado `evaluacion`, pestañas Scorecard y Consolidado) y **Personas**; desde la 0.39.0, **Pruebas de capacidad** (solo RR.HH.). El resto de apartados está oculto con `MODULOS_OCULTOS` en `app.js` (no borrado).
 - **Desarrollo** = Talent Review v1.0 en web. Archivos: `desarrollo_cat.js` (escalas, 13 competencias, 9-Box, textos; objeto `TRC` y reglas `TR`), `desarrollo_eval.js` (ficha del responsable que entra con su código; estado `TRE`, acciones `data-tr`), `desarrollo.js` (panel de RR.HH.; estado `S.dr`, acciones `data-tra`), `desarrollo_inf.js` (objeto `TRI`: informe por equipo y por persona, compartidos por los dos lados; desde 0.30.0). Tablas `dr_*` y RPC `dr_abrir/dr_guardar/dr_alta/dr_entregar` (migración 0.28).
   - Oficina: manager → su equipo. Retail: Regional Manager → Store Managers; Store Manager → Assistant.
   - **Regla (16/11/2026): todo lo que rellenan terceros usa el mismo sistema de códigos que la encuesta de clima**: misma puerta («Entrar con un código de invitación»), mismo formato `XXXX-XXXX` (`SC.codigoInvitacion()`), envío por correo con la función `enviar-invitacion`. `abrirInvitacion()` prueba primero `invitacion_abrir` y, si no existe, `dr_abrir`.
@@ -55,7 +55,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 
 ## Cómo está hecho
 - **HTML, CSS y JavaScript sin framework ni compilación.** `index.html` lleva todos los estilos y carga los scripts en este orden:
-  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, correo_vista (carga la plantilla del correo al usarla con un `<script>` normal: `cargarPlantillaCorreo()` → `window.CORREO`), resenas, clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, hoy, demo, app.
+  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, correo_vista (carga la plantilla del correo al usarla con un `<script>` normal: `cargarPlantillaCorreo()` → `window.CORREO`), resenas, clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, ia_datos, ia, desarrollo_cat, desarrollo_inf, desarrollo_eval, desarrollo, hoy, avisos, demo, explica, copiloto, misdatos, capacidad, capacidad_app, app.
 - **`app.js`**:
   - Estado global `S`, pintado completo con `pintar()` y apartados en el array `MODULOS`.
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
@@ -109,6 +109,13 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 - **«¿De dónde sale?»** (0.38.0): `explica.js`. `abrirExplica(titulo, sub, html)` (overlay `#exOv`, acción `exCerrar`), `explicaBonus(t, p, per)` y `explicaClima(c, dim)`. Acciones `exBonus` (panel del bonus) y `exClima` (`data-dim` opcional). Calcula con `SC.calcular`, `clDatos` y `clResumen`: nunca con fórmulas propias. Ojo: la base del bonus es `importe ÷ puntuacionMaxima` (referenciaBonus "maximo"), no «÷ 2 periodos».
 - **Copiloto del manager** (0.38.0): `copiloto.js`. `copBorrador(t, p, per)` arma el borrador **con reglas, sin IA**; `copClima(t)` toma la encuesta más reciente con `CL.MIN` respuestas de la tienda. Acciones `copiloto`, `copFila`, `copQuitar`, `copLlevar` (añade a `planMejora`). La IA solo podría sustituir la redacción, con el visto bueno del DPO; las reglas deciden qué datos entran.
 - **«Tus datos»** (0.38.0): `misdatos.js` + `migracion_0.38.sql`. `empleados.datos_hash` (huella SHA-256 del código, nunca el código) y `datos_enviado`; tabla `accesos_ficha`; funciones `datos_codigo_nuevo(uuid)` (solo admin), `registrar_acceso(uuid, donde)` y `mis_datos(codigo)` (anon). `abrirInvitacion()` prueba `invitacion_abrir` → Talent Review → `abrirMisDatos()`. Correo `{tipo: "datos", datos: [{id, codigo}]}` en `enviar-invitacion`. `registrarAcceso(empId, donde)` en Personas (`pEditar`) y Scorecard (`p.emp_id`). Pantalla solo en español (pendiente en y fr).
+- **Pruebas de capacidad** (0.39.0): `capacidad.js` (motor: 7 minijuegos `capMontar*`, catálogo `CAPJ`, baterías `CAP_BATERIAS` retail y oficina, notas `CAP_NOTAS`, informe `capInformeHtml`, reproductor `capReproducir`; teclado con un único manejador `capTeclas`) y `capacidad_app.js` (apartado `capacidad`, solo admin vía `MODULOS_SOLO_ADMIN`; pestañas `capnueva/capcurso/capcatalogo`; estado `S.capN`; acciones `cap*` en `ACCIONES_CAP`; invitado `pintarCapInvitado`).
+  - Campaña `tipo: "psico"`, `plantilla: "cap"`, `config = {version 1, capacidad, bateria, juegos, extra (1 o 1.5), cierre, externos, correo}`. `campanasDe()` y los contadores de Formación las excluyen. Sin migración.
+  - Respuestas: `{v, juegos: {id: {score 0–1, kpis, tabla, datos, reinicios}}, extra, inicio, fin, dispositivo}`; la nota explicativa no se guarda (sale de `CAP_NOTAS`) y, si pasa de 19 000 caracteres, se quita `datos` (el límite de `invitacion_responder` es 20 000).
+  - Avance del invitado en `localStorage` `pp-cap-<código>`; recargar a mitad cuenta como reinicio de esa prueba. El invitado no ve puntuaciones.
+  - Correo modo `capacidad` (en `enviar-invitacion` se elige por `plantilla === "cap"`).
+  - **Sin baremo ni validación**: el aviso de la interfaz lo dice. Para selección real hace falta piloto, estudio de sesgos y visto bueno del DPO; los candidatos externos necesitan aviso de privacidad. Pantallas de invitado solo en español.
+  - Cada montaje deja de actuar si su elemento ya no está en la página (`el.isConnected`), para que cerrar la vista previa no deje temporizadores vivos.
 - **Prueba de humo** (0.37.0): `pruebas/humo.py` (Playwright). `publicar-pages.yml` la pasa, junto con `node --check` de cada fichero, antes de publicar. En local: `HUMO_LIBS=<ruta a supabase.js> python3 pruebas/humo.py`. Falla si aparece una marca del cliente en pantalla.
 
 ## Despliegue
@@ -123,7 +130,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion`, `resenas` y `crear-cuenta` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.38.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.39.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.
