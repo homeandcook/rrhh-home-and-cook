@@ -526,7 +526,7 @@ const CLIMA_ITEMS = [
   L("m1", "medios", "Tengo el producto y los medios para atender bien al cliente", "I have the product and the tools to serve customers well", "J'ai le produit et les moyens pour bien servir le client"),
   L("m2", "medios", "Sé a quién acudir cuando tengo un problema", "I know who to turn to when I have a problem", "Je sais à qui m'adresser en cas de problème")
 ];
-const ENPS = { id: "nps", tipo: "nps", t: { es: "¿Qué probabilidad hay de que recomiendes trabajar en Home & Cook a alguien conocido? (0 a 10)", en: "How likely are you to recommend working at Home & Cook to someone you know? (0 to 10)", fr: "Quelle est la probabilité que vous recommandiez de travailler chez Home & Cook ? (0 à 10)" } };
+const ENPS = { id: "nps", tipo: "nps", t: { es: "¿Qué probabilidad hay de que recomiendes trabajar en esta empresa a alguien conocido? (0 a 10)", en: "How likely are you to recommend working at this company to someone you know? (0 to 10)", fr: "Quelle est la probabilité que vous recommandiez de travailler dans cette entreprise ? (0 à 10)" } };
 
 CONFIG.plantillas.push(
   {
@@ -625,7 +625,7 @@ CONFIG.plantillas.push(
       L("x2", "desarrollo", "He tenido oportunidades de aprender y crecer", "I had opportunities to learn and grow", "J'ai eu des occasions d'apprendre et d'évoluer"),
       L("x3", "carga", "La carga de trabajo y los horarios eran sostenibles", "The workload and schedules were sustainable", "La charge de travail et les horaires étaient tenables"),
       L("x4", "liderazgo", "Mi responsable me ha apoyado", "My manager supported me", "Mon responsable m'a soutenu"),
-      L("x5", "equipo", "Recomendaría trabajar en Home & Cook a alguien conocido", "I would recommend working at Home & Cook to someone I know", "Je recommanderais de travailler chez Home & Cook"),
+      L("x5", "equipo", "Recomendaría trabajar en esta empresa a alguien conocido", "I would recommend working at this company to someone I know", "Je recommanderais de travailler dans cette entreprise"),
       TXT("t1", "¿Qué habría hecho falta para que te quedaras?", "What would it have taken for you to stay?", "Qu'aurait-il fallu pour que vous restiez ?"),
       TXT("t2", "¿Qué te llevas de tu paso por aquí?", "What do you take away from your time here?", "Que retenez-vous de votre passage ici ?")
     ]
@@ -636,34 +636,24 @@ CONFIG.tiposPrueba.onboarding = { t: { es: "Onboarding", en: "Onboarding", fr: "
 CONFIG.tiposPrueba.offboarding = { t: { es: "Offboarding", en: "Offboarding", fr: "Départs" } };
 
 /* --------- KPIs del People Data Centre --------- */
-/* La red real, a 27/09/2026. "rm" es la clave de zona del Regional Manager
-   que la gestiona; al crear los usuarios se asocia cada clave a su persona.
-   Si abre o cierra una tienda, se cambia aquí y en Usuarios y tiendas.
-   «nombre» es lo que se ve (sin marcas, por la regla de marca); «alias» es
-   el nombre con el que la tienda aparece en los ficheros de la empresa, y
-   solo sirve para reconocerla al importar. No se muestra nunca. */
+/* Red de ejemplo (empresa ficticia). "rm" es la clave de zona del Regional
+   Manager que la gestiona; al crear los usuarios se asocia cada clave a su
+   persona. Cada cliente tendrá la suya: se cambia aquí y en Personas → Tiendas.
+   «alias» (opcional) es el nombre con el que la tienda aparece en los ficheros
+   del cliente, si es distinto, y solo sirve para reconocerla al importar. */
 CONFIG.red = [
-  { codigo: "ES001", nombre: "San Sebastián de los Reyes", alias: "HOME & COOK S.SEBASTIAN REYES", rm: "es" },
-  { codigo: "ES002", nombre: "Getafe", alias: "HOME & COOK GETAFE", rm: "es" },
-  { codigo: "ES003", nombre: "Sevilla", alias: "HOME & COOK SEVILLA", rm: "es" },
-  { codigo: "ES004", nombre: "Bizkaia", alias: "HOME & COOK BIZKAIA", rm: "es" },
-  { codigo: "ES006", nombre: "Mallorca", alias: "HOME & COOK MALLORCA", rm: "es" },
-  { codigo: "ES007", nombre: "Tui", alias: "HOME & COOK TUI", rm: "pt" },
-  { codigo: "ES008", nombre: "A Coruña", alias: "HOME & COOK A CORUÑA", rm: "es" },
-  { codigo: "ES009", nombre: "Las Rozas", alias: "HOME & COOK LAS ROZAS", rm: "es" },
-  { codigo: "ES011", nombre: "Viladecans", alias: "HOME & COOK VILADECANS", rm: "es" },
-  { codigo: "ES012", nombre: "Alicante", alias: "HOME & COOK ALICANTE", rm: "es" },
-  { codigo: "ES014", nombre: "Málaga", alias: "HOME & COOK MÁLAGA", rm: "es" },
-  { codigo: "ES015", nombre: "Zaragoza", alias: "HOME & COOK ZARAGOZA", rm: "es" },
-  { codigo: "ES019", nombre: "Mallorca 2", alias: "WMF MALLORCA", rm: "es" },
-  { codigo: "ES020", nombre: "San Sebastián de los Reyes 2", alias: "WMF S.SEBASTIAN REYES", rm: "es" },
-  { codigo: "PT001", nombre: "Porto", alias: "HOME & COOK PORTO", rm: "pt" },
-  { codigo: "PT002", nombre: "Freeport", alias: "HOME & COOK FREEPORT", rm: "pt" },
-  { codigo: "PT003", nombre: "Algarve", alias: "HOME & COOK ALGARVE", rm: "pt" },
-  { codigo: "PT004", nombre: "Strada", alias: "TEFAL OUTLET STRADA", rm: "pt" },
-  { codigo: "PT005", nombre: "Freeport 2", alias: "WMF FREEPORT", rm: "pt" },
-  { codigo: "PT006", nombre: "Algarve 2", alias: "WMF ALGARVE", rm: "pt" },
-  { codigo: "PT008", nombre: "Campera", alias: "TEFAL Campera", rm: "pt" }
+  { codigo: "ES001", nombre: "Madrid Centro", rm: "es" },
+  { codigo: "ES002", nombre: "Madrid Norte", rm: "es" },
+  { codigo: "ES003", nombre: "Barcelona", rm: "es" },
+  { codigo: "ES004", nombre: "Valencia", rm: "es" },
+  { codigo: "ES005", nombre: "Sevilla", rm: "es" },
+  { codigo: "ES006", nombre: "Bilbao", rm: "es" },
+  { codigo: "ES007", nombre: "Zaragoza", rm: "es" },
+  { codigo: "ES008", nombre: "Málaga", rm: "es" },
+  { codigo: "PT001", nombre: "Lisboa", rm: "pt" },
+  { codigo: "PT002", nombre: "Porto", rm: "pt" },
+  { codigo: "PT003", nombre: "Braga", rm: "pt" },
+  { codigo: "PT004", nombre: "Faro", rm: "pt" }
 ];
 CONFIG.zonas = { es: "España", pt: "Portugal y Tui" };
 

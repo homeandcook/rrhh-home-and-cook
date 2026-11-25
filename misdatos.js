@@ -38,7 +38,7 @@ function pintarMisDatos() {
   const TIPO = { formacion: "Formación", clima: "Encuesta de clima con nombre", psico: "Prueba", onboarding: "Encuesta de incorporación", offboarding: "Encuesta de salida", mystery: "Evaluación" };
   const ESTADO = { pendiente: ["Sin empezar", "aviso"], abierta: ["Empezada", "aviso"], respondida: ["Completada", "ok"] };
 
-  let h = `<div class="guest md"><div class="esquina"><span class="chipseb">${logoSEB(34)}</span></div><div class="guest-card md-card">${logo(48)}
+  let h = `<div class="guest md"><div class="esquina"><span class="chipsimbolo">${simboloPippole(34)}</span></div><div class="guest-card md-card">${logo(48)}
     <h1>Hola, ${esc(f.nombre || "")}</h1>
     <p class="sub">Esto es todo lo que Pippole guarda sobre ti y quién puede verlo. Solo es para consultar.</p>`;
 

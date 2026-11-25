@@ -61,10 +61,10 @@ function impTipologia(v) {
   if (/^(demostrador|demostradora|demostradores|demo|promotor|promotora|promotores|animador|animadora)/.test(n)) return "demostradores";
   return "";
 }
-/* Nombre de tienda reconocible: sin la marca de la red delante */
-const impClaveTienda = x => impNorm(x).replace(/\b(home and cook|home cook|h c|hc|tienda|outlet|store)\b/g, " ").replace(/\s+/g, " ").trim();
-/* Los ficheros de la empresa nombran las tiendas a su manera (con la marca
-   delante, por ejemplo). CONFIG.red guarda ese nombre como «alias» para
+/* Nombre de tienda reconocible: sin palabras genéricas delante */
+const impClaveTienda = x => impNorm(x).replace(/\b(tienda|outlet|store)\b/g, " ").replace(/\s+/g, " ").trim();
+/* Los ficheros de cada cliente nombran las tiendas a su manera (con la marca
+   delante, por ejemplo). CONFIG.red puede guardar ese nombre como «alias» para
    reconocerlas aunque en Pippole se llamen solo por la ciudad. */
 function impTiendaPorAlias(ts, k) {
   const r = (SC.CONFIG.red || []).find(x => x.alias && impNorm(x.alias) === k)

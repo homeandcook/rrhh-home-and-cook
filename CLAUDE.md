@@ -4,17 +4,17 @@ Contexto del proyecto para cualquier sesión de trabajo nueva. Léelo entero ant
 Este repositorio es **público**: aquí no van datos de personas, claves secretas ni decisiones internas de ningún cliente.
 
 ## Qué es
-**Pippole** (www.pippole.es) es una plataforma web de Recursos Humanos. Nació como «RR.HH. x Home & Cook», el portal de RR.HH. de una red de 21 tiendas (14 en España y 7 en Portugal). En la versión 0.26.0 se convirtió en Pippole, una marca propia y neutra.
-- Quien la promueve es el responsable de RR.HH. de ese cliente; habla en español.
+**Pippole** (www.pippole.es) es una plataforma web de Recursos Humanos para empresas con equipos que no trabajan delante de un ordenador (redes de tiendas, franquicias, equipos de campo). Es un producto propio del usuario (Camilo), que habla en español.
+- **Desde el 25/11/2026 no hay cliente**: el primer cliente para el que nació ya no forma parte del proyecto. En la 0.40.0 se quitó todo su contenido (red de tiendas, Process Book, fotos, guiones de venta, herramienta interna, dominio de usuarios). No volver a usar su nombre, el de su grupo ni sus marcas en ningún sitio: ni en la interfaz, ni en el código, ni en la documentación.
 - Usuarios: RR.HH. (administrador), 2 Regional Managers (`rm.es`, `rm.pt`) y Marketing (`marketing`, solo ve Mystery Shopper y People Data Centre). Los empleados de tienda **no tienen usuario**: entran con un **código de invitación** a encuestas, pruebas y formaciones.
-- Todavía **no hay datos reales de empleados**, y no deben cargarse hasta que IT y el DPO del cliente lo validen (ver «Seguridad»).
+- Todavía **no hay datos reales de empleados**, y no deben cargarse hasta que el cliente que los aporte tenga firmado el contrato de encargado y lo valide su DPO (ver «Seguridad»).
 
 ## Regla de marca (desde 0.26.0)
-- La interfaz de Pippole **no puede mencionar** a Home & Cook, a Groupe SEB ni a sus marcas (Tefal, Rowenta, Moulinex, Krups, WMF, Lagostina…).
+- La interfaz no menciona marcas de terceros. La demo usa una empresa ficticia (`CONFIG.red` en `engine.js`: 12 tiendas de ejemplo, 8 en España y 4 en Portugal).
 - Identidad «Cercana»:
   - Color principal violeta `#5B3FD9` (variable CSS `--red` por historia; el nombre se mantiene), tinta `#231A3D`, fondo `#FBF7FF`, con tema oscuro.
   - Tipografía Plus Jakarta Sans, alojada en `fonts/`. Sin Google Fonts: evita mandar la IP de quien entra a terceros.
-  - Logotipo «pippole» en minúsculas (`marca.js`) y símbolo de la **π**: dos personas que sostienen juntas una barra (`simboloPippole()` en `marcas.js`, `favicon.svg`; desde 0.27.1). `logoSEB()` y `bandaMarcas()` son nombres heredados: el primero devuelve el símbolo y el segundo nada.
+  - Logotipo «pippole» en minúsculas (`marca.js`) y símbolo de la **π**: dos personas que sostienen juntas una barra (`simboloPippole()` en `marcas.js`, `favicon.svg`, `logo.png`; desde 0.27.1).
 - El lienzo con las cuatro direcciones de marca estudiadas está en claude.ai (artefacto «Pippole · Direcciones de marca»). La elegida es la 2, «Cercana».
 
 ## Foco actual (desde 0.28.0)
@@ -26,18 +26,11 @@ Decidido el 16/11/2026: de momento solo se ven **Encuestas de clima**, **Desarro
 - **Formación de IA** (0.29.0): curso «Inteligencia artificial en el trabajo», traído de Vigente (repo privado `cmerhi87/vigenteIA-web`; el usuario lo pasó en ZIP).
   - `ia_datos.js` es **generado** desde `lib/content.mjs` de Vigente: no se edita a mano. Se regenera con un script de node que importa `lib/content.mjs` y escribe `IA_DATOS` (módulos y las 12 preguntas del examen, elegidas como `armarExamen()` de Vigente).
   - `ia.js`: reproductor (`pintarIA` vista previa, `pintarIAInvitado` con código), plantilla `form-ia` con `umbral` 0.75, certificado imprimible. Avance en `localStorage` por código.
-  - Los cursos de tienda tienen `oculto: true` en `CURSOS`; `cursosVisibles()` y `plantillaVisible()` los filtran.
+  - Los cursos de tienda (KPIs Retail, Visual Merchandising, P&L, Gestión de equipos, en `cursos.js`) tienen `oculto: true` en `CURSOS`; `cursosVisibles()` y `plantillaVisible()` los filtran. Desde 0.40.0 ya no existen el Circuito de Venta, el arcade ni el escape room de PRL.
   - El revisor jurídico de Vigente sigue como marcador («[Nombre Apellido]…»): el contenido no está revisado por un abogado.
 
-## Siguiente trabajo acordado: Pippole genérica + configuración por cliente
-Decidido el 16/11/2026, **aún sin diseñar ni empezar**. Pippole pasa a ser genérica y lo propio de Home & Cook se convierte en la **configuración de un cliente**, que es el primero. Hoy ese contenido sigue escrito directamente en el código:
-- `engine.js`: lista `CONFIG.red` con las 21 tiendas y sus RM (desde 0.37.0 `nombre` es la ciudad y `alias` el nombre de la empresa con la marca, que solo sirve para reconocerlas al importar: `impTiendaPorAlias`); pregunta eNPS `ENPS` y la del clima `x5` («recomendarías trabajar en Home & Cook»); puestos Store Manager / Assistant Store Manager y bonus (1000 € y 500 €).
-- `formacion.js`, `curso_datos.js`, `cursos.js`: Circuito de Venta con guiones («bienvenido a Home&Cook»), familias y argumentos por producto con marcas del grupo.
-- `docs_base.js`: Process Book escrito para una tienda outlet de la red.
-- `escape.js` + `img/esc-*.jpg`: formación PRL «Un turno seguro» con **fotos reales de tiendas**, donde se ven marcas en los lineales. Desde 0.37.0 las fotos no se publican.
-- `pdc_carga.js`: abrevia «HOME & COOK» a «H&C» en nombres de tienda.
-- `config.js`: `enlaces.hometime` (herramienta interna del cliente, con VPN) y `dominioUsuarios: "homeandcook.app"`. **El dominio interno de usuarios no se cambia**: invalidaría los usuarios que ya existen. No se ve en ninguna pantalla.
-- Supabase: tabla `tiendas` y su `datos` (equipo, kpis, bajas…).
+## Siguiente trabajo: Pippole multicliente
+Pippole ya es genérica (0.40.0) y no tiene cliente. Cuando llegue el primero, lo propio de cada uno será su **configuración**: red de tiendas (`CONFIG.red`), puestos y bonus (`CONFIG.bonus`), textos y datos en Supabase (tabla `tiendas` y su `datos`).
 
 Hay que proponer el diseño antes de construir, porque toca la base de datos. Algunas preguntas que el diseño tiene que responder:
 - ¿Una sola instancia con varios clientes (columna de cliente y reglas por fila) o un proyecto de Supabase por cliente?
@@ -55,7 +48,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 
 ## Cómo está hecho
 - **HTML, CSS y JavaScript sin framework ni compilación.** `index.html` lleva todos los estilos y carga los scripts en este orden:
-  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, correo_vista (carga la plantilla del correo al usarla con un `<script>` normal: `cargarPlantillaCorreo()` → `window.CORREO`), resenas, clima, clima_inv, pdc, pdc_carga, bajas, prl, curso_datos, cursos, formacion, docs_base, docs, arcade, escape, ia_datos, ia, desarrollo_cat, desarrollo_inf, desarrollo_eval, desarrollo, hoy, avisos, demo, explica, copiloto, misdatos, capacidad, capacidad_app, app.
+  `supabase-js@2` (CDN jsdelivr) → config, i18n, marca, marcas, engine, talent, pruebas, envios, importar, personas, correo_vista (carga la plantilla del correo al usarla con un `<script>` normal: `cargarPlantillaCorreo()` → `window.CORREO`), resenas, clima, clima_inv, pdc, pdc_carga, bajas, prl, cursos, formacion, ia_datos, ia, desarrollo_cat, desarrollo_inf, desarrollo_eval, desarrollo, hoy, avisos, demo, explica, copiloto, misdatos, capacidad, capacidad_app, app.
 - **`app.js`**:
   - Estado global `S`, pintado completo con `pintar()` y apartados en el array `MODULOS`.
   - Delegación de eventos: `data-action="x"` llama a `acciones.x(boton, …)`. Cada módulo aporta su objeto `ACCIONES_*`. Si una acción devuelve `false`, no se repinta.
@@ -72,12 +65,12 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - Coste: Place Details con reseñas es SKU «Enterprise + Atmosphere» (1.000 gratis al mes). Consulta automática como mucho cada 20 h por persona (`EB_HORAS_AUTO`).
   - Siguiente paso acordado: Google Business Profile API (todas las reseñas y respuestas) cuando haya acceso de quien gestiona las fichas.
 - **Avisos** (0.30.0): `avisos.js`, campana de la cabecera con lo completado (invitaciones respondidas y entregas `dr_evaluadores.entregado`). Sondeo cada minuto; «visto» en `localStorage` por usuario. Las anónimas se agrupan sin hora ni tienda.
-- **Invitados con código**: `pruebas.js` (`abrirInvitacion`, `pintarInvitado`) usa las funciones de base de datos SECURITY DEFINER `invitacion_abrir` e `invitacion_responder`. Encuestas, pruebas, formaciones y el escape room son **plantillas de preguntas** que puntúa `SC.puntuar`.
+- **Invitados con código**: `pruebas.js` (`abrirInvitacion`, `pintarInvitado`) usa las funciones de base de datos SECURITY DEFINER `invitacion_abrir` e `invitacion_responder`. Encuestas, pruebas y formaciones son **plantillas de preguntas** que puntúa `SC.puntuar`.
 - **Personas** (0.33.0): `personas.js` (apartado `personas`, estado `S.emp` (null si falta la migración 0.33, con `S.empFalta`), filtros `S.pf`, formulario `S.pe`, acciones `p*` en `ACCIONES_PERSONAS`) e `importar.js` (`abrirImportador("base"|"encuesta", {alUsar})`, estado `IMP`, overlay `#impOv` con sus propios eventos `data-imp*`, sin pasar por `pintar()`).
   - Tabla `empleados` con `empresa_id` (tabla `empresas`, función `mi_empresa()`; migración 0.33). Tipologías fijas: tiendas, oficinas, comerciales, demostradores. `tienda_id` se rellena si la ubicación coincide con una tienda (`impTiendaDe`).
   - `equipoDe(t)` (app.js) devuelve las personas activas de esa tienda desde `S.emp`; si `S.emp` es null, el equipo antiguo de `tiendas.datos.equipo`.
   - Lectores cargados al usarlos: `read-excel-file@9.3.17` (global `readXlsxFile`; no lee .xls) y `mammoth@1.13.0` (Word). No se usa SheetJS: la versión de npm (0.18.5) tiene fallos de seguridad conocidos y la corregida no está en npm.
-  - La lectura con IA está como botón desactivado: no activarla sin el visto bueno del DPO del cliente.
+  - La lectura con IA está como botón desactivado: no activarla sin el visto bueno del DPO de quien aporte los datos.
   - **Desde 0.34.0 Personas tiene pestañas** `pplantilla` (pintarPersonas), `paccesos`, `ptiendas`, `pactividad` (las tres con `pintarGestion(parte)`). `S.modulo = "gestion"` redirige a Personas → Usuarios con acceso.
   - **Selector común** (0.34.0, personas.js): `selPHtml(k, op)`, `selPElegidos(k, filtro)`, estado `S.selP[k]`, acciones `spTip/spModo/spGrupo/spPers`. Lo usan envíos de campañas (`k = "env"`, envios.js) y Desarrollo (`k = "dr-oficina|dr-retail"`, acción `data-tra="dePersonas"`). Scorecard: `scCandidatos(t)` y acción `scDePersonas`.
   - Modo "usuarios" (0.33.1): alta masiva de cuentas desde Usuarios y tiendas (acción `impUsuarios`). `impCrearUsuarios` crea cada cuenta con `crearCuenta()` (app.js), de una en una, y se para si Supabase devuelve límite de altas.
@@ -119,10 +112,10 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 - **Prueba de humo** (0.37.0): `pruebas/humo.py` (Playwright). `publicar-pages.yml` la pasa, junto con `node --check` de cada fichero, antes de publicar. En local: `HUMO_LIBS=<ruta a supabase.js> python3 pruebas/humo.py`. Falla si aparece una marca del cliente en pantalla.
 
 ## Despliegue
-- Repositorio `homeandcook/rrhh-home-and-cook` (público). La web se sirve con **GitHub Pages** desde la rama `main` en `www.pippole.es`.
+- Repositorio `homeandcook/rrhh-home-and-cook` (público; el nombre de la cuenta y del repositorio son heredados y se pueden cambiar, ajustando el CNAME de `www`). La web se sirve con **GitHub Pages** desde la rama `main` en `www.pippole.es`.
   - El archivo `CNAME` es imprescindible: no borrarlo.
   - DNS en Hostinger: cuatro registros A a GitHub y CNAME `www` → `homeandcook.github.io`.
-- Base de datos: **Supabase**, proyecto `hrybclllymcsbujancuw`, región UE (Irlanda), plan gratuito, en la organización «Groupe SEB Iberica».
+- Base de datos: **Supabase**, proyecto `hrybclllymcsbujancuw`, región UE (Irlanda), plan gratuito, en una organización del usuario (con un nombre heredado que conviene cambiar en *Organization settings*).
   - La clave publicable está en `config.js`. **Nunca** poner en el código la clave secreta ni la `service_role`.
   - **`config.js` no se sobrescribe** en las actualizaciones: tiene las claves reales y cambios del propio usuario.
 - **SQL**: `supabase/schema.sql` + `migracion_0.xx.sql`. Si una versión toca la base de datos, la migración la ejecuta el usuario a mano en el SQL Editor; el CHANGELOG lo indica con «SQL: sí».
@@ -130,7 +123,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
   - `publicar-pages.yml`: publica.
   - `mantener-supabase.yml`: cada 3 días, para que el plan gratuito no pause el proyecto. Da por buena la respuesta 42501.
   - `desplegar-funciones.yml`: despliega `enviar-invitacion`, `resenas` y `crear-cuenta` en cada cambio de `supabase/functions/` (o a mano con «Run workflow»). Funciona desde el 16/11/2026, con `--yes` porque la CLI pide confirmación. El token de GitHub (`SUPABASE_ACCESS_TOKEN`) está limitado al proyecto (Edge Functions lectura-escritura y Project Settings lectura) y **caduca el 14/02/2027**: entonces hay que generar otro igual y sustituirlo.
-- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.39.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
+- **Versiones**: `APP_VERSION` en `app.js` y una entrada en `CHANGELOG.md`, siempre las dos. Versión actual: **0.40.0**. Al cambiar de versión, cambia también `?v=` en los `<script>` de `index.html`..
 
 ## Cómo comprobar los cambios
 - La web no tiene compilación: se prueba sirviendo la carpeta (`python3 -m http.server`) y abriendo `?demo`.
@@ -140,7 +133,7 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 
 ## Seguridad y datos (no negociable)
 - Ninguna clave secreta en el código ni en el chat: ni la de Resend ni el token de Supabase.
-- Nada de datos reales de empleados hasta que IT y el DPO lo validen. Para ese paso hace falta:
+- Nada de datos reales de empleados hasta que el cliente y su DPO lo validen. Para ese paso hace falta:
   - Cuentas de empresa (organización de GitHub y de Supabase) y traspaso del repositorio y del proyecto.
   - Plan de pago con copias de seguridad.
   - SSO corporativo.
@@ -153,6 +146,6 @@ Hay que proponer el diseño antes de construir, porque toca la base de datos. Al
 - PRL: la formación del juego **complementa**, no sustituye, la formación específica del puesto que exige la LPRL. El contenido debe revisarlo el servicio de prevención.
 
 ## Correcciones del usuario que hay que respetar
-- En las tiendas **no hay demostraciones de cocina**. Por eso el ítem q13 del Scorecard es «Atención y asesoramiento al cliente» (0.37.0).
+- El ítem q13 del Scorecard es «Atención y asesoramiento al cliente» (0.37.0).
 - Las formaciones **no se repiten**. En la 0.23.0 se añadió una caducidad anual (`caducada()` en `formacion.js`); **pendiente de confirmar si se quita**.
 - El correo y la interfaz deben ser sobrios y profesionales, sin adornos.

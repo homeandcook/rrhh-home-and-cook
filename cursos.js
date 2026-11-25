@@ -4,7 +4,7 @@
    haces, frases que ayudan y en qué te fijas. Al final, un test corto de
    cinco preguntas que deja registro de quién lo ha superado.
 
-   El contenido es una base de partida escrita para la red Home & Cook. Las
+   El contenido es una base de partida para una red de tiendas. Las
    cifras de ejemplo son orientativas: ajústalas a los objetivos reales y a
    la nomenclatura que use Operaciones.
    ============================================================================ */

@@ -26,7 +26,7 @@ async function abrirInvitacion(codigo) {
 }
 function pintarInvitado() {
   const d = INV.datos, pl = d ? SC.plantilla(d.plantilla) : null;
-  let h = `<div class="guest"><div class="esquina"><span class="chipseb">${logoSEB(34)}</span></div><div class="guest-card">${selectorIdioma()}${logo(64)}`;
+  let h = `<div class="guest"><div class="esquina"><span class="chipsimbolo">${simboloPippole(34)}</span></div><div class="guest-card">${selectorIdioma()}${logo(64)}`;
   if (!d) {
     h += `<h1>${t("accesoCodigo")}</h1><p class="sub">${t("codigoSub")}</p>
       <form id="codeForm"><label>${t("codigo")}<input id="codeIn" value="${esc(INV.codigo)}" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" required></label>
@@ -41,7 +41,7 @@ function pintarInvitado() {
     /* En una formación la persona tiene derecho a ver su nota y a saber qué
        falló: de eso va la formación. En una encuesta no hay nota que dar. */
     const n = SC.puntuar(pl, INV.respuestas), apto = n.pct >= (pl.umbral || 0.6);
-    $("app").innerHTML = `<div class="guest wide"><div class="esquina"><span class="chipseb">${logoSEB(32)}</span></div>
+    $("app").innerHTML = `<div class="guest wide"><div class="esquina"><span class="chipsimbolo">${simboloPippole(32)}</span></div>
       <div class="guest-card wide">${selectorIdioma()}<div class="guest-h">${logo(56)}<div>
         <h1>${esc(SC.txt(pl.nombre))}</h1><p class="sub">${esc(d.destinatario || "")}${d.tienda ? " · " + esc(d.tienda) : ""}</p></div></div>
       <div class="nota-inv ${apto ? "ok" : "ko"}"><b>${n.obt} de ${n.puntuables}</b>
@@ -53,7 +53,7 @@ function pintarInvitado() {
           ${q.por ? `<small>${esc(SC.txt(q.por))}</small>` : ""}</li>`;
       }).join("")}</ul>
       <p class="hint" style="text-align:center">${t("cerrarVentana")}</p>
-      </div>${bandaMarcas()}</div>`;
+      </div></div>`;
     return;
   } else if (d.estado === "respondida" || INV.enviado) {
     h += `<h1>${t("gracias")}</h1><p class="sub">${pl && pl.anonima ? t("graciasAnon") : t("graciasNom")}</p>
@@ -62,13 +62,11 @@ function pintarInvitado() {
     h += `<h1>${t("campanaCerrada")}</h1><p class="sub">${t("campanaCerradaTxt")}</p>`;
   } else if (pl.ia && typeof pintarIAInvitado === "function") {
     pintarIAInvitado(); return;
-  } else if (pl.juego && typeof pintarEscapeInvitado === "function") {
-    pintarEscapeInvitado(); return;
   } else if (pl.curso && INV.fase !== "test" && typeof pasoInvitado === "function") {
     $("app").innerHTML = pasoInvitado(pl); return;
   } else {
     const r = SC.puntuar(pl, INV.respuestas);
-    h = `<div class="guest wide"><div class="esquina"><span class="chipseb">${logoSEB(32)}</span></div><div class="guest-card wide">${selectorIdioma()}
+    h = `<div class="guest wide"><div class="esquina"><span class="chipsimbolo">${simboloPippole(32)}</span></div><div class="guest-card wide">${selectorIdioma()}
       <div class="guest-h">${logo(56)}<div><h1>${esc(d.titulo)}</h1>
         <p class="sub">${esc(d.tienda || "")}${d.destinatario ? " · " + esc(d.destinatario) : ""}</p></div></div>
       <p class="intro">${esc(SC.txt(pl.intro))}</p><p class="aviso">${esc(SC.txt(pl.aviso))}</p>
@@ -77,10 +75,10 @@ function pintarInvitado() {
         <span class="muted num">${r.contestadas} ${t("respondidas")} ${r.puntuables}</span>
         <button class="btn primary" data-action="invEnviar" ${r.completa ? "" : "disabled"}>${t("enviar")}</button></div>
       ${r.completa ? "" : `<p class="hint">${t("faltanPreguntas")}</p>`}
-      </div>${bandaMarcas()}</div>`;
+      </div></div>`;
     $("app").innerHTML = h; return;
   }
-  $("app").innerHTML = h + `</div>${bandaMarcas()}</div>`;
+  $("app").innerHTML = h + `</div></div>`;
   const f = $("codeForm");
   if (f) f.addEventListener("submit", ev => { ev.preventDefault(); abrirInvitacion($("codeIn").value); });
 }

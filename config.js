@@ -10,11 +10,8 @@ window.APP_CONFIG = {
   supabaseAnonKey: "sb_publishable_f3punkQZ6WiowP4xIrc8VQ_8BoVB-Sp",
   // Los usuarios entran con un nombre (p. ej. "rm.es"). Internamente se
   // convierte en rm.es@<dominio>. No se envía ningún correo.
-  dominioUsuarios: "homeandcook.app",
+  dominioUsuarios: "usuarios.pippole.es",
     correoDirecto: true,
-  // Herramientas internas que se abren en una pestaña nueva (solo con la VPN conectada).
-  // Deja la url vacía para que no aparezca la tarjeta.
-  enlaces: {
-    hometime: "http://sw86t882/timetableplanner/login"
-  }
+  // Herramientas externas que se abren en una pestaña nueva (de momento, ninguna).
+  enlaces: {}
 };

@@ -99,7 +99,7 @@ function pintarPDCCarga() {
     <section class="card"><h2>Pegar desde Excel</h2>
       <p class="hint">Copia el rango en Excel (con la fila de cabecera) y pégalo aquí. Una fila por tienda y mes. Columnas reconocidas: Código o Tienda, Mes, ${PDC_CAMPOS.map(c => c.t.replace(/ \(.*\)/, "")).join(", ")}; y, si las tienes, «Tráfico 10-12»… y «Horas plan 10-12»… por franja.</p>
       <textarea id="pdcPegar" rows="8" placeholder="Código	Mes	Ventas	Tickets	Unidades	Visitantes	Horas contratadas	Horas trabajadas	Horas apertura	Empleados
-ES014	2026-03	96.420	2.011	2.650	18.900	1.280	1.195	300	7">${esc(f.pegado || "")}</textarea>
+ES001	2026-03	96.420	2.011	2.650	18.900	1.280	1.195	300	7">${esc(f.pegado || "")}</textarea>
       <div class="actions"><label class="btn" style="margin:0">Subir CSV<input type="file" id="pdcFichero" accept=".csv,.txt,.tsv" hidden></label><button class="btn primary" data-action="pdcPrevisualizar">Previsualizar</button></div>
       ${prev ? (prev.error ? `<p class="bad">${esc(prev.error)}</p>` : `
         <div class="card-h" style="margin-top:14px"><h3>${prev.filas.filter(x => x.ok).length} filas listas de ${prev.filas.length}</h3><span class="muted">${prev.columnas.length} columnas de datos${prev.franjas.length ? " · franjas: " + prev.franjas.join(", ") : ""}</span></div>
@@ -176,7 +176,7 @@ function svgBarras(filas, opt) {
     <span class="barra-v num">${esc(fmt(f.v))}</span></div>`).join("")}</div>`;
 }
 const compacto = x => x >= 1e6 ? SC.fmt(x / 1e6, 1) + " M€" : x >= 1000 ? SC.fmt(Math.round(x / 1000), 0) + " k€" : SC.eur(x, 0);
-const nombreCorto = n => String(n || "").replace(/^HOME & COOK /i, "H&C ");
+const nombreCorto = n => String(n || "");
 function svgColumnas(etiquetas, valores, opt) {
   // columnas verticales a escala; opt.ref dibuja una línea de referencia
   if (!valores.some(v => v)) return `<p class="empty">${esc(opt.vacio || "Sin datos para dibujar.")}</p>`;

@@ -1,5 +1,5 @@
 "use strict";
-const APP_VERSION = "0.39.0";
+const APP_VERSION = "0.40.0";
 /* Ítems del cualitativo que el evaluador ha desplegado a mano. Vive fuera
    del estado porque es preferencia de pantalla, no dato que guardar. */
 const ITEMS_ABIERTOS = new Set();
@@ -14,7 +14,7 @@ const S = {
 };
 const $ = id => document.getElementById(id);
 const configurado = () => K.supabaseUrl && !/TU-PROYECTO/.test(K.supabaseUrl) && K.supabaseAnonKey && !/TU-CLAVE/.test(K.supabaseAnonKey);
-const emailDe = u => (u.includes("@") ? u : u + "@" + (K.dominioUsuarios || "homeandcook.app")).trim().toLowerCase();
+const emailDe = u => (u.includes("@") ? u : u + "@" + (K.dominioUsuarios || "usuarios.pippole.es")).trim().toLowerCase();
 /* Dentro de claude.ai la plataforma corre en un artifact: ahí funciona el
    role play con IA y no se puede cambiar la dirección para entrar en modo
    demostración, así que el acceso de ejemplo se ofrece en la pantalla. */
@@ -28,7 +28,7 @@ const MODULOS_MARKETING = ["pdc"];
 /* Pippole se centra de momento en tres bloques: Encuestas de clima, Formación
    de IA y Desarrollo. El resto de apartados sigue en el código, oculto: para
    recuperar uno basta con quitarlo de esta lista. */
-const MODULOS_OCULTOS = ["prl", "pdc", "docs", "hometime", "employer"]; // employer: aparcado el 19/11/2026 hasta tener clave de Google y la migración 0.36
+const MODULOS_OCULTOS = ["prl", "pdc", "employer"]; // employer: aparcado el 19/11/2026 hasta tener clave de Google y la migración 0.36
 const MODULOS_SOLO_ADMIN = ["employer", "capacidad"];
 const puedeVer = id => !MODULOS_OCULTOS.includes(id) && (!esMarketing() || MODULOS_MARKETING.includes(id)) && (!MODULOS_SOLO_ADMIN.includes(id) || esAdmin());
 const nombreRol = () => (esAdmin() ? t("admin") : esMarketing() ? t("marketing") : t("rm"));
@@ -172,7 +172,7 @@ function panelMarca() {
       <div class="marcacaja">${marcaSVG("grande", 34)}</div>
       <p class="lm-lema">${t("lemaPanel")}</p>
     </div>
-    ${bandaMarcas()}
+    
   </div>`;
 }
 function pantallaLogin(msg) {
@@ -263,7 +263,7 @@ async function recargar() {
   S.todas = (t.data || []).map(desdeFila);
   aplicarVista();
   S.perfiles = p.data || [S.me];
-  await Promise.all([recargarPruebas(), cargarDocumentos(), cargarEmpleados(), typeof cargarAvisosDr === "function" ? cargarAvisosDr() : null]);
+  await Promise.all([recargarPruebas(), cargarEmpleados(), typeof cargarAvisosDr === "function" ? cargarAvisosDr() : null]);
   // Reseñas de Google: sin esperar; como mucho una consulta automática al día
   if (esAdmin() && puedeVer("employer") && typeof cargarSitiosResenas === "function") cargarSitiosResenas().then(() => { if (S.modulo === "inicio") pintar(); ebActualizar(true); });
   if (realEsAdmin()) { const a = await sb.from("actividad").select("*").order("fecha", { ascending: false }).limit(150); S.actividad = a.data || []; }
@@ -377,11 +377,7 @@ const MODULOS = [
     d: "Las reseñas de Google de cada tienda y de la oficina en un solo sitio: nota, total, las últimas reseñas y aviso de las nuevas." },
   { id: "personas", t: "Personas", grupo: "activo",
     d: "La plantilla, los usuarios con acceso y las tiendas, en un solo sitio. De aquí salen los destinatarios de encuestas, Desarrollo y formaciones.",
-    tabs: [["pplantilla", "Plantilla"], ["paccesos", "Usuarios con acceso", true], ["ptiendas", "Tiendas", true], ["pactividad", "Actividad", true]] },
-  { id: "docs", t: "Process Book y Políticas", grupo: "activo",
-    d: "Los procesos de tienda paso a paso y las normas que el equipo consulta a diario, en un solo sitio.",
-    tabs: [["process", "Process Book"], ["politica", "Políticas"]] },
-  { id: "hometime", t: "HomeTime", grupo: "externo", enlace: "hometime", d: "" }
+    tabs: [["pplantilla", "Plantilla"], ["paccesos", "Usuarios con acceso", true], ["ptiendas", "Tiendas", true], ["pactividad", "Actividad", true]] }
 ];
 /* Qué apartado y qué pestaña corresponden a cada cuestionario con código */
 const TAB_TXT = { pplantilla: "pplantilla", paccesos: "paccesos", ptiendas: "ptiendas", pactividad: "pactividad", clnueva: "clnueva", clcurso: "clcurso", clanteriores: "clanteriores", clresultados: "clresultados", clmodelos: "clmodelos", capnueva: "capnueva", capcurso: "capcurso", capcatalogo: "capcatalogo", envios: "envios", seguimiento: "seguimiento", eval: "scorecard", consolidado: "consolidado", talent: "talent", mapa: "mapa",
@@ -411,7 +407,7 @@ function pintar() {
   const m = modActual();
   const tabs = m && m.tabs ? m.tabs.filter(x => !x[2] || esAdmin()) : [];
   $("app").innerHTML = `<header class="top">
-      <button class="brand" data-action="inicio" title="${t("inicio")}">${logoSEB(36)}${marcaSVG("linea", 17)}</button>
+      <button class="brand" data-action="inicio" title="${t("inicio")}">${simboloPippole(36)}${marcaSVG("linea", 17)}</button>
       ${S.modulo !== "inicio" ? `<button class="atras" data-action="atras">← ${esc(etiquetaAtras())}</button>` : ""}
       ${m && !S.indice && etiquetaAtras() !== modTxt(m.id, 0) ? `<span class="modname">${esc(modTxt(m.id, 0))}</span>` : ""}
       ${tabs.length > 1 && !S.indice ? `<nav class="mainnav">${tabs.map(([id, t]) => `<button class="${tabActual() === id ? "on" : ""}" data-action="tab" data-v="${id}">${t}</button>`).join("")}</nav>` : ""}
@@ -447,7 +443,6 @@ function pintar() {
     return pintarPrl();
   }
   if (S.modulo === "formacion") return tab === "psico" ? pintarPruebas("psico") : tab === "envios" ? pintarPruebas("formacion") : tab === "seguimiento" ? pintarSegForm() : pintarFormaciones();
-  if (S.modulo === "docs") return pintarDocs(tab);
   if (S.modulo === "pdc") return pintarPDC();
   pintarInicio();
 }
@@ -494,10 +489,8 @@ function resumenTab(id) {
     if (id === "bajas") { const a = SC.absentismo(S.tiendas, mesesDisponibles()); return a.tasa == null ? (a.procesos ? `${a.dias} días perdidos` : "Sin bajas registradas") : `${SC.fmt(a.tasa, 1)} % de absentismo`; }
     if (id === "prevencion") { const R = S.tiendas.map(resumenPrl), per = R.reduce((a, x) => a + x.personas, 0), ok = R.reduce((a, x) => a + x.alDia, 0); return per ? `${SC.pct(ok / per, 0)} con la formación al día` : "Sin personas dadas de alta"; }
     if (id === "cursos") { const n = typeof cursosCompletados === "function" ? cursosCompletados() : 0; return `${cursosVisibles().length} ${cursosVisibles().length === 1 ? "formación" : "formaciones"} · ${n} ${n === 1 ? "completada" : "completadas"}`; }
-    if (id === "process") return `${libro("process").items.length} procesos`;
     if (id.startsWith("cl") && typeof clResumenTab === "function") return clResumenTab(id);
     if (/^cap(nueva|curso|catalogo)$/.test(id) && typeof capResumenTab === "function") return capResumenTab(id);
-    if (id === "politica") return `${libro("politica").items.length} fichas`;
   } catch (e) {}
   return "";
 }
@@ -514,7 +507,7 @@ function pintarIndice(m, tabs) {
   $("vista").innerHTML = `<div class="home idx">
     <div class="idx-h"><h1>${esc(modTxt(m.id, 0))}</h1><p>${esc(modTxt(m.id, 1))}</p></div>
     <div class="cards">${tabs.map(tarjeta).join("")}</div>
-    ${bandaMarcas()}</div>`;
+    </div>`;
 }
 function menuVerComo() {
   if (!realEsAdmin()) return "";
@@ -618,7 +611,6 @@ function pintarInicio() {
       const n = empActivos().length, sin = empActivos().filter(e => !e.correo).length;
       return n ? `${n} ${n === 1 ? "persona activa" : "personas activas"}${sin ? ` · ${sin} sin correo` : ""}` : "Nadie dado de alta todavía";
     }
-    if (m.id === "docs") return `${libro("process").items.length} procesos · ${libro("politica").items.length} fichas de política`;
     if (m.id === "prl") {
       const a = SC.absentismo(S.tiendas, mesesDisponibles());
       const R = S.tiendas.map(resumenPrl), per = R.reduce((s2, x) => s2 + x.personas, 0), ok = R.reduce((s2, x) => s2 + x.alDia, 0);
@@ -658,7 +650,7 @@ function pintarInicio() {
     ${bloqueMisTiendas()}
     <h2 class="grupo">${t("enMarcha")}</h2><div class="cards">${enMarcha.map(tarjeta).join("")}</div>
     ${pendientes.length ? `<h2 class="grupo">${t("enPreparacion")}</h2><div class="cards">${pendientes.map(tarjeta).join("")}</div>` : ""}
-    ${bandaMarcas()}</div>`;
+    </div>`;
 }
 /* =================== Evaluaciones =================== */
 /* Store Manager y Assistant de la tienda en Personas (0.34.0) */
@@ -1119,8 +1111,6 @@ function scopeObj(scope) {
 }
 document.addEventListener("input", e => {
   const el = e.target;
-  if (el.id === "buscaProd") { S.busca = el.value; S.prod = null; const foco = el.selectionStart; pintar();
-    const n = $("buscaProd"); if (n) { n.focus(); n.setSelectionRange(foco, foco); } return; }
   if (!el.dataset.scope) return;
   const o = scopeObj(el.dataset.scope); if (!o) return;
   setPath(o, el.dataset.path, el.value);

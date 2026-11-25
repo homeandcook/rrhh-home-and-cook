@@ -84,7 +84,7 @@ Supabase → **Project Settings → Edge Functions → Secrets** (o
 | Nombre | Valor |
 |---|---|
 | `RESEND_API_KEY` | la clave del paso 1 |
-| `CORREO_DE` | `RR.HH. Home & Cook <rrhh@vuestrodominio.com>` |
+| `CORREO_DE` | `Pippole <no-responder@pippole.es>` |
 | `CORREO_RESPONDER` | tu correo, para que las respuestas te lleguen (opcional) |
 | `URL_PLATAFORMA` | `https://www.pippole.es/` |
 

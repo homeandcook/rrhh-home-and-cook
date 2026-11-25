@@ -78,7 +78,6 @@ function buscarGlobal(q) {
   if (typeof CURSOS !== "undefined") cursosVisibles().forEach(c => { if (norm(c.t).includes(nq)) out.push({ tipo: "Formación", t: c.t, m: "formacion", tab: "cursos", curso: c.id }); });
   S.tiendas.forEach(t => { if (norm(t.nombre).includes(nq) || norm(t.codigo).includes(nq)) out.push({ tipo: "Tienda", t: t.nombre, sub: t.codigo, m: esMarketing() ? "pdc" : "evaluacion", tab: "eval", tienda: t.id }); });
   if (!esMarketing()) S.tiendas.forEach(t => t.personas.forEach(p => { if (norm(p.nombre).includes(nq)) out.push({ tipo: "Persona", t: p.nombre, sub: `${(C.bonus[p.puesto] || {}).nombre || p.puesto} · ${t.nombre}`, m: "evaluacion", tab: "eval", tienda: t.id, p: p.id }); }));
-  DOCS_TIPOS.forEach(tipo => { libro(tipo).items.forEach(x => { if (norm(x.t).includes(nq)) out.push({ tipo: libro(tipo).titulo, t: x.t, m: "docs", tab: tipo, doc: x.id }); }); });
   return out.slice(0, 9);
 }
 function pintarBusqueda() {
@@ -92,7 +91,6 @@ function pintarBusqueda() {
 function irA(d) {
   S.modulo = d.m; S.indice = false; S.campana = d.campana || null;
   S.tab = d.tab || tabPorDefecto(d.m);
-  if (S.docs) { S.docs.sel = d.doc || null; S.docs.edit = null; S.docs.busca = ""; }
   if (d.m === "evaluacion") {
     if (S.tab === "eval" || S.tab === "talent")
       S.ui = { t: d.tienda || d.t || null, p: d.p || null, fase: S.tab === "talent" ? "talent" : (d.fase || (d.p ? "fy" : "obj")) };

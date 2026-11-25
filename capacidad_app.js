@@ -35,7 +35,7 @@ function capLeer() { try { return JSON.parse(localStorage.getItem(capClave()) ||
 function capGuardar(x) { try { localStorage.setItem(capClave(), JSON.stringify(x)); } catch (e) {} }
 function pintarCapInvitado() {
   const d = INV.datos, cfg = d.config || {}, juegos = (cfg.juegos || []).filter(j => CAPJ[j]);
-  const caja = cuerpo => { $("app").innerHTML = `<div class="guest cap-guest"><div class="esquina"><span class="chipseb">${logoSEB(34)}</span></div><div class="cap-card">${cuerpo}</div></div>`; };
+  const caja = cuerpo => { $("app").innerHTML = `<div class="guest cap-guest"><div class="esquina"><span class="chipsimbolo">${simboloPippole(34)}</span></div><div class="cap-card">${cuerpo}</div></div>`; };
   if (d.estado === "respondida") return caja(`<h1>Pruebas completadas</h1><p class="sub">Ya las hiciste y se enviaron a RR.HH. Gracias por tu tiempo.</p>`);
   if (d.campana_estado === "cerrada") return caja(`<h1>Estas pruebas ya están cerradas</h1><p class="sub">Si crees que es un error, escribe a quien te envió el código.</p>`);
   if (!juegos.length) return caja(`<h1>No hay pruebas en este código</h1><p class="sub">Escribe a quien te lo envió.</p>`);

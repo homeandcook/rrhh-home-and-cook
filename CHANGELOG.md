@@ -4,24 +4,24 @@ Formato: versión · fecha · qué cambió · si hace falta tocar la base de dat
 
 ## 0.9.0 · 24/09/2026 · **SQL: no**
 Estado actual del prototipo.
-- Portada RRHH x Home&Cook con logotipo propio, Groupe SEB y cinta de marcas.
+- Portada con logotipo propio y logotipos del primer cliente.
 - Scorecard Retail: objetivos, seguimiento de 6 meses, cierre anual, bonus e informe imprimible.
 - Talent Matrix: ficha por persona y mapa 9-Box para RR.HH.
 - People Data Centre: datos clave con filtros, KPIs de negocio, de RR.HH. y ajuste al tráfico.
 - Pruebas con código de invitado: Psicotécnicos, Mystery Shopper, Clima (por olas y dimensiones), Onboarding y Offboarding.
 - Formaciones: Circuito de Venta en 7 paradas, chuleta imprimible, arcade "Un turno en la tienda" y role play con IA (11 escenarios).
 - Idiomas: español, inglés y francés en portada, acceso y pantallas de invitado.
-- Enlace a HomeTime (requiere VPN).
+- Enlace a una herramienta interna del cliente (requiere VPN).
 
 ## 0.9.1 · 24/09/2026 · **SQL: no**
-- El dominio interno de los usuarios pasa a ser `homeandcook.app`. Afecta a `config.js`, al correo del administrador en Supabase y al README.
+- Se fija el dominio interno de los usuarios. Afecta a `config.js`, al correo del administrador en Supabase y al README.
 
 ## 0.10.0 · 26/09/2026 · **SQL: no**
 Rediseño de la pantalla de acceso, la primera que ve todo el mundo.
 
 Aspecto:
-- A dos columnas en ordenador: panel de marca a la izquierda (logo de Home & Cook grande, logotipo RRHH x Home&Cook, una sola frase y la cinta de marcas dentro) y formulario a la derecha. En móvil y tablet se apila: primero el panel, debajo el formulario.
-- El logo de Groupe SEB pasa al panel, acompañado de «Una plataforma de Groupe SEB Ibérica».
+- A dos columnas en ordenador: panel de marca a la izquierda (logotipo, una sola frase y la cinta de marcas dentro) y formulario a la derecha. En móvil y tablet se apila: primero el panel, debajo el formulario.
+- El logotipo del grupo del cliente pasa al panel.
 - De tres subtítulos a uno. Campos más altos y fondo con dos tintes en diagonal.
 
 Funcionamiento:
@@ -36,8 +36,8 @@ Funcionamiento:
 - Arreglado: al entrar por `?codigo=` sin código, ya no aparece el aviso de «código caducado» antes de escribir nada.
 
 ## 0.10.1 · 26/09/2026 · **SQL: no**
-- **KRUPS**: el logo se veía lavado al lado de los demás porque su opacidad máxima era 199 de 255. Reconstruido desde el fichero original de marca, a opacidad completa y con su gris oscuro (60, 57, 53), el mismo del propio fichero. Sigue pendiente la versión oficial del portal de marca.
-- **WMF**: su logo es cuadrado y de dos líneas, así que a 30 px quedaba pequeño al lado de los logotipos horizontales. Sube a 42 px, que es donde la altura de sus letras iguala a la de KRUPS y Rowenta.
+- Un logotipo de la cinta se veía lavado al lado de los demás: reconstruido a opacidad completa.
+- Un logotipo cuadrado y de dos líneas quedaba pequeño al lado de los horizontales: sube a 42 px.
 - `config.js` sale del paquete y pasa a llamarse `config.EJEMPLO.js`, para que al subir una actualización no pueda machacar las claves del proyecto.
 
 ## 0.11.0 · 27/09/2026 · **SQL: SÍ** — ejecuta `supabase/migracion_0.11.sql`
@@ -90,7 +90,7 @@ Qué se ha añadido:
 
 Todos los apartados de la portada quedan en marcha. Desaparece el bloque «En preparación».
 
-**Formaciones: cinco cursos completos.** Al Circuito de Venta se suman KPIs Retail, Visual Merchandising, P&L y Gestión de equipos, cada uno con cinco paradas en el mismo formato (idea, qué haces, frases que ayudan, cuidado con) y un test final de cinco preguntas corregido en pantalla, con la explicación de cada respuesta. El progreso y el resultado del test quedan registrados por persona. La chuleta y la impresión funcionan para cualquier curso. El contenido está escrito para la red Home & Cook y conviene que Operaciones lo revise.
+**Formaciones: cinco cursos completos.** Al Circuito de Venta se suman KPIs Retail, Visual Merchandising, P&L y Gestión de equipos, cada uno con cinco paradas en el mismo formato (idea, qué haces, frases que ayudan, cuidado con) y un test final de cinco preguntas corregido en pantalla, con la explicación de cada respuesta. El progreso y el resultado del test quedan registrados por persona. La chuleta y la impresión funcionan para cualquier curso. El contenido es una base para una red de tiendas y conviene que Operaciones lo revise.
 
 **Process Book.** Doce procesos de tienda (apertura, cierre, caja, devoluciones, recepción, inventario, mermas, cambio de campaña, incidencias, demo, acogida y horarios) como listas paso a paso que se marcan desde el móvil mientras se hacen; las marcas se reinician cada día. Buscador, impresión por ficha y edición desde la propia plataforma por RR.HH.: lo que se guarda lo ve toda la red al momento y siempre se puede volver a la versión base. Nueva tabla `documentos`.
 
@@ -123,7 +123,7 @@ El menú pasa de **catorce tarjetas a seis**. No se ha quitado ninguna función:
 | **PRL** | Bajas y absentismo · Prevención · Clima |
 | **Formaciones** | Formaciones · Pruebas situacionales |
 | **Process Book y Políticas** | Process Book · Políticas |
-| **HomeTime** | enlace externo |
+| **Herramienta interna del cliente** | enlace externo |
 
 Más, en detalle:
 
@@ -136,22 +136,22 @@ Más, en detalle:
 
 ## 0.15.1 · 06/10/2026 · **SQL: no**
 Portada: jerarquía visual.
-- Cabecera en una sola fila: logotipo Home & Cook y título a la izquierda, sello Groupe SEB a la derecha. Antes los dos logotipos quedaban apilados y descolocados.
+- Cabecera en una sola fila: logotipo y título a la izquierda, sello del grupo a la derecha. Antes los dos logotipos quedaban apilados y descolocados.
 - "Para hoy" pasa a una fila por aviso: el texto ya no se parte en tres líneas y el apartado de destino queda alineado a la derecha. Contador de lo urgente junto al título y filo rojo cuando hay algo que no es informativo.
 - El pie de cada tarjeta deja de ser rojo. El rojo pasa a significar algo: cada tarjeta lleva un contador de lo que pide atención en ese apartado, enlazado con "Para hoy".
 - "Usuarios y tiendas" deja de ser una tarjeta huérfana en su propia fila y pasa a una barra de gestión bajo la rejilla.
-- HomeTime deja el borde discontinuo (parecía sin terminar) y se distingue por fondo.
+- El enlace externo deja el borde discontinuo (parecía sin terminar) y se distingue por fondo.
 
 ## 0.16.0 · 06/10/2026 · **SQL: no**
-Navegación de dos niveles y sello de Groupe SEB en la cabecera.
-- El sello de Groupe SEB deja la portada y pasa a la cabecera, junto a RRHH ✕ Home&Cook, a 38 px.
+Navegación de dos niveles y sello del grupo en la cabecera.
+- El sello del grupo deja la portada y pasa a la cabecera, a 38 px.
 - Al entrar en un apartado con varias pantallas se ve primero su índice, con las mismas tarjetas de la portada: título, descripción y un dato real de cada pantalla. Las pestañas de arriba siguen estando para saltar directo.
 - Botón "Atrás" en la cabecera, que sube un nivel cada vez: pantalla → índice del apartado → portada. Cuando el botón ya dice el nombre del apartado, deja de repetirse al lado.
-- People Data Centre y PRL intercambian su sitio en la portada. El título de People Data Centre pasa a dorado, igual que HomeTime va en azul.
+- People Data Centre y PRL intercambian su sitio en la portada. El título de People Data Centre pasa a dorado, igual que el enlace externo va en azul.
 - Descripciones nuevas en los tres idiomas para Consolidado, Mapa 9-Box, Prevención, Offboarding y Formaciones.
 
 ## 0.16.1 · 06/10/2026 · **SQL: no**
-- En la cabecera, arriba a la izquierda, queda solo el logotipo de Groupe SEB, en el sitio que ocupaba el de Home & Cook. El de Home & Cook sigue presidiendo la portada.
+- En la cabecera, arriba a la izquierda, queda solo el logotipo del grupo. El del cliente sigue presidiendo la portada.
 
 ## 0.17.0 · 06/10/2026 · **SQL: no**
 Borrar y vaciar en las encuestas y pruebas (Clima, Pruebas situacionales, Onboarding y Offboarding).
@@ -214,7 +214,7 @@ Seguimiento de formaciones: pestaña nueva en Formaciones.
 
 ## 0.22.1 · 07/10/2026 · **SQL: no**, pero hay que volver a desplegar la función
 - **Botón Actualizar** en las campañas. La pantalla se pintaba con lo que había al entrar, así que quien respondía mientras tú mirabas no aparecía hasta recargar el navegador. Ahora se piden las respuestas nuevas y te dice cuántas han llegado.
-- **Correo rediseñado**: maquetado con tablas, que es lo único que Outlook renderiza igual que el resto; filete rojo SEB arriba, la marca en tipografía, el código en su propia caja, botón sólido, firma con el apartado y pie con las marcas del grupo. Sin imágenes remotas, por dos motivos: la mayoría de los clientes las bloquean y, además, la plataforma está en privado, así que un logotipo alojado ahí no cargaría.
+- **Correo rediseñado**: maquetado con tablas, que es lo único que Outlook renderiza igual que el resto; filete de color arriba, la marca en tipografía, el código en su propia caja, botón sólido, firma con el apartado. Sin imágenes remotas, por dos motivos: la mayoría de los clientes las bloquean y, además, la plataforma está en privado, así que un logotipo alojado ahí no cargaría.
 - Comprobado a 760 y a 400 píxeles: sin desbordes. La dirección larga ya parte de línea, que era lo que descuadraba el móvil.
 
 ## 0.23.0 · 08/10/2026 · **SQL: no**
@@ -237,7 +237,7 @@ Formación nueva: **Un turno seguro**, un escape room de PRL.
 Un turno seguro, rehecho: ahora hay que decidir, usa fotos de tiendas reales y se puede enviar con código.
 - **Hay que decidir en cada objeto.** Antes de ver la explicación, la persona elige «Es un riesgo» o «Está bien», y el objeto solo muestra un nombre neutro («Las cajas de la esquina») para no regalar la respuesta. La primera decisión es la que cuenta y los fallos restan. Antes se ganaba pulsando todos los círculos.
 - **La nota sale de todo el recorrido**: cada objeto es un punto, más las tres preguntas de la taquilla. Al terminar, la lista de lo que se escapó.
-- **Fotos de tiendas Home & Cook** en las tres zonas de sala: café, cuidado personal y clima, y mesa de campaña. Comprimidas a unos 200 KB cada una. En la del Día sin IVA están difuminadas las dos personas que se podían reconocer; la foto de la entrada no se usa porque se ven caras.
+- **Fotos de tienda** en las tres zonas de sala, comprimidas y con las personas difuminadas. (Retiradas en la 0.40.)
 - La trastienda y el almacén siguen dibujados hasta que haya fotos. Sale la zona de caja dibujada.
 - Un hilo mínimo: el Store Manager está de vacaciones y antes de abrir das una vuelta.
 - **Se envía con código** desde Enviar a tienda, como cualquier formación: por dentro es una plantilla de preguntas, así que puntúa, vuelve al seguimiento y se ve en Ver respuestas sin nada aparte.
@@ -245,7 +245,7 @@ Un turno seguro, rehecho: ahora hay que decidir, usa fotos de tiendas reales y s
 
 ## 0.26.0 · 13/11/2026 · **SQL: no**
 La plataforma pasa a llamarse **Pippole** y se sirve en www.pippole.es. Identidad «Cercana».
-- **Sin referencias a Home & Cook ni a Groupe SEB en la interfaz**: fuera el logo de Groupe SEB, el de Home & Cook, la cinta de marcas, «Una plataforma de Groupe SEB Ibérica» y «RRHH x Home&Cook» en cabecera, acceso, pantallas de invitado, informes imprimibles, icono de la app y correo de invitación.
+- **Sin referencias al primer cliente ni a su grupo en la interfaz**: fuera sus logotipos, la cinta de marcas y sus nombres en cabecera, acceso, pantallas de invitado e informes.
 - **Logotipo nuevo**: «pippole» en minúsculas y un bocadillo con dos puntos.
 - **Colores**: violeta #5B3FD9 como color principal, tinta #231A3D y fondo #FBF7FF, con su versión oscura.
 - **Tipografía**: Plus Jakarta Sans, alojada en la propia web (`fonts/`), sin llamadas a Google.
@@ -269,7 +269,7 @@ La plataforma pasa a llamarse **Pippole** y se sirve en www.pippole.es. Identida
 
 ## 0.28.0 · 16/11/2026 · **SQL: sí** (`supabase/migracion_0.28.sql`)
 Pippole se centra en tres bloques: **Encuestas de clima**, **Desarrollo** y **Formación de IA**.
-- **Apartados ocultos, no borrados**: Scorecard, PRL, People Data Centre, Process Book y HomeTime (lista `MODULOS_OCULTOS` en `app.js`). «Para hoy» solo avisa de lo visible.
+- **Apartados ocultos, no borrados**: Scorecard, PRL, People Data Centre, Process Book y el enlace externo (lista `MODULOS_OCULTOS` en `app.js`). «Para hoy» solo avisa de lo visible.
 - **Encuestas de clima** pasa a ser un bloque propio (antes era una pestaña de PRL).
 - **Formación de IA**: de momento renombra el bloque de formaciones (sin pruebas situacionales). El contenido del prototipo Vigente está pendiente de acceso.
 - **Desarrollo (nuevo)**: el Talent Review v1.0 llevado a la web, en dos ámbitos.
@@ -507,3 +507,22 @@ Correo
 - Nuevo tipo `capacidad` en la plantilla y en `enviar-invitacion` (se elige por la plantilla de la campaña `cap`).
 
 Sin migración: son campañas de tipo `psico` con plantilla `cap`; Formación y sus contadores no las mezclan con las pruebas situacionales.
+
+## 0.40.0 · 25/11/2026 · **SQL: sí** (`migracion_0.40.sql`, justo después de publicar)
+Pippole pasa a ser un producto sin cliente: fuera todo el contenido del primer cliente.
+
+Quitado
+- **Process Book y Políticas** (apartado, contenido base y motor de fichas: `docs.js`, `docs_base.js`).
+- **Fotos de tienda** (`img/`) y el escape room de PRL que las usaba (`escape.js`).
+- **Circuito de Venta**: guiones, preguntas por familia, argumentos por producto (`curso_datos.js`) y el juego «Un turno en la tienda» (`arcade.js`).
+- **Enlace a la herramienta interna** del cliente, de `config.js` y de la portada.
+- Su nombre en la pregunta de eNPS y en la de recomendación de la encuesta de salida: ahora dicen «esta empresa».
+- Su nombre y sus marcas en el código, en la documentación (README, CLAUDE.md, este CHANGELOG, migraciones antiguas) y en la prueba de humo.
+
+Cambiado
+- **Red de tiendas de ejemplo**: 12 tiendas ficticias (8 en España, 4 en Portugal) en lugar de la red real. La demo las usa.
+- **Dominio interno de los usuarios**: `usuarios.pippole.es`. Las cuentas que ya existen se pasan al dominio nuevo con `migracion_0.40.sql`; hasta ejecutarla no se puede entrar con usuario. Las contraseñas no cambian.
+- `migracion_0.37.sql` deja de hacer nada (renombraba las tiendas de la red real).
+- README reescrito para Pippole.
+- Los cursos de tienda (KPIs, Visual, P&L, Equipos) siguen en el código, ocultos y sin referencias al cliente.
+

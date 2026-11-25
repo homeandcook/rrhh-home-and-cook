@@ -70,7 +70,7 @@ function clInvPintar() {
   const seq = clInvSeq(), paso = CI.fin ? { k: "fin" } : CI.i >= 0 ? seq[CI.i] : null;
   const col = CI.pl.colectivo ? CL.COLECTIVOS[CI.pl.colectivo] : null;
   const contables = seq.filter(s => s.k === "q" || s.k === "abierta");
-  const marca = `<span class="cli-marca">${logoSEB(26)}<b>pippole</b></span>`;
+  const marca = `<span class="cli-marca">${simboloPippole(26)}<b>pippole</b></span>`;
   let h;
   if (!paso) {
     const n = contables.length, min = clMinutos(CI.pl, CI.cfg);

@@ -1,5 +1,5 @@
 -- ===================================================================
--- Migración 0.20 · RR.HH. x Home & Cook
+-- Migración 0.20
 -- Guarda cuándo se envió por correo cada código, para no mandarlo dos
 -- veces y para saber a quién hay que recordárselo.
 -- Se puede ejecutar varias veces sin romper nada.

@@ -1,8 +1,8 @@
 "use strict";
 /* ===================== FORMACIONES =====================
-   Catálogo de formaciones y, dentro, el Circuito de Venta como recorrido
-   de tienda en 7 paradas. Contenido tomado del dossier y del Excel de
-   sistemática comercial de Home & Cook.
+   Catálogo de formaciones: cada curso es un recorrido por paradas con un
+   test final. El de IA tiene su propio reproductor (ia.js); el resto viven
+   en cursos.js.
    ======================================================= */
 
 /* Desde la 0.28 el bloque es «Formación de IA»: los cursos de tienda siguen
@@ -12,9 +12,6 @@ const CURSOS = [
   { id: "ia", t: "Inteligencia artificial en el trabajo", estado: "activo", min: 60, ia: true,
     d: "El Reglamento europeo de IA para el día a día: qué está prohibido, qué hay que avisar y qué cambia en el empleo. Nueve módulos y examen final.",
     quien: "Toda la plantilla" },
-  { id: "circuito", oculto: true, t: "Circuito de Venta", estado: "activo", min: 15,
-    d: "Desde que el cliente entra hasta que sale: los siete pasos, con las frases que funcionan en sala.",
-    quien: "Todo el equipo de tienda" },
   { id: "kpis", oculto: true, t: "KPIs Retail", estado: "activo", min: 20,
     d: "Conversión, ticket medio, unidades por ticket, margen y productividad: qué mide cada uno y qué hacer cuando bajan.", quien: "SM y ASM" },
   { id: "visual", oculto: true, t: "Visual Merchandising", estado: "activo", min: 20,
@@ -22,225 +19,12 @@ const CURSOS = [
   { id: "pyl", oculto: true, t: "P&L", estado: "activo", min: 25,
     d: "La cuenta de resultados de una tienda: qué líneas dependen de ti, cuáles no, y cómo leerla cada mes.", quien: "SM" },
   { id: "equipos", oculto: true, t: "Gestión de equipos", estado: "activo", min: 25,
-    d: "Horarios, feedback, reconocimiento, conversaciones difíciles y la acogida de quien entra.", quien: "SM y ASM" },
-  { id: "seguridad", oculto: true, t: "Un turno seguro", estado: "activo", min: 20, juego: true,
-    d: "Hoy la tienda es tuya: recorre cinco zonas antes de abrir y decide, objeto a objeto, qué es un riesgo y qué está bien.",
-    quien: "Todo el equipo" }
-];
-/* Las paradas de cada curso. El Circuito tiene las suyas aquí abajo; el
-   resto viven en cursos.js con el mismo formato. */
-/* El Circuito es el único curso que va a todo el equipo, así que es el que
-   más falta hace poder enviar y medir. Siete preguntas, una por parada. */
-const TEST_CIRCUITO = [
-  { t: "Entra una clienta, la saludas y te contesta «solo estoy mirando». ¿Qué haces?",
-    o: ["Le explicas las ofertas de la semana para engancharla",
-        "«Perfecto, mire con calma. Si necesita algo estoy por aquí», y te quedas cerca y atento",
-        "Asientes y te vas a ordenar el lineal",
-        "La sigues a dos metros por si cambia de opinión"],
-    r: 1, por: "«Solo estoy mirando» casi nunca significa que no vaya a comprar: significa que todavía no se fía. Le das espacio y te quedas disponible. Irte del todo la pierde; echársele encima la espanta." },
-  { t: "Un cliente quiere un aspirador. ¿Por dónde empiezas?",
-    o: ["Por el modelo más vendido, que acierta casi siempre",
-        "Por el de más margen, que es lo que pesa en el Scorecard",
-        "Por preguntar: qué suelo tiene, si hay mascotas, cuántos metros",
-        "Por enseñarle la gama entera para que elija"],
-    r: 2, por: "Sin saber para qué lo quiere, cualquier producto que propongas es una apuesta. Tres preguntas antes de abrir la boca convierten la recomendación en algo que el cliente reconoce como suyo." },
-  { t: "¿Cuál de estas frases argumenta bien?",
-    o: ["«Lleva 2.800 W y filtro HEPA de cuatro etapas»",
-        "«Es el más vendido de la marca»",
-        "«Con el pelo de su perro, este filtro le evita tener que pasarlo dos veces»",
-        "«Está en oferta esta semana»"],
-    r: 2, por: "La característica es el filtro; el valor es no tener que pasar el aspirador dos veces. Traduce siempre la ficha técnica a lo que le pasa a esa persona en su casa." },
-  { t: "«Es muy caro». ¿Cuál es el orden correcto?",
-    o: ["Rebatir con un hecho, empatizar y ofrecer una salida",
-        "Empatizar, rebatir con un hecho y ofrecer una salida",
-        "Ofrecer un descuento y pasar a caja",
-        "Enseñarle directamente el modelo más barato"],
-    r: 1, por: "Si rebates antes de empatizar, el cliente siente que no le has escuchado y se cierra. Y bajar al modelo barato sin entender la objeción suele perder la venta y el margen a la vez." },
-  { t: "Has argumentado, has resuelto la objeción y el cliente asiente. ¿Qué haces?",
-    o: ["Esperas a que lo diga él, que no hay que presionar",
-        "Le das más argumentos para asegurarte",
-        "Preguntas: «¿se lo preparo?»",
-        "Le propones que se lo piense y vuelva"],
-    r: 2, por: "El cierre no es un momento mágico: es preguntar. Si los pasos anteriores están bien hechos, es casi un trámite. No preguntar es la causa más habitual de una venta que se cae sola." },
-  { t: "El cliente ya ha dicho que sí al aspirador. ¿Qué dices?",
-    o: ["«¿Algo más?»",
-        "«Le pongo también el pack de filtros de recambio, que así no se queda tirado en seis meses»",
-        "Nada, no conviene presionar después del sí",
-        "Le enseñas la gama de cafeteras por si acaso"],
-    r: 1, por: "«¿Algo más?» se contesta que no por inercia. La venta cruzada es recomendar algo que protege o mejora lo que acaba de comprar, no ofrecer un producto cualquiera." },
-  { t: "Estáis en caja. ¿Qué es lo último que debe pasar?",
-    o: ["Cobrar rápido, que hay cola",
-        "Ofrecerle la tarjeta de fidelización y explicarle la garantía en una frase",
-        "Pedirle que valore la tienda en una encuesta",
-        "Darle el tique y despedirte"],
-    r: 1, por: "En caja todavía se vende, y es el último recuerdo que se lleva. La tarjeta y una frase sobre la garantía dan un motivo real para volver; la prisa se nota y se recuerda." }
+    d: "Horarios, feedback, reconocimiento, conversaciones difíciles y la acogida de quien entra.", quien: "SM y ASM" }
 ];
 function cursoDe(id) { return CURSOS.find(c => c.id === id); }
 const cursosVisibles = () => CURSOS.filter(c => !c.oculto);
-function pasosDe(id) { return id === "circuito" ? CIRCUITO : ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).pasos || []; }
-function testDe(id) { return id === "circuito" ? TEST_CIRCUITO : ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).test || null; }
-
-const CIRCUITO = [
-  {
-    id: "acogida", t: "Acogida", sub: "Bienvenida y abordaje", min: 2,
-    idea: "Los primeros diez segundos deciden si el cliente se deja ayudar. Saluda siempre, pero no te le eches encima.",
-    haces: [
-      "Contacto visual en cuanto entra, estés donde estés.",
-      "Sonrisa y saludo: buenos días o buenas tardes, y bienvenido a Home&Cook.",
-      "Dale espacio: entre 30 y 60 segundos para que mire, sin perderle de vista.",
-      "Elige el abordaje según el tráfico que haya en ese momento."
-    ],
-    dices: [
-      { c: "Saludo", f: "Buenos días, bienvenido a Home&Cook." },
-      { c: "Poco tráfico, foco fidelizar", f: "¿Es su primera vez aquí? ¿Conoce la tienda?" },
-      { c: "Poco tráfico", f: "Todas las marcas de la tienda son del mismo grupo: está comprando directamente al fabricante, con dos años de garantía y reparabilidad hasta diez años en muchos productos." },
-      { c: "Poco tráfico", f: "Al ser tienda outlet todos los productos tienen descuento, y en la mesa encontrará las promociones especiales." },
-      { c: "Mucho tráfico, foco venta", f: "¿En qué le puedo ayudar? ¿Qué está buscando?" },
-      { c: "Mucho tráfico", f: "¿Conoce nuestro robot de aspiración? Se lo muestro sin compromiso." },
-      { c: "Si dice que no quiere ayuda", f: "Para cualquier consulta estoy a su disposición." }
-    ],
-    ojo: [
-      "Abordar en el primer segundo: el cliente se cierra y contesta \"solo estoy mirando\".",
-      "Dejar de mirarle mientras le das espacio: espacio no es desaparecer.",
-      "Soltar la promoción antes de saber a qué ha venido."
-    ]
-  },
-  {
-    id: "deteccion", t: "Detección de necesidades", sub: "Preguntar y escuchar", min: 3,
-    idea: "Antes de explicar nada, pregunta. Si no sabes para qué lo quiere, cualquier producto que propongas es una apuesta.",
-    haces: [
-      "Justifica por qué preguntas: al cliente no le molesta si entiende para qué.",
-      "Mezcla preguntas abiertas y cerradas hasta tener claro el uso real.",
-      "Escucha activa: déjale hablar y no interrumpas para argumentar.",
-      "Resume en voz alta lo que te ha contado antes de proponer."
-    ],
-    dices: [
-      { c: "Justificar", f: "Para recomendarle lo que mejor le encaje, ¿me permite un par de preguntas?" },
-      { c: "Cerradas", f: "¿Cuántas personas son en casa? ¿Qué tipo de cocina tiene? ¿Qué uso va a darle: picar, batir, freír?" },
-      { c: "Resumen", f: "Entonces busca un aspirador para una casa grande, con moqueta y mascotas, y para uso diario." }
-    ],
-    ojo: [
-      "Empezar a argumentar con la tercera frase de la conversación.",
-      "Encadenar preguntas sin explicar por qué: parece un interrogatorio.",
-      "No resumir: el resumen es lo que hace que el cliente sienta que le has entendido."
-    ],
-    extra: "necesidades"
-  },
-  {
-    id: "argumentacion", t: "Argumentación", sub: "Características y valor", min: 3,
-    idea: "No recites la ficha técnica: traduce cada característica a lo que le pasa a ese cliente en su casa.",
-    haces: [
-      "Presenta dos o tres opciones que encajen con lo detectado, no todo el lineal.",
-      "Explica solo las características que le importan a él.",
-      "Da valor: número uno en ventas, fiabilidad, tecnología patentada.",
-      "Deja tocar el producto y haz demostración: enciéndelo, desmóntalo, úsalo.",
-      "Comprueba aceptación antes de seguir."
-    ],
-    dices: [
-      { c: "Característica con beneficio", f: "2.800 W, 45 g/m y 400 salidas de vapor para repartirlo de forma homogénea: plancha perfecta en mucho menos tiempo." },
-      { c: "Característica con beneficio", f: "Olla con tres válvulas de seguridad, cromargan y fabricada en Alemania: una olla para toda la vida que le resuelve recetas en veinte minutos." },
-      { c: "Valor", f: "Es nuestro número uno en ventas." },
-      { c: "Valor", f: "Es un producto patentado, no va a encontrar otro igual." },
-      { c: "Comprobar aceptación", f: "¿Qué le parece? ¿Es lo que estaba buscando?" }
-    ],
-    ojo: [
-      "Soltar vatios y materiales sin decir qué gana el cliente con ellos.",
-      "Argumentar con el producto dentro de la caja o en la estantería.",
-      "Seguir hablando sin comprobar si le encaja lo que le estás contando."
-    ],
-    extra: "argumentos"
-  },
-  {
-    id: "objeciones", t: "Objeciones", sub: "Empatizar, rebatir, ofrecer", min: 2,
-    idea: "Una objeción es interés con dudas. El orden siempre es el mismo: empatiza, rebate con un hecho y ofrece una salida.",
-    haces: [
-      "Empatiza primero: nunca discutas la percepción del cliente.",
-      "Rebate con hechos concretos, no con opiniones.",
-      "Ofrece siempre una alternativa, aunque sea de otra marca de la casa.",
-      "Refuerza con lo que solo tenemos nosotros: servicio técnico nacional, atención personalizada, garantía técnica en tienda y tarjeta de fidelización."
-    ],
-    dices: [
-      { c: "Busca otra marca", f: "Esa marca no la trabajamos, pero si tiene un minuto le enseño qué le aporta Rowenta para lo que usted necesita." },
-      { c: "Mala experiencia previa", f: "Es normal que piense así, le entiendo. Por lo que me cuenta, el antiadherente no le respondió; nuestros productos han evolucionado mucho y este lleva un recubrimiento de titanio con mucha más resistencia." },
-      { c: "Mala experiencia previa", f: "Si no quedó contento con esa gama, podemos ir a la otra marca del grupo y le explico las diferencias." },
-      { c: "Precio", f: "Aquí tiene servicio técnico en toda España ante cualquier incidencia, atención personalizada y garantía técnica en la propia tienda." },
-      { c: "Precio", f: "Además, con la tarjeta de fidelización tiene acceso prioritario a ofertas y un descuento de 25 €." }
-    ],
-    ojo: [
-      "Rebatir antes de empatizar: el cliente se pone a la defensiva.",
-      "Hablar mal de otra marca en vez de explicar lo nuestro.",
-      "Quedarte en el \"no\" sin ofrecer alternativa."
-    ]
-  },
-  {
-    id: "cierre", t: "Cierre de venta", sub: "Cinco formas de rematar", min: 2,
-    idea: "El cierre no es un momento mágico: es preguntar. Si has hecho bien los pasos anteriores, es casi un trámite.",
-    haces: [
-      "Elige la fórmula según cómo esté el cliente, y usa solo una.",
-      "Cuando diga que sí, deja de vender y refuerza la decisión.",
-      "Aprovecha el cierre para ofrecer la tarjeta de fidelización."
-    ],
-    dices: [
-      { c: "Condicionando el compromiso", f: "Siendo varios en casa y con el volumen de ropa que plancha, lo razonable es que se decida por el centro de planchado." },
-      { c: "Ofreciendo alternativas", f: "¿Entonces se lleva la ProMaster o la SteamForce?" },
-      { c: "Cierre directo", f: "Es una promoción que no tenemos siempre. ¿Cuántas sartenes se lleva?" },
-      { c: "Pregunta de aceptación", f: "La opción más recomendable es el Air Force 360, por diseño, succión y versatilidad. Es buena opción, ¿verdad?" },
-      { c: "Con la tarjeta", f: "Con nuestra tarjeta se beneficia de 25 € de descuento adicional en esta compra." },
-      { c: "Cuando dice que sí", f: "Ha hecho una buena compra." }
-    ],
-    ojo: [
-      "No cerrar nunca y esperar a que el cliente lo diga.",
-      "Seguir argumentando después del sí: solo puedes perder la venta.",
-      "Encadenar tres fórmulas de cierre seguidas."
-    ]
-  },
-  {
-    id: "cruzada", t: "Venta cruzada", sub: "Recomendar, no ofrecer", min: 2,
-    idea: "No preguntes si quiere algo más. Recomienda algo que proteja o mejore lo que acaba de comprar.",
-    haces: [
-      "Propón el complemento con un motivo, no por catálogo.",
-      "Si el producto no admite complemento, informa de promociones y novedades.",
-      "Apóyate otra vez en la tarjeta: con una compra adicional puede alcanzar el descuento."
-    ],
-    dices: [
-      { c: "Sartenes", f: "¿Por qué no se lleva estas espátulas de silicona? No rascan la sartén y aguantan hasta 140 grados." },
-      { c: "Sartenes", f: "Estas alfombrillas son del propio fabricante y, por los materiales, alargan la vida de las sartenes." },
-      { c: "Centro de planchado", f: "Para este centro le recomiendo una tabla homologada, resistente y regulable, específica para centros de planchado." },
-      { c: "Aspirador", f: "Para este aspirador le recomiendo nuestras bolsas homologadas: aíslan mejor el polvo y aguantan más que las convencionales." },
-      { c: "Sin complemento posible", f: "Le aconsejo que eche un vistazo a la promoción flash que termina hoy: 20 % adicional en batidoras Moulinex y las sartenes Character en 3x2." },
-      { c: "Tarjeta", f: "Con una compra adicional de X € tendría 25 € de descuento en su próxima visita." }
-    ],
-    ojo: [
-      "El clásico \"¿algo más?\": no vende nada.",
-      "Ofrecer el complemento después de cobrar.",
-      "Recomendar accesorios que no tienen que ver con lo que se lleva."
-    ]
-  },
-  {
-    id: "despedida", t: "Despedida y caja", sub: "El último contacto", min: 2,
-    idea: "Es el último recuerdo que se lleva de la tienda, y lo que decide si vuelve. En caja todavía se vende.",
-    haces: [
-      "En caja, ofrece producto pequeño: utensilios, picadora, espiralizador.",
-      "Pide los datos de la tarjeta sin preguntar si la quiere: explícale directamente qué gana.",
-      "Recuerda la garantía antes de despedirte.",
-      "Actitud positiva y sonrisa, por favor y gracias, y trato de usted.",
-      "Si paga con tarjeta, fíjate en el apellido y úsalo al agradecer.",
-      "Muestra el datáfono con el importe, y ayuda con el producto hasta la puerta si hace falta."
-    ],
-    dices: [
-      { c: "Tarjeta de fidelización", f: "Si me da brevemente su nombre, DNI y correo, le guardamos el ticket y le avisamos de las ofertas exclusivas para clientes. Además, por cada 40 € acumula un punto, y con seis puntos tiene 25 € de descuento." },
-      { c: "Garantía", f: "Recuerde que tiene garantía técnica de quince días en tienda y dos años a nivel mundial." },
-      { c: "Despedida", f: "Que disfrute de su compra, y esperamos verle pronto por Home&Cook." },
-      { c: "Despedida", f: "Espero que vuelva a visitarnos y nos cuente qué tal le ha ido con el producto." },
-      { c: "Con el apellido", f: "Muchas gracias, señor Fernández." }
-    ],
-    ojo: [
-      "Preguntar \"¿tiene tarjeta?\" en vez de explicar la ventaja.",
-      "Despedir sin mirar, mientras ya atiendes al siguiente.",
-      "Olvidar la garantía: es lo que más tranquiliza al cliente que duda."
-    ]
-  }
-];
+function pasosDe(id) { return ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).pasos || []; }
+function testDe(id) { return ((typeof CURSOS_CONTENIDO !== "undefined" && CURSOS_CONTENIDO[id]) || {}).test || null; }
 
 /* ---------------- Progreso ---------------- */
 function claveProgreso() { return "sc-formacion-" + (S.me ? S.me.id : "anon"); }
@@ -248,8 +32,7 @@ function progreso() {
   try { return JSON.parse(localStorage.getItem(claveProgreso())) || {}; } catch (e) { return {}; }
 }
 function guardarProgreso(p) { try { localStorage.setItem(claveProgreso(), JSON.stringify(p)); } catch (e) {} }
-/* El progreso se guarda por curso, con la misma clave que su id. El del
-   Circuito guarda además las prácticas con IA y las partidas del arcade. */
+/* El progreso se guarda por curso, con la misma clave que su id. */
 function progresoCurso(id) { return progreso()[id || S.curso] || {}; }
 function vistos(id) { return progresoCurso(id).vistos || []; }
 function marcarVisto(paso) {
@@ -271,16 +54,7 @@ function pintarFormaciones() {
   const pie = c => {
     const p = progresoCurso(c.id), v = (p.vistos || []).length, n = pasosDe(c.id).length;
     const extra = [];
-    if (c.id === "circuito") {
-      const narc = (p.arcade || {}).partidas || 0;
-      if (narc) extra.push(`${narc} ${narc === 1 ? "partida" : "partidas"}`);
-    }
     if (p.test) extra.push(`test ${p.test.aciertos} de ${p.test.total}`);
-    if (c.juego) {
-      const ll = typeof esc_llaves === "function" ? (escModo = "int", esc_llaves()) : 0;
-      return p.completado ? `Completada el ${fechaES(p.completado)}${p.test ? ` · ${p.test.aciertos} de ${p.test.total} aciertos` : ""}`
-        : ll ? `${ll} de ${ESC_SALAS.length} zonas revisadas` : "Sin empezar";
-    }
     const base = p.completado ? "Completada el " + fechaES(p.completado) : (v ? `${v} de ${n} pasos vistos` : "Sin empezar");
     return [base].concat(extra).join(" · ");
   };
@@ -304,18 +78,16 @@ function pintarFormaciones() {
 function pintarCurso() {
   if (S.chuleta) return pintarChuleta();
   if (S.vista === "test") return pintarTest();
-  if (S.curso === "seguridad") return pintarEscape();
   if (S.curso === "ia" && typeof pintarIA === "function") return pintarIA();
-  if (S.curso === "circuito" && S.vista === "arcade") return pintarArcade();
   const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso), vis = vistos();
   if (!curso || !PASOS.length) { S.curso = null; return pintarFormaciones(); }
   const i = Math.max(0, PASOS.findIndex(p => p.id === S.paso));
-  const p = PASOS[i], ult = i === PASOS.length - 1, esCircuito = S.curso === "circuito";
+  const p = PASOS[i], ult = i === PASOS.length - 1;
   const prog = progresoCurso(), test = testDe(S.curso);
   $("vista").innerHTML = `<div class="page curso">
     <div class="page-h"><div><button class="btn small ghost" data-action="volverCursos">← Formaciones</button>
       <h1>${esc(curso.t)}</h1></div>
-      <div class="curso-acc">${esCircuito ? `<button class="btn small" data-action="arcade">Jugar el turno</button>` : ""}
+      <div class="curso-acc">
         ${test ? `<button class="btn small" data-action="irTest">Hacer el test</button>` : ""}
         <button class="btn small" data-action="chuleta">Ver la chuleta</button>
         <button class="btn small ghost" data-action="imprimirCurso">Imprimir</button></div></div>
@@ -336,12 +108,10 @@ function pintarCurso() {
         <div class="bloque"><h3>Cuidado con</h3><ul class="lista cuidado">${p.ojo.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
       </div>
 
-      <h3 class="tit-frases">${esCircuito ? "Qué dices" : "Frases que ayudan"}</h3>
+      <h3 class="tit-frases">Frases que ayudan</h3>
       <div class="frases">${p.dices.map((f, k) => `<blockquote class="frase"><span class="ctx">${esc(f.c)}</span>
         <p>${esc(f.f)}</p><button class="btn small ghost" data-action="copiarFrase" data-i="${i}" data-k="${k}">Copiar</button></blockquote>`).join("")}</div>
 
-      ${p.extra === "necesidades" ? extraNecesidades() : ""}
-      ${p.extra === "argumentos" ? extraArgumentos() : ""}
 
       ${ult && test ? `<div class="cta-rp"><div><b>Has llegado al final del curso.</b>
         <p class="hint">Cinco preguntas para comprobar que te lo llevas. Se pueden repetir las veces que quieras; queda la última.</p></div>
@@ -387,34 +157,6 @@ function pintarTest() {
   </div>`;
 }
 
-function extraNecesidades() {
-  return `<div class="extra"><h3>Preguntas por familia</h3>
-    <p class="hint">De la sistemática comercial. Elige la familia y llévate dos o tres preguntas a la conversación.</p>
-    <div class="pills fam">${CURSO_DATOS.necesidades.map((f, k) => `<button class="pill ${k === (S.fam || 0) ? "on" : ""}" data-action="famSel" data-k="${k}">${esc(f.t)}</button>`).join("")}</div>
-    <ul class="preguntas">${(CURSO_DATOS.necesidades[S.fam || 0] || { items: [] }).items.map(q => `<li>${esc(q)}</li>`).join("")}</ul></div>`;
-}
-function extraArgumentos() {
-  const lista = CURSO_DATOS.argumentos;
-  const q = (S.busca || "").toLowerCase();
-  const enc = q ? lista.filter(x => x.t.toLowerCase().includes(q) || x.items.some(i => i.toLowerCase().includes(q))) : lista;
-  const sel = enc.find(x => x.t === S.prod) || enc[0];
-  return `<div class="extra"><h3>Puntos fuertes por producto</h3>
-    <p class="hint">${lista.length} productos con sus argumentos, tal y como están en la sistemática comercial.</p>
-    <input id="buscaProd" class="busca" placeholder="Busca un producto o una palabra: titanio, silencio, autonomía…" value="${esc(S.busca || "")}">
-    ${enc.length ? `<div class="pills prod">${enc.slice(0, 40).map(x => `<button class="pill ${sel && x.t === sel.t ? "on" : ""}" data-action="prodSel" data-t="${esc(x.t)}">${esc(x.t)}</button>`).join("")}</div>
-    <ul class="preguntas">${sel.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`
-    : `<p class="empty">Ningún producto coincide con esa búsqueda.</p>`}</div>`;
-}
-
-function pintarArcade() {
-  const a = (progreso().circuito || {}).arcade || {};
-  $("vista").innerHTML = `<div class="page curso">
-    <div class="page-h"><div><button class="btn small ghost" data-action="volverRecorrido">← Recorrido</button>
-      <h1>El turno en la tienda</h1></div>
-      ${a.partidas ? `<span class="muted num">${a.partidas} ${a.partidas === 1 ? "partida" : "partidas"}</span>` : `<span class="muted">Prototipo en pruebas</span>`}</div>
-    ${vistaArcade()}</div>`;
-  arcRefrescar(); arcPintarDecision();
-}
 function pintarChuleta() {
   const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso);
   $("vista").innerHTML = `<div class="page curso">
@@ -427,13 +169,13 @@ function pintarChuleta() {
 }
 
 function informeCurso() {
-  const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso), esCircuito = S.curso === "circuito";
+  const curso = cursoDe(S.curso), PASOS = pasosDe(S.curso);
   return `<div class="pr-head">${logo(56)}<div><h1>${esc(curso.t)}</h1>
     <p class="meta">Pippole${S.me ? " · " + esc(S.me.nombre) : ""}</p></div></div>
     ${PASOS.map((p, k) => `<h2>${k + 1}. ${esc(p.t)} — ${esc(p.sub)}</h2>
       <p><b>${esc(p.idea)}</b></p>
       <p><b>Qué haces:</b></p><ul>${p.haces.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
-      <p><b>${esCircuito ? "Qué dices" : "Frases que ayudan"}:</b></p><ul>${p.dices.map(f => `<li><i>${esc(f.c)}:</i> ${esc(f.f)}</li>`).join("")}</ul>
+      <p><b>Frases que ayudan:</b></p><ul>${p.dices.map(f => `<li><i>${esc(f.c)}:</i> ${esc(f.f)}</li>`).join("")}</ul>
       <p><b>Cuidado con:</b></p><ul>${p.ojo.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`).join("")}`;
 }
 
@@ -452,12 +194,9 @@ const ACCIONES_FORMACION = {
     else toast("Formación completada");
   },
   chuleta() { S.chuleta = true; S.vista = "recorrido"; window.scrollTo(0, 0); },
-  arcade() { S.vista = "arcade"; S.chuleta = false; window.scrollTo(0, 0); },
   volverRecorrido() { S.vista = "recorrido"; },
   chuletaNo() { S.chuleta = false; },
   async reiniciarCurso() { if (!(await confirmar({ titulo: "Empezar de nuevo", texto: "Se borra tu progreso de esta formación.", ok: "Empezar de nuevo", peligro: true }))) return false; const p = progreso(); delete p[S.curso]; guardarProgreso(p); S.paso = (pasosDe(S.curso)[0] || {}).id; },
-  famSel(b) { S.fam = Number(b.dataset.k); },
-  prodSel(b) { S.prod = b.dataset.t; },
   copiarFrase(b) {
     const f = pasosDe(S.curso)[Number(b.dataset.i)].dices[Number(b.dataset.k)].f;
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(f).then(() => toast("Frase copiada"), () => toast(f));
@@ -492,7 +231,7 @@ function pasoInvitado(pl) {
   const i = Math.min(Math.max(0, INV.paso | 0), n - 1), p = P[i];
   if (!p) { INV.fase = "test"; return ""; }
   const curso = CURSOS.find(c => c.id === pl.curso) || { t: "" };
-  return `<div class="guest wide"><div class="esquina"><span class="chipseb">${logoSEB(32)}</span></div>
+  return `<div class="guest wide"><div class="esquina"><span class="chipsimbolo">${simboloPippole(32)}</span></div>
     <div class="guest-card wide curso-inv">${selectorIdioma()}
       <div class="guest-h">${logo(56)}<div><h1>${esc(curso.t)}</h1>
         <p class="sub">${esc(INV.datos.tienda || "")}${INV.datos.destinatario ? " · " + esc(INV.datos.destinatario) : ""}</p></div></div>
@@ -513,7 +252,7 @@ function pasoInvitado(pl) {
         <button class="btn" data-action="invPasoAnt" ${i === 0 ? "disabled" : ""}>Anterior</button>
         <span class="muted num">${i + 1} / ${n}</span>
         <button class="btn primary" data-action="invPasoSig">${i === n - 1 ? "Ir al test" : "Siguiente"}</button>
-      </div></div>${bandaMarcas()}</div>`;
+      </div></div></div>`;
 }
 const ACCIONES_INV_CURSO = {
   invPasoAnt() { INV.paso = Math.max(0, (INV.paso | 0) - 1); window.scrollTo(0, 0); pintarInvitado(); return false; },

@@ -1,5 +1,5 @@
 -- ===================================================================
--- Migración 0.17 · RR.HH. x Home & Cook
+-- Migración 0.17
 -- Añade puesto y correo a las invitaciones, para poder dar de alta a
 -- una persona en el momento (sin que sea usuario de la plataforma) y
 -- enviarle el código a su correo.

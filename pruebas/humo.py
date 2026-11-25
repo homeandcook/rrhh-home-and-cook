@@ -13,8 +13,7 @@ import asyncio, os, sys
 from playwright.async_api import async_playwright
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8765").rstrip("/")
-MARCAS = ["HOME & COOK", "Home & Cook", "Home&Cook", "Groupe SEB", "SEB Academy", "Tefal", "Rowenta", "Moulinex",
-          "Krups", "WMF", "Lagostina", "Atrivity", "Lyreco", "Great Place To Work"]
+MARCAS = ["Atrivity", "Lyreco", "Great Place To Work"]
 # El 404 de la copia de la plantilla del correo es normal fuera de la web publicada.
 IGNORAR = ["correo_plantilla.js", "status of 404"]
 fallos = []

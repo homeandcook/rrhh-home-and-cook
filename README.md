@@ -1,113 +1,41 @@
-# RR.HH. x Home & Cook
+# Pippole
 
-Portal de RR.HH. para la red de tiendas Home & Cook. Los Regional Managers entran con su usuario y ven sus tiendas; RR.HH. (administrador) gestiona usuarios, tiendas y los consolidados.
+Plataforma web de Recursos Humanos para empresas con equipos que no trabajan delante de un ordenador: redes de tiendas, franquicias, hostelería, equipos de campo. Quien gestiona (RR.HH., responsables de zona) entra con usuario; el resto de la plantilla **no necesita usuario**: recibe un código y entra con él a encuestas, pruebas y formaciones.
 
-Apartados en marcha: **Scorecard Retail** (objetivos, seguimiento, cierre anual y bonus) y **Talent Matrix** (desempeño, potencial, riesgo, sucesión y plan de desarrollo, con matriz 9-Box).
-Destacado en la portada: **People Data Centre**, cuadro de mando con datos clave y tres bloques (negocio, RR.HH. y *staff adaptation to traffic*). Los datos mensuales por tienda se guardan en `datos.kpis` de cada tienda; de momento se cargan a mano o desde el ejemplo, la importación desde Excel está pendiente.
-También en marcha, con el mismo circuito de códigos: **Psicotécnicos**, **Mystery Shopper**, **Encuesta de Clima** (por olas, con dimensiones y eNPS) y **Onboarding y Offboarding**.
-También en marcha: **Formaciones**, con el *Circuito de Venta* desarrollado y KPIs Retail, Visual Merchandising, P&L y Gestión de equipos por hacer.
-En preparación: **Process Book**, **Política de RR.HH.** y **PRL**.
+Web: [www.pippole.es](https://www.pippole.es). Para verla sin configurar nada, añade `?demo` al final del enlace (usuarios `admin`, `rm.es`, `rm.pt` y `marketing`, contraseña `demo1234`). La demo usa una empresa ficticia y guarda los datos solo en la pestaña del navegador.
 
-Los apartados se definen en el array `MODULOS`, al principio de `app.js`: cambiar un texto, añadir uno nuevo o pasar uno de pendiente a activo se hace ahí.
+## Apartados visibles
+- **Encuestas de clima**: por colectivo o de cultura y confianza, anónimas o con nombre, con resultados por dimensión y eNPS.
+- **Desarrollo**: revisión de talento con 9-Box, riesgo × impacto, sucesión y plan de desarrollo; cada responsable rellena su ficha con un código.
+- **Scorecard**: objetivos, seguimiento, cierre y bonus por tienda, con consolidado para RR.HH.
+- **Formación de IA**: curso «Inteligencia artificial en el trabajo» con examen y certificado.
+- **Pruebas de capacidad**: siete minijuegos (planificación, memoria, atención, cálculo, razonamiento, análisis de datos y priorización) en baterías para tienda y para oficina.
+- **Personas**: plantilla, usuarios con acceso, tiendas y registro de actividad.
+- **«Tus datos»**: cada persona puede ver los datos que la plataforma guarda sobre ella.
 
-- **Web:** GitHub Pages (gratis, enlace tipo `https://tu-usuario.github.io/scorecard-retail/`)
-- **Usuarios y datos:** Supabase (gratis en su plan inicial). Las reglas de acceso viven en la base de datos, no en el navegador.
+Hay más apartados construidos y ocultos (People Data Centre, PRL, Employer Branding). Se activan o se ocultan con `MODULOS_OCULTOS`, al principio de `app.js`.
 
-Puedes probarla sin configurar nada añadiendo `?demo` al final del enlace.
+## Cómo está hecho
+HTML, CSS y JavaScript sin framework ni compilación. `index.html` lleva los estilos y carga los scripts; cada apartado vive en su fichero (`clima.js`, `desarrollo*.js`, `capacidad*.js`, `personas.js`…). Los datos y los usuarios están en **Supabase** (región UE), con reglas de acceso por fila en la base de datos. El correo sale por **Resend** desde una función de Supabase (`supabase/functions/enviar-invitacion`). La web se publica con **GitHub Pages**.
 
-## Archivos
+El detalle técnico de cada pieza está en `CLAUDE.md` y la historia de versiones en `CHANGELOG.md`.
 
-| Archivo | Qué es |
-|---|---|
-| `index.html` | Página y estilos |
-| `app.js` | Lógica de la plataforma |
-| `engine.js` | **Parámetros y cálculo** del bonus y de la Talent Matrix (pesos, escalados, importes, bandas, competencias, año) |
-| `talent.js` | Módulo Talent Matrix: ficha del RM y mapa de talento |
-| `pruebas.js` | Pruebas situacionales, Mystery Shopper, Clima, Onboarding y Offboarding: campañas, códigos y acceso de invitado |
-| `pdc.js` | People Data Centre: cuadro de mando con filtros |
-| `pdc_carga.js` | Carga de datos mensuales (pegar desde Excel, CSV o a mano) y gráficos SVG |
-| `bajas.js` | Bajas y absentismo |
-| `prl.js` | Prevención de riesgos: formación, revisiones del local, reconocimientos e incidencias |
-| `docs_base.js`, `docs.js` | Process Book y Política de RR.HH.: contenido base y motor de fichas con edición en la plataforma |
-| `hoy.js` | Bloque «Para hoy» de la portada y búsqueda rápida |
-| `formacion.js` | Formaciones: catálogo, recorrido por paradas, chuleta y test final |
-| `cursos.js` | Contenido de KPIs Retail, Visual Merchandising, P&L y Gestión de equipos |
-| `curso_datos.js` | Preguntas por familia y argumentos por producto (sistemática comercial) |
-| `i18n.js` | Idiomas (español, inglés, francés) del portal y de las pantallas de invitado |
-| `marca.js` | Logotipo RR.HH. x Home & Cook dibujado en curvas SVG (sin fuentes externas) |
-| `marcas.js` | Logos de Groupe SEB y de las marcas, recortados e incrustados, y la cinta inferior |
-| `config.js` | Conexión a tu proyecto de Supabase |
-| `demo.js` | Modo demostración (`?demo`) |
-| `roleplay.js` | Role play con IA dentro del Circuito de Venta |
-| `arcade.js` | Juego «Un turno en la tienda» |
-| `logo.png` | Logo Home & Cook |
-| `manifest.json` | Datos para instalar la plataforma en el móvil |
-| `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` | Iconos de esa instalación |
-| `supabase/schema.sql` | Tablas y reglas de seguridad |
-| `supabase/migracion_0.11.sql`, `migracion_0.14.sql` | Cambios de base de datos por versión, en orden |
-
-### Instalarla en el móvil
-
-Con `manifest.json` y los tres iconos subidos, cualquiera que abra el enlace desde el móvil puede añadirla a la pantalla de inicio y abrirla como una aplicación, sin barra del navegador. En Android: menú del navegador → «Añadir a pantalla de inicio». En iPhone: botón de compartir → «Añadir a pantalla de inicio».
-
-## Puesta en marcha (unos 20 minutos)
-
-### 1. Supabase
-1. Crea una cuenta en supabase.com y un proyecto nuevo. Elige una **región de la UE**.
-2. **SQL Editor → New query**: pega el contenido de `supabase/schema.sql` y pulsa **Run**.
-3. **Authentication → Sign In / Providers → Email**: desactiva **Confirm email** (los usuarios no tienen correo real) y deja activado **Allow new users to sign up** (lo usa el administrador para dar de alta a los RM).
-4. **Primer administrador**: en **Authentication → Users → Add user → Create new user** crea `admin@homeandcook.app` con una contraseña y marca *Auto Confirm User*. Luego, en el SQL Editor:
+## Puesta en marcha
+1. **Supabase**: crea un proyecto en una región de la UE. En **SQL Editor**, ejecuta `supabase/schema.sql` y después las `migracion_0.xx.sql` en orden.
+2. **Autenticación**: en **Authentication → Sign In / Providers → Email**, desactiva *Confirm email* (los usuarios no tienen correo real).
+3. **Primer administrador**: en **Authentication → Users → Add user** crea `admin@usuarios.pippole.es` con una contraseña y marca *Auto Confirm User*. Luego, en el SQL Editor:
    ```sql
    insert into public.perfiles (id, usuario, nombre, rol)
-   select id, 'admin', 'RR.HH.', 'admin' from auth.users where email = 'admin@homeandcook.app';
+   select id, 'admin', 'RR.HH.', 'admin' from auth.users where email = 'admin@usuarios.pippole.es';
    ```
-5. **Project Settings → API Keys** (o el botón *Connect*): copia la *Project URL* y la **clave publicable** (`sb_publishable_…`). En proyectos creados antes de noviembre de 2025 se llama *anon public* y sirve igual.
+4. **config.js**: pon la *Project URL* y la **clave publicable** (`sb_publishable_…`). Es pública por diseño. **Nunca** pongas aquí una clave secreta.
+5. **Correo**: sigue `supabase/CORREO.md` (cuenta de Resend, dominio y secretos de la función).
+6. **GitHub Pages**: *Settings → Pages → Deploy from a branch → `main`*. El flujo `publicar-pages.yml` pasa la prueba de humo antes de publicar.
 
-### 2. config.js
-Pega la URL y la clave publicable en `config.js`. Si cambias `dominioUsuarios`, usa el mismo dominio en el correo del paso 4.
-Esa clave es pública por diseño. **Nunca** pongas una clave secreta (`sb_secret_…` o *service_role*).
+Al entrar como `admin`, en **Personas** se crean los usuarios con acceso y las tiendas.
 
-### 3. GitHub Pages
-1. En GitHub: **New repository** (por ejemplo `scorecard-retail`) → sube todos los archivos manteniendo la carpeta `supabase/`.
-2. **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `(root)`** → Save.
-3. En uno o dos minutos la web estará en `https://tu-usuario.github.io/scorecard-retail/`.
-
-### 4. Primer uso
-Entra como `admin` → **Usuarios y tiendas**: crea los 3 Regional Managers (usuario + contraseña inicial), crea las tiendas y asígnalas. Cada RM puede cambiar su contraseña desde su nombre, arriba a la derecha.
-
-## Uso durante el año
-- **Enero:** cada RM fija y valida los objetivos de sus tiendas y añade al SM/ASM.
-- **Seguimiento 6 meses:** resultados de tienda + valoración cualitativa → bonus indicativo.
-- **Cierre anual:** resultados + valoración → bonus a liquidar. Al cerrar se bloquea.
-- **RR.HH.:** *Consolidado* del bonus (calibración entre RM, alertas, CSV para nómina) y *Actividad reciente*.
-- **Pruebas con código:** RR.HH. crea la campaña, se generan códigos por tienda y se envían con un mensaje ya redactado. Quien lo recibe entra en `.../index.html?codigo=XXXX-XXXX`, sin usuario, responde una sola vez y el resultado vuelve al panel. La de clima es anónima: códigos sin nombre y nada de resultados en tiendas con menos de 4 respuestas.
-- **Talent Matrix:** el RM rellena una ficha por persona (el desempeño se propone desde la nota del Scorecard) y RR.HH. ve la matriz 9-Box, la distribución frente a los guardarraíles, las prioridades de retención, las tiendas sin sucesor y la calibración por zona.
-
-## Cambiar parámetros o de año
-Edita `engine.js` en GitHub (icono del lápiz) y guarda: la web se actualiza sola.
-Para un año nuevo cambia `anio` y `version`; las tiendas del año anterior quedan guardadas pero dejan de mostrarse.
-
-## Idiomas
-El selector (arriba a la derecha) cambia entre español, inglés y francés. Están traducidos la portada, el acceso, el menú y todo lo que ve la gente de tienda, incluidos los cuestionarios de clima, onboarding y offboarding. El Scorecard, la Talent Matrix, el People Data Centre y la gestión siguen solo en español; los textos viven en `i18n.js` y en las plantillas de `engine.js`.
-
-## Cómo actualizar la web después de un cambio
-
-El repositorio de GitHub es la única fuente de verdad. Cada vez que pidas un cambio, recibes **solo los ficheros que cambian** y una nota que dice si hay que tocar la base de datos.
-
-1. Descarga los ficheros nuevos.
-2. En GitHub, abre el repositorio y arrastra los ficheros encima: sustituye los que existan y confirma el cambio (*Commit changes*).
-3. En uno o dos minutos la web ya está actualizada. Si no ves el cambio, recarga con Ctrl+F5.
-4. Si la nota dice que hay SQL, pega ese trozo en **Supabase → SQL Editor → Run** antes de probar.
-
-Reglas para no romper nada:
-- **`config.js` no se sustituye nunca**: ahí están tus claves. Si alguna vez hiciera falta cambiarlo, se te dice expresamente.
-- Si editas ficheros a mano en GitHub, avísalo: si no, el siguiente paquete de cambios puede pisar tu edición.
-- Los datos no se pierden al actualizar la web: viven en Supabase, no en los ficheros.
-- El **role play con IA** no funciona en GitHub Pages: necesita una función de servidor en Supabase. Todo lo demás, incluido el arcade, funciona sin ella.
-- Anota cada entrega en `CHANGELOG.md` para saber qué versión está publicada.
-
-## Seguridad
-- Cada RM solo puede leer y modificar sus tiendas; no puede reasignarlas ni cambiarlas de año. Esto lo impone la base de datos.
-- Solo el administrador crea, desactiva o cambia contraseñas de usuarios y crea o elimina tiendas.
-- Si dos personas editan la misma tienda a la vez, la segunda recibe un aviso en lugar de sobrescribir.
-- Un usuario desactivado pierde el acceso al momento; sus datos se conservan.
+## Seguridad y datos
+- Las reglas de acceso están en la base de datos: cada responsable solo ve lo suyo.
+- Ninguna clave secreta en el código.
+- Antes de cargar datos reales de personas hace falta el contrato de encargado de tratamiento (RGPD art. 28), el registro de actividades (art. 30) y, para la revisión de talento, probablemente una evaluación de impacto.
+- Las pruebas de capacidad no tienen baremo: sirven para comparar dentro de una campaña, nunca para decidir solas.
